@@ -117,19 +117,19 @@ export default function OpenPortalHomePage() {
 
       {/* Main Container with Safe Bottom Spacing for Mobile Bottom Nav */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 pb-28 md:pb-8">
-        {/* Banner Hero */}
+        {/* Banner Hero with high contrast in both themes */}
         <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 shadow-2xl bg-gradient-to-r from-[#0d2a20] via-[#0b2118] to-[#071711] p-6 sm:p-10 mb-8">
-          <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-400 text-xs font-bold mb-3.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Gerbang Terpadu Ekosistem Yayasan Rumah Etnik Papua</span>
+          <div className="relative z-10 max-w-2xl hero-banner-content">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-bold mb-3.5 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span className="text-amber-200">Gerbang Terpadu Ekosistem Yayasan Rumah Etnik Papua</span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
               Pilih & Buka Aplikasi Langsung
             </h1>
 
-            <p className="text-slate-300 text-sm sm:text-base mt-2.5 leading-relaxed">
+            <p className="text-slate-100 text-sm sm:text-base mt-2.5 leading-relaxed font-medium">
               Klik salah satu kotak aplikasi di bawah untuk langsung membuka sistem kerja yang Anda butuhkan di tab baru. Verifikasi login dilakukan langsung pada masing-masing aplikasi.
             </p>
           </div>
@@ -138,8 +138,8 @@ export default function OpenPortalHomePage() {
         {/* Search & Category Filter Section */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
           {/* Search Input */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400/70" />
+          <div className="relative w-full md:w-80 search-box-container">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
             <input
               type="text"
               value={searchQuery}
@@ -158,7 +158,7 @@ export default function OpenPortalHomePage() {
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   selectedCategory === cat.id
                     ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-950/50 scale-102 border border-amber-400/40'
-                    : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-900/40 border border-amber-500/15'
+                    : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-900/40 border border-amber-500/15 category-pill-inactive'
                 }`}
               >
                 <span>{cat.label}</span>
@@ -166,7 +166,7 @@ export default function OpenPortalHomePage() {
                   className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                     selectedCategory === cat.id
                       ? 'bg-black/30 text-amber-200'
-                      : 'bg-black/20 text-slate-400'
+                      : 'bg-black/20 text-slate-400 category-pill-count'
                   }`}
                 >
                   {cat.count}
@@ -185,7 +185,7 @@ export default function OpenPortalHomePage() {
             return (
               <div
                 key={app.id}
-                className="group relative rounded-3xl glass-panel overflow-hidden border-2 border-amber-500/25 hover:border-amber-400/70 bg-gradient-to-b from-[#0e291e]/95 to-[#081812]/95 shadow-2xl hover:shadow-amber-950/50 transition-all duration-300 flex flex-col justify-between"
+                className="group relative rounded-3xl glass-panel overflow-hidden border-2 border-amber-500/25 hover:border-amber-400/70 bg-gradient-to-b from-[#0e291e]/95 to-[#081812]/95 shadow-2xl hover:shadow-amber-950/50 transition-all duration-300 flex flex-col justify-between app-card-wrapper"
               >
                 <PapuanBorderCorner />
 
@@ -213,31 +213,31 @@ export default function OpenPortalHomePage() {
                       <span className="text-xs font-black tracking-widest text-amber-400 uppercase">
                         {app.shortCode}
                       </span>
-                      <span className="text-[11px] text-slate-400">• Vercel Production</span>
+                      <span className="text-[11px] text-slate-400 app-card-sub">• Vercel Production</span>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition-colors mt-1 leading-snug">
+                    <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition-colors mt-1 leading-snug app-card-title">
                       {app.title}
                     </h2>
                   </div>
 
-                  <p className="text-sm text-slate-300 leading-relaxed line-clamp-3 mb-4">
+                  <p className="text-sm text-slate-300 leading-relaxed line-clamp-3 mb-4 app-card-desc">
                     {app.fullDetails || app.description}
                   </p>
 
                   {app.stats && (
-                    <div className="py-2.5 px-3.5 rounded-xl bg-[#06160f]/80 border border-amber-500/15 flex items-center gap-2 text-xs text-slate-300">
+                    <div className="py-2.5 px-3.5 rounded-xl bg-[#06160f]/80 border border-amber-500/15 flex items-center gap-2 text-xs text-slate-300 app-card-stats">
                       <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
                       <span className="truncate font-medium">{app.stats}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="p-6 pt-3 bg-[#06140e]/95 border-t border-amber-500/20 relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="p-6 pt-3 bg-[#06140e]/95 border-t border-amber-500/20 relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 app-card-footer">
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={(e) => handleCopyLink(e, app.id, app.url)}
-                      className="px-3 py-2 rounded-xl bg-[#0c241b] hover:bg-[#123528] text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 border border-amber-500/20 transition-all cursor-pointer"
+                      className="px-3 py-2 rounded-xl bg-[#0c241b] hover:bg-[#123528] text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 border border-amber-500/20 transition-all cursor-pointer app-card-btn-copy"
                       title="Salin Tautan Aplikasi"
                     >
                       {isCopied ? (
@@ -260,7 +260,7 @@ export default function OpenPortalHomePage() {
                         setSelectedAppForRequest(app);
                         setRequestAccessModalOpen(true);
                       }}
-                      className="px-3 py-2 rounded-xl bg-amber-950/70 hover:bg-amber-900/90 text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center gap-1.5 border border-amber-500/40 transition-all cursor-pointer shadow-sm"
+                      className="px-3 py-2 rounded-xl bg-amber-950/70 hover:bg-amber-900/90 text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center gap-1.5 border border-amber-500/40 transition-all cursor-pointer shadow-sm app-card-btn-request"
                       title={`Minta Akun & Password untuk ${app.title}`}
                     >
                       <KeyRound className="w-3.5 h-3.5 text-amber-400" />
@@ -273,10 +273,10 @@ export default function OpenPortalHomePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={handleLaunchClick}
-                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs sm:text-sm font-extrabold shadow-xl shadow-amber-950/70 hover:shadow-amber-600/40 transition-all active:scale-95 cursor-pointer border border-amber-400/40 text-center"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 hover:from-amber-500 hover:via-amber-600 hover:to-amber-700 text-white font-black text-sm tracking-wide shadow-xl shadow-amber-950/60 hover:shadow-amber-600/40 border border-amber-400/40 transition-all duration-200 transform active:scale-95 group/btn cursor-pointer"
                   >
                     <span>Buka Sistem</span>
-                    <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    <ExternalLink className="w-4 h-4 text-amber-200 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                   </a>
                 </div>
               </div>

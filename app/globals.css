@@ -58,64 +58,189 @@ body {
   border-image: linear-gradient(to right, #e5a93c, #c28844, #0f382a) 1;
 }
 
-/* Light Mode Theme Overrides */
+/* ========================================================================= */
+/* LIGHT MODE THEME OVERRIDES (HIGH CONTRAST & RICH PAPUAN AESTHETIC)       */
+/* ========================================================================= */
 html.light body, [data-theme="light"] body {
-  background-color: #f6f8f7;
-  color: #122c22;
+  background-color: #f5f8f6;
+  color: #0f281e;
 }
 
 html.light .papuan-pattern-overlay {
-  background-image: radial-gradient(rgba(180, 83, 9, 0.12) 1px, transparent 0);
+  background-image: radial-gradient(rgba(180, 83, 9, 0.15) 1px, transparent 0);
+  background-size: 24px 24px;
 }
 
-html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.95);
-  background-color: rgba(255, 255, 255, 0.95);
-  border-color: rgba(180, 83, 9, 0.25);
-  box-shadow: 0 10px 25px -5px rgba(15, 56, 42, 0.07), 0 0 15px rgba(229, 169, 60, 0.08);
-}
-
-html.light .glass-panel-hover:hover {
-  border-color: rgba(180, 83, 9, 0.5);
-  box-shadow: 0 16px 30px -10px rgba(15, 56, 42, 0.12), 0 0 20px rgba(229, 169, 60, 0.15);
-}
-
+/* Header & Top Bar */
 html.light header {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(180, 83, 9, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid rgba(180, 83, 9, 0.25) !important;
+  box-shadow: 0 4px 20px rgba(15, 56, 42, 0.05);
 }
 
-html.light nav {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(180, 83, 9, 0.2) !important;
+html.light header h1,
+html.light header span.font-black {
+  color: #b45309 !important;
 }
 
-html.light .text-slate-100,
-html.light .text-white {
-  color: #0d281e;
+html.light header p {
+  color: #334e42 !important;
 }
 
-html.light .text-slate-200,
-html.light .text-slate-300 {
-  color: #1a3c2f;
+/* Hero Banner - Always Rich Forest Emerald with Crisp White Text */
+.hero-banner-content h1,
+.hero-banner-content p,
+.hero-banner-content span {
+  color: #ffffff !important;
 }
 
-html.light .text-slate-400 {
-  color: #4b6b5e;
+.hero-banner-content p {
+  color: #e2e8f0 !important;
 }
 
-html.light .bg-\[\#091d15\],
-html.light .bg-\[\#091b14\],
-html.light .bg-\[\#091e16\],
-html.light .bg-\[\#081812\],
-html.light .bg-\[\#07130f\],
-html.light .bg-\[\#0e291e\] {
-  background-color: #ffffff;
+/* Search Bar in Light Mode */
+html.light .search-box-container input {
+  background-color: #ffffff !important;
+  color: #0c261c !important;
+  border-color: rgba(180, 83, 9, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(15, 56, 42, 0.05) !important;
 }
 
-html.light .bg-\[\#06140e\],
-html.light .bg-\[\#06160f\] {
-  background-color: #f1f5f3;
+html.light .search-box-container input::placeholder {
+  color: #64748b !important;
+}
+
+/* Category Filter Tabs in Light Mode */
+html.light .category-pill-inactive {
+  background-color: #ffffff !important;
+  color: #143528 !important;
+  border-color: rgba(180, 83, 9, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(15, 56, 42, 0.04) !important;
+}
+
+html.light .category-pill-inactive:hover {
+  background-color: #eaf2ed !important;
+  color: #092017 !important;
+}
+
+html.light .category-pill-count {
+  background-color: rgba(180, 83, 9, 0.12) !important;
+  color: #8b3707 !important;
+  font-weight: 800 !important;
+}
+
+/* Application Big Grid Cards in Light Mode */
+html.light .app-card-wrapper {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid rgba(180, 83, 9, 0.28) !important;
+  box-shadow: 0 10px 30px -5px rgba(15, 56, 42, 0.08), 0 0 15px rgba(229, 169, 60, 0.08) !important;
+}
+
+html.light .app-card-wrapper:hover {
+  border-color: rgba(180, 83, 9, 0.55) !important;
+  box-shadow: 0 16px 36px -8px rgba(15, 56, 42, 0.14), 0 0 22px rgba(229, 169, 60, 0.18) !important;
+}
+
+html.light .app-card-title {
+  color: #0c261c !important;
+}
+
+html.light .app-card-desc {
+  color: #2c4a3d !important;
+}
+
+html.light .app-card-sub {
+  color: #527063 !important;
+}
+
+html.light .app-card-stats {
+  background-color: #f0f6f2 !important;
+  border-color: rgba(180, 83, 9, 0.22) !important;
+  color: #143528 !important;
+  font-weight: 600 !important;
+}
+
+html.light .app-card-footer {
+  background-color: #f7faf8 !important;
+  border-top-color: rgba(180, 83, 9, 0.18) !important;
+}
+
+html.light .app-card-btn-copy {
+  background-color: #e6ede8 !important;
+  color: #143528 !important;
+  border-color: rgba(180, 83, 9, 0.28) !important;
+  font-weight: 700 !important;
+}
+
+html.light .app-card-btn-copy:hover {
+  background-color: #d6e2d9 !important;
+  color: #071912 !important;
+}
+
+html.light .app-card-btn-request {
+  background-color: rgba(180, 83, 9, 0.12) !important;
+  color: #8b3707 !important;
+  border-color: rgba(180, 83, 9, 0.4) !important;
+  font-weight: 800 !important;
+}
+
+html.light .app-card-btn-request:hover {
+  background-color: rgba(180, 83, 9, 0.2) !important;
+  color: #632402 !important;
+}
+
+/* Native Mobile Bottom Navigation Bar in Light Mode */
+html.light nav.fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  border-top: 1.5px solid rgba(180, 83, 9, 0.25) !important;
+  box-shadow: 0 -6px 25px rgba(15, 56, 42, 0.09) !important;
+}
+
+html.light nav.fixed.bottom-0 a,
+html.light nav.fixed.bottom-0 button {
+  color: #334155 !important;
+}
+
+html.light nav.fixed.bottom-0 .text-amber-400 {
+  color: #b45309 !important;
+}
+
+html.light nav.fixed.bottom-0 .bg-amber-950\/60 {
+  background-color: rgba(254, 243, 199, 0.9) !important;
+  color: #92400e !important;
+}
+
+html.light nav.fixed.bottom-0 .text-purple-400 {
+  color: #7e22ce !important;
+}
+
+html.light nav.fixed.bottom-0 .text-emerald-400 {
+  color: #047857 !important;
+}
+
+/* Modals & Dialogs in Light Mode */
+html.light .glass-panel {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(180, 83, 9, 0.3) !important;
+  box-shadow: 0 20px 40px -10px rgba(15, 56, 42, 0.15) !important;
+}
+
+html.light .glass-panel h2,
+html.light .glass-panel h3 {
+  color: #0c261c !important;
+}
+
+html.light .glass-panel input,
+html.light .glass-panel select,
+html.light .glass-panel textarea {
+  background-color: #f8faf9 !important;
+  border-color: rgba(180, 83, 9, 0.3) !important;
+  color: #0c261c !important;
+}
+
+html.light .glass-panel label {
+  color: #163628 !important;
 }
 
 /* Glassmorphic Cards with full Safari WebKit support */
