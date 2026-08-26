@@ -119,8 +119,8 @@ export default function RequestAccessModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-      <div className="relative w-full max-w-xl rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091d15] border-t-2 sm:border-2 border-amber-500/40 shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-none overflow-y-auto my-0 sm:my-6 pb-safe-bottom">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-xl my-auto rounded-3xl glass-panel bg-[#091d15] border-2 border-amber-500/40 shadow-2xl overflow-hidden max-h-[90dvh] overflow-y-auto">
         <PapuanBorderCorner />
 
         {/* Ambient Glows */}

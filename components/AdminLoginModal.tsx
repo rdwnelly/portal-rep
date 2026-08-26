@@ -58,8 +58,8 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-purple-500/40 shadow-2xl overflow-hidden p-6 sm:p-8 pb-safe-bottom max-h-[92dvh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-md my-auto rounded-3xl glass-panel bg-[#091e16] border-2 border-purple-500/40 shadow-2xl overflow-hidden p-6 sm:p-8 max-h-[92dvh] overflow-y-auto">
         <PapuanBorderCorner />
 
         {/* Ambient Glows */}

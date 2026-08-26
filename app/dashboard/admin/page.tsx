@@ -189,11 +189,11 @@ export default function AdminDashboardPage() {
     };
 
     return (
-      <div className="relative min-h-screen flex flex-col justify-between bg-[#07130f] papuan-pattern-overlay text-slate-100 selection:bg-amber-500 selection:text-black">
+      <div className="relative min-h-[100dvh] flex flex-col bg-[#07130f] papuan-pattern-overlay text-slate-100 selection:bg-amber-500 selection:text-black">
         <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
-        <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 pb-32 md:pb-12">
-          <div className="relative w-full max-w-md rounded-3xl glass-panel bg-[#091e16]/95 border-2 border-purple-500/40 shadow-2xl overflow-hidden p-6 sm:p-8">
+        <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 pb-28 sm:pb-12 w-full max-w-md mx-auto my-auto">
+          <div className="relative w-full rounded-3xl glass-panel bg-[#091e16]/95 border-2 border-purple-500/40 shadow-2xl overflow-hidden p-6 sm:p-8">
             <PapuanBorderCorner />
 
             <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />

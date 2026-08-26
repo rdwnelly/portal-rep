@@ -51,8 +51,8 @@ export default function PWAInstallModal({ isOpen, onClose }: PWAInstallModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-2xl glass-panel bg-[#091d16] border-t-2 sm:border border-amber-500/30 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-lg my-auto rounded-3xl glass-panel bg-[#091d16] border-2 border-amber-500/35 shadow-2xl p-6 overflow-hidden max-h-[90dvh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
