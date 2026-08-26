@@ -190,32 +190,39 @@ html.light .app-card-btn-request:hover {
   color: #632402 !important;
 }
 
-/* Native Mobile Bottom Navigation Bar in Light Mode */
-html.light nav.fixed.bottom-0 {
+/* Ultra-Modern Floating Bottom Dock in Light Mode */
+html.light .floating-bottom-nav {
   background-color: rgba(255, 255, 255, 0.97) !important;
-  border-top: 1.5px solid rgba(180, 83, 9, 0.25) !important;
-  box-shadow: 0 -6px 25px rgba(15, 56, 42, 0.09) !important;
+  border-color: rgba(180, 83, 9, 0.3) !important;
+  box-shadow: 0 14px 40px rgba(15, 56, 42, 0.12), 0 0 20px rgba(229, 169, 60, 0.12) !important;
 }
 
-html.light nav.fixed.bottom-0 a,
-html.light nav.fixed.bottom-0 button {
+html.light .floating-bottom-nav a,
+html.light .floating-bottom-nav button {
   color: #334155 !important;
 }
 
-html.light nav.fixed.bottom-0 .text-amber-400 {
+html.light .floating-bottom-nav .text-amber-400,
+html.light .floating-bottom-nav .text-amber-300 {
   color: #b45309 !important;
 }
 
-html.light nav.fixed.bottom-0 .bg-amber-950\/60 {
-  background-color: rgba(254, 243, 199, 0.9) !important;
+html.light .floating-bottom-nav .bg-amber-500\/15 {
+  background-color: rgba(254, 243, 199, 0.95) !important;
   color: #92400e !important;
 }
 
-html.light nav.fixed.bottom-0 .text-purple-400 {
+html.light .floating-bottom-nav .text-purple-400,
+html.light .floating-bottom-nav .text-purple-300\/80 {
   color: #7e22ce !important;
 }
 
-html.light nav.fixed.bottom-0 .text-emerald-400 {
+html.light .floating-bottom-nav .bg-purple-500\/15 {
+  background-color: rgba(243, 232, 255, 0.95) !important;
+  color: #6b21a8 !important;
+}
+
+html.light .floating-bottom-nav .text-emerald-400 {
   color: #047857 !important;
 }
 

@@ -21,6 +21,9 @@ import {
   Moon
 } from 'lucide-react';
 import AdminLoginModal from '@/components/AdminLoginModal';
+import RequestAccessModal from '@/components/RequestAccessModal';
+import PWAInstallModal from '@/components/PWAInstallModal';
+import { getAppsList } from '@/lib/storage';
 import { useTheme } from '@/lib/theme-context';
 
 interface NavbarProps {
@@ -38,6 +41,8 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [internalRequestModalOpen, setInternalRequestModalOpen] = useState(false);
+  const [internalPwaModalOpen, setInternalPwaModalOpen] = useState(false);
 
   // Live WIT Clock (Sorong, Papua Barat Daya - UTC+9)
   useEffect(() => {
@@ -428,89 +433,128 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
       />
 
       {/* ========================================================================= */}
-      {/* NATIVE MOBILE BOTTOM NAVIGATION BAR (KHUSUS LAYAR HP STAF KARYAWAN)      */}
+      {/* ULTRA-MODERN FLOATING BOTTOM DOCK (MOBILE / HP STAF KARYAWAN)             */}
       {/* ========================================================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#071711]/95 backdrop-blur-xl border-t border-amber-500/25 px-1 py-1.5 pb-safe-bottom shadow-2xl flex items-center justify-around">
-        {/* 1. Beranda Aplikasi */}
-        <Link
-          href="/"
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-            pathname === '/' || pathname === '/dashboard'
-              ? 'text-amber-400 bg-amber-950/60 font-black scale-105'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
+      <div className="md:hidden fixed bottom-3 left-2.5 right-2.5 z-50 pointer-events-none flex justify-center">
+        <nav
+          className="pointer-events-auto w-full max-w-md rounded-3xl bg-[#081c14]/94 backdrop-blur-2xl border border-amber-500/35 px-1.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.6)] flex items-center justify-between transition-all duration-300 floating-bottom-nav"
         >
-          <LayoutGrid className="w-5 h-5 mb-0.5" />
-          <span className="text-[9px] font-bold">Aplikasi</span>
-        </Link>
-
-        {/* 2. Papan Pengumuman */}
-        <Link
-          href="/dashboard/notices"
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-            pathname === '/dashboard/notices'
-              ? 'text-amber-400 bg-amber-950/60 font-black scale-105'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Bell className="w-5 h-5 mb-0.5 text-amber-400" />
-          <span className="text-[9px] font-bold">Info</span>
-        </Link>
-
-        {/* 3. Minta Akses Button (Floating Action) */}
-        {onOpenRequestModal && (
-          <button
-            onClick={onOpenRequestModal}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-amber-300 hover:text-amber-200 transition-all cursor-pointer"
+          {/* 1. Beranda Aplikasi */}
+          <Link
+            href="/"
+            className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all duration-200 ${
+              pathname === '/' || pathname === '/dashboard'
+                ? 'text-amber-400 bg-amber-500/15 font-black scale-105 shadow-inner'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
           >
-            <div className="w-9 h-9 -mt-4 rounded-full bg-gradient-to-tr from-amber-600 to-amber-800 border-2 border-amber-300 flex items-center justify-center shadow-xl shadow-amber-950">
-              <UserPlus className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-[9px] font-extrabold text-amber-300 mt-0.5">Daftar</span>
-          </button>
-        )}
+            <LayoutGrid className="w-5 h-5 mb-0.5" />
+            <span className="text-[9px] font-bold tracking-tight">Aplikasi</span>
+          </Link>
 
-        {/* 4. Theme Toggle Button in Bottom Nav */}
-        <button
-          suppressHydrationWarning
-          onClick={toggleTheme}
-          className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-amber-400 hover:text-amber-300 transition-all cursor-pointer"
-          title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
-        >
-          {theme === 'dark' ? <Sun className="w-5 h-5 mb-0.5 text-amber-300" /> : <Moon className="w-5 h-5 mb-0.5 text-indigo-400" />}
-          <span className="text-[9px] font-bold">{theme === 'dark' ? 'Siang' : 'Malam'}</span>
-        </button>
+          {/* 2. Papan Pengumuman */}
+          <Link
+            href="/dashboard/notices"
+            className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all duration-200 ${
+              pathname === '/dashboard/notices'
+                ? 'text-amber-400 bg-amber-500/15 font-black scale-105 shadow-inner'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Bell className="w-5 h-5 mb-0.5 text-amber-400" />
+            <span className="text-[9px] font-bold tracking-tight">Info</span>
+          </Link>
 
-        {/* 5. Pasang PWA */}
-        {onOpenPwaModal && (
+          {/* 3. Minta Akses Button (Floating Center Action with Gold Gradient & Halo) */}
           <button
-            onClick={onOpenPwaModal}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-emerald-400 hover:text-emerald-300 transition-all cursor-pointer"
+            onClick={() => {
+              if (onOpenRequestModal) {
+                onOpenRequestModal();
+              } else {
+                setInternalRequestModalOpen(true);
+              }
+            }}
+            className="flex-1 flex flex-col items-center justify-center relative -top-3.5 group cursor-pointer"
+            title="Daftar & Minta Akses Akun Staf"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 via-amber-600 to-amber-700 border-2 border-amber-300 flex items-center justify-center shadow-xl shadow-amber-950/70 group-active:scale-90 group-hover:scale-105 transition-all duration-200">
+              <UserPlus className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-[10px] font-black text-amber-400 mt-0.5 tracking-tight drop-shadow-sm">
+              Daftar
+            </span>
+          </button>
+
+          {/* 4. Theme Toggle Button */}
+          <button
+            suppressHydrationWarning
+            onClick={toggleTheme}
+            className="flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl text-amber-400 hover:text-amber-300 transition-all duration-200 cursor-pointer"
+            title={theme === 'dark' ? 'Mode Terang (Siang)' : 'Mode Gelap (Malam)'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-5 h-5 mb-0.5 text-amber-300" />
+            ) : (
+              <Moon className="w-5 h-5 mb-0.5 text-indigo-400" />
+            )}
+            <span className="text-[9px] font-bold tracking-tight">
+              {theme === 'dark' ? 'Siang' : 'Malam'}
+            </span>
+          </button>
+
+          {/* 5. Pasang PWA */}
+          <button
+            onClick={() => {
+              if (onOpenPwaModal) {
+                onOpenPwaModal();
+              } else {
+                setInternalPwaModalOpen(true);
+              }
+            }}
+            className="flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl text-emerald-400 hover:text-emerald-300 transition-all duration-200 cursor-pointer"
+            title="Pasang Aplikasi di HP"
           >
             <Download className="w-5 h-5 mb-0.5" />
-            <span className="text-[9px] font-bold">Pasang</span>
+            <span className="text-[9px] font-bold tracking-tight">Pasang</span>
           </button>
-        )}
 
-        {/* 6. Admin Panel */}
-        <button
-          onClick={() => {
-            if (user && (user.role === 'IT_ADMIN' || user.role === 'EXECUTIVE')) {
-              router.push('/dashboard/admin');
-            } else {
-              setAdminModalOpen(true);
-            }
-          }}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-            pathname === '/dashboard/admin'
-              ? 'text-purple-400 bg-purple-950/60 font-black scale-105'
-              : 'text-purple-300/80 hover:text-purple-200'
-          }`}
-        >
-          <ShieldCheck className="w-5 h-5 mb-0.5" />
-          <span className="text-[9px] font-bold">Admin</span>
-        </button>
-      </nav>
+          {/* 6. Admin Panel */}
+          <button
+            onClick={() => {
+              if (user && (user.role === 'IT_ADMIN' || user.role === 'EXECUTIVE')) {
+                router.push('/dashboard/admin');
+              } else {
+                setAdminModalOpen(true);
+              }
+            }}
+            className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all duration-200 ${
+              pathname === '/dashboard/admin'
+                ? 'text-purple-400 bg-purple-500/15 font-black scale-105'
+                : 'text-purple-300/80 hover:text-purple-200'
+            }`}
+            title="Panel Admin"
+          >
+            <ShieldCheck className="w-5 h-5 mb-0.5" />
+            <span className="text-[9px] font-bold tracking-tight">Admin</span>
+          </button>
+        </nav>
+      </div>
+
+      {/* Internal Modals for complete stand-alone functionality */}
+      {internalRequestModalOpen && (
+        <RequestAccessModal
+          isOpen={internalRequestModalOpen}
+          availableApps={getAppsList()}
+          onClose={() => setInternalRequestModalOpen(false)}
+        />
+      )}
+
+      {internalPwaModalOpen && (
+        <PWAInstallModal
+          isOpen={internalPwaModalOpen}
+          onClose={() => setInternalPwaModalOpen(false)}
+        />
+      )}
     </header>
   );
 }
