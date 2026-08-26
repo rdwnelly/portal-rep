@@ -36,6 +36,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  // Jangan cache dynamic bundle Next.js, chunks, atau API
+  if (url.pathname.startsWith('/_next/') || url.pathname.startsWith('/api/')) {
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
