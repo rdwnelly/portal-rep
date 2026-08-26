@@ -106,7 +106,8 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-amber-500/20 bg-[#081812]/90 backdrop-blur-md transition-all">
+    <>
+      <header className="sticky top-0 z-40 w-full border-b border-amber-500/20 bg-[#081812]/90 backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Brand Logo & Name */}
@@ -425,6 +426,7 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
           </div>
         </div>
       )}
+      </header>
 
       {/* Admin Login Modal */}
       <AdminLoginModal
@@ -432,8 +434,24 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
         onClose={() => setAdminModalOpen(false)}
       />
 
+      {/* Internal Modals for complete stand-alone functionality */}
+      {internalRequestModalOpen && (
+        <RequestAccessModal
+          isOpen={internalRequestModalOpen}
+          availableApps={getAppsList()}
+          onClose={() => setInternalRequestModalOpen(false)}
+        />
+      )}
+
+      {internalPwaModalOpen && (
+        <PWAInstallModal
+          isOpen={internalPwaModalOpen}
+          onClose={() => setInternalPwaModalOpen(false)}
+        />
+      )}
+
       {/* ========================================================================= */}
-      {/* ULTRA-MODERN FLOATING BOTTOM DOCK (MOBILE / HP STAF KARYAWAN)             */}
+      {/* ULTRA-MODERN FLOATING BOTTOM DOCK (STAND-ALONE VIEWPORT FIXED BOTTOM)     */}
       {/* ========================================================================= */}
       <div className="md:hidden fixed bottom-3 left-2.5 right-2.5 z-50 pointer-events-none flex justify-center">
         <nav
@@ -539,22 +557,6 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
           </button>
         </nav>
       </div>
-
-      {/* Internal Modals for complete stand-alone functionality */}
-      {internalRequestModalOpen && (
-        <RequestAccessModal
-          isOpen={internalRequestModalOpen}
-          availableApps={getAppsList()}
-          onClose={() => setInternalRequestModalOpen(false)}
-        />
-      )}
-
-      {internalPwaModalOpen && (
-        <PWAInstallModal
-          isOpen={internalPwaModalOpen}
-          onClose={() => setInternalPwaModalOpen(false)}
-        />
-      )}
-    </header>
+    </>
   );
 }
