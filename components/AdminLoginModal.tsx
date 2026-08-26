@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import {
   X,
   ShieldCheck,
+  Mail,
   Lock,
   Eye,
   EyeOff,
   Sparkles,
   ArrowRight,
-  AlertTriangle
+  AlertTriangle,
+  KeyRound
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '@/lib/auth-context';
@@ -23,23 +25,29 @@ interface AdminLoginModalProps {
 
 export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
   const router = useRouter();
-  const { loginAsDemo, loginWithGoogle, isLoading, authError } = useAuth();
-  const [passcode, setPasscode] = useState('');
-  const [showPasscode, setShowPasscode] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const { loginWithEmailPassword, loginAsDemo, loginWithGoogle, isLoading, authError, clearAuthError } = useAuth();
+  const [email, setEmail] = useState('ridwanelly123@gmail.com');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState('');
 
   if (!isOpen) return null;
 
-  const handlePasscodeLogin = (e: React.FormEvent) => {
+  const handleEmailPasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
+    setLocalError('');
+    clearAuthError();
 
-    const cleanPass = passcode.trim().toLowerCase();
-    if (cleanPass === 'admin2026' || cleanPass === 'rep2026' || cleanPass === 'admin' || cleanPass === 'itadmin') {
-      loginAsDemo('RIDWAN');
+    if (!email.trim() || !password.trim()) {
+      setLocalError('Mohon masukkan email dan kata sandi admin.');
+      return;
+    }
+
+    const success = await loginWithEmailPassword(email.trim(), password);
+    if (success) {
       if (typeof window !== 'undefined') {
         confetti({
-          particleCount: 40,
+          particleCount: 45,
           spread: 60,
           origin: { y: 0.6 },
           colors: ['#e5a93c', '#0f382a', '#10b981', '#a855f7'],
@@ -47,8 +55,6 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
       }
       onClose();
       router.push('/dashboard/admin');
-    } else {
-      setErrorMsg('Kata sandi admin tidak valid! Gunakan sandi admin atau pilih masuk cepat Ridwan Elly.');
     }
   };
 
@@ -90,72 +96,89 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
         </button>
 
         {/* Header */}
-        <div className="text-center mb-6 relative z-10">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-700 to-indigo-950 border-2 border-purple-400/50 text-purple-200 mx-auto flex items-center justify-center shadow-xl shadow-black/50 mb-3">
-            <ShieldCheck className="w-7 h-7" />
+        <div className="text-center mb-5 relative z-10">
+          <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-purple-700 to-indigo-950 border-2 border-purple-400/50 text-purple-200 mx-auto flex items-center justify-center shadow-xl shadow-black/50 mb-2.5">
+            <ShieldCheck className="w-7 h-7 text-purple-300" />
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
             <Sparkles className="w-3 h-3" />
-            <span>Hak Akses Khusus Admin</span>
+            <span>Firebase Authentication</span>
           </div>
-          <h2 className="text-xl font-black text-white">Login Administrator Portal</h2>
-          <p className="text-xs text-slate-300 mt-1">
-            Masuk untuk mengelola notifikasi, tautan aplikasi, dan informasi yayasan.
+          <h2 className="text-xl font-black text-white">Login Administrator</h2>
+          <p className="text-xs text-slate-300 mt-0.5">
+            Masuk dengan Email & Password Firebase untuk mengelola sistem.
           </p>
         </div>
 
-        {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs flex items-center gap-2 relative z-10 animate-in fade-in duration-200">
-            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-            <span>{errorMsg}</span>
+        {(localError || authError) && (
+          <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs flex items-start gap-2 relative z-10 animate-in fade-in duration-200">
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <span className="leading-snug">{localError || authError}</span>
           </div>
         )}
 
-        {authError && (
-          <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs flex items-center gap-2 relative z-10">
-            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-            <span>{authError}</span>
-          </div>
-        )}
-
-        {/* Form: Password / Passcode */}
-        <form onSubmit={handlePasscodeLogin} className="space-y-4 relative z-10">
+        {/* Form: Email & Password */}
+        <form onSubmit={handleEmailPasswordLogin} className="space-y-3.5 relative z-10">
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
+            <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1">
+              <Mail className="w-3.5 h-3.5 text-purple-400" />
+              <span>Email Admin</span>
+            </label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ridwanelly123@gmail.com"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all font-mono"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1">
               <Lock className="w-3.5 h-3.5 text-purple-400" />
               <span>Kata Sandi Admin</span>
             </label>
             <div className="relative">
               <input
-                type={showPasscode ? 'text' : 'password'}
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Masukkan kata sandi admin (misal: admin2026)"
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Masukkan kata sandi Firebase"
                 className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all font-mono"
               />
               <button
                 type="button"
-                onClick={() => setShowPasscode(!showPasscode)}
+                onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-300 p-1 cursor-pointer"
               >
-                {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-purple-950/60 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-purple-400/40"
+            disabled={isLoading}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-purple-950/60 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-purple-400/40 disabled:opacity-50"
           >
-            <span>Masuk ke Panel Admin</span>
-            <ArrowRight className="w-4 h-4" />
+            {isLoading ? (
+              <span>Memverifikasi akun...</span>
+            ) : (
+              <>
+                <KeyRound className="w-4 h-4 text-purple-300" />
+                <span>Masuk dengan Email & Password</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 
-        <div className="relative flex items-center justify-center my-4 relative z-10">
+        <div className="relative flex items-center justify-center my-3.5 relative z-10">
           <div className="border-t border-slate-700/80 w-full" />
-          <span className="bg-[#091e16] px-3 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            Atau Pilihan Masuk
+          <span className="bg-[#091e16] px-3 text-[10px] uppercase font-bold text-slate-400 tracking-wider whitespace-nowrap">
+            Pilihan Lainnya
           </span>
           <div className="border-t border-slate-700/80 w-full" />
         </div>

@@ -8,6 +8,7 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from 'firebase/auth';
@@ -20,6 +21,7 @@ interface AuthContextType {
   unauthorizedEmail: string | null;
   authError: string | null;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmailPassword: (email: string, pass: string) => Promise<boolean>;
   loginAsDemo: (demoKey: 'FRICKY' | 'MITSHI' | 'RIDWAN' | 'FRONTDESK' | 'FINANCE' | 'UNAUTHORIZED_DEMO') => void;
   logout: () => void;
   requestAccess: (data: { name: string; email: string; department: string; reason: string }) => Promise<void>;
@@ -262,6 +264,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithEmailPassword = async (email: string, pass: string): Promise<boolean> => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      if (!cleanEmail || !pass) {
+        setAuthError('Silakan masukkan email dan kata sandi admin.');
+        return false;
+      }
+
+      if (isConfigured) {
+        try {
+          const cred = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+          if (cred.user && cred.user.email) {
+            handleAuthUserEmail(
+              cred.user.email,
+              cred.user.displayName || (cleanEmail === 'ridwanelly123@gmail.com' ? 'Ridwan Elly' : 'Administrator Yayasan'),
+              cred.user.photoURL || undefined,
+              false
+            );
+            return true;
+          }
+        } catch (firebaseErr: unknown) {
+          const fErr = firebaseErr as { code?: string; message?: string };
+          console.error('Firebase Email/Password Error:', fErr);
+          
+          if (fErr?.code === 'auth/user-not-found' || fErr?.code === 'auth/invalid-credential' || fErr?.code === 'auth/wrong-password') {
+            setAuthError('Email atau kata sandi tidak cocok. Pastikan akun email & password sudah terdaftar di Firebase Authentication.');
+          } else if (fErr?.code === 'auth/invalid-email') {
+            setAuthError('Format alamat email tidak valid.');
+          } else if (fErr?.code === 'auth/too-many-requests') {
+            setAuthError('Akses diblokir sementara karena terlalu banyak percobaan salah. Silakan tunggu beberapa saat.');
+          } else if (fErr?.code === 'auth/operation-not-allowed') {
+            setAuthError('Fitur Email/Password belum diaktifkan di Firebase Console. Buka Authentication > Sign-in method > aktifkan Email/Password.');
+          } else {
+            setAuthError(`Gagal autentikasi: ${fErr?.message || fErr?.code || 'Terjadi kesalahan sistem'}`);
+          }
+          return false;
+        }
+      } else {
+        // Fallback for demo/development
+        if (cleanEmail === 'ridwanelly123@gmail.com' || pass === 'admin2026' || pass === 'rep2026') {
+          handleAuthUserEmail(cleanEmail || 'ridwanelly123@gmail.com', 'Ridwan Elly (Admin IT)', undefined, false);
+          return true;
+        } else {
+          setAuthError('Email atau kata sandi tidak valid.');
+          return false;
+        }
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loginAsDemo = (demoKey: keyof typeof DEMO_ACCOUNTS) => {
     setIsLoading(true);
     setAuthError(null);
@@ -332,6 +389,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         unauthorizedEmail,
         authError,
         loginWithGoogle,
+        loginWithEmailPassword,
         loginAsDemo,
         logout,
         requestAccess,
