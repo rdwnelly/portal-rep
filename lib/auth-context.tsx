@@ -4,7 +4,13 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { UserProfile, UserRole } from './types';
 import { findWhitelistedUser, addAuditLog, submitAccessRequest } from './storage';
 import { auth, googleProvider, isConfigured } from './firebase';
-import { signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
+import {
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -156,9 +162,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isConfigured) {
+      // Periksa hasil redirect saat user kembali dari halaman login Google
+      getRedirectResult(auth)
+        .then((result) => {
+          if (result?.user?.email) {
+            handleAuthUserEmail(
+              result.user.email,
+              result.user.displayName || 'Pengguna Google',
+              result.user.photoURL || undefined,
+              true
+            );
+          }
+        })
+        .catch((err) => {
+          console.error('Redirect result error:', err);
+        });
+
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
         if (firebaseUser && firebaseUser.email) {
-          handleAuthUserEmail(firebaseUser.email, firebaseUser.displayName || 'Pengguna Google', firebaseUser.photoURL || undefined, false);
+          handleAuthUserEmail(
+            firebaseUser.email,
+            firebaseUser.displayName || 'Pengguna Google',
+            firebaseUser.photoURL || undefined,
+            false
+          );
         }
       });
       return () => unsubscribe();
@@ -170,9 +197,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
     try {
       if (isConfigured) {
-        const result = await signInWithPopup(auth, googleProvider);
-        if (result?.user?.email) {
-          handleAuthUserEmail(result.user.email, result.user.displayName || 'Pengguna Google', result.user.photoURL || undefined, true);
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          if (result?.user?.email) {
+            handleAuthUserEmail(
+              result.user.email,
+              result.user.displayName || 'Pengguna Google',
+              result.user.photoURL || undefined,
+              true
+            );
+          }
+        } catch (popupError: unknown) {
+          const pErr = popupError as { code?: string };
+          // Jika popup diblokir oleh browser (Safari/iOS/Chrome), otomatis alihkan ke signInWithRedirect!
+          if (pErr?.code === 'auth/popup-blocked') {
+            console.log('Popup diblokir, mengalihkan ke mode Redirect langsung...');
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          }
+          throw popupError;
         }
       } else {
         handleAuthUserEmail(DEMO_ACCOUNTS.RIDWAN.email, DEMO_ACCOUNTS.RIDWAN.displayName, DEMO_ACCOUNTS.RIDWAN.photoURL, true);
@@ -186,8 +229,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthError('Google Sign-In belum diaktifkan di Firebase Console. Buka Firebase Console > Authentication > Sign-in method > aktifkan Google.');
       } else if (authErr?.code === 'auth/unauthorized-domain') {
         setAuthError(`Domain "${currentHost}" belum diizinkan di Firebase Console. Buka Firebase Console > Authentication > Settings > Authorized domains > tambahkan "${currentHost}".`);
-      } else if (authErr?.code === 'auth/popup-blocked') {
-        setAuthError('Popup Google diblokir oleh browser. Harap izinkan popup di pengaturan URL browser Anda.');
       } else if (authErr?.code === 'auth/popup-closed-by-user' || authErr?.code === 'auth/cancelled-popup-request') {
         // User sengaja menutup popup
         setAuthError(null);
