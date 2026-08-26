@@ -1,0 +1,24 @@
+{
+  "name": "PORTAL REP - Yayasan Rumah Etnik Papua",
+  "short_name": "PORTAL REP",
+  "description": "Pusat Operasional Rumah Terpadu Aplikasi Layanan Yayasan Rumah Etnik Papua",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1914",
+  "theme_color": "#0f2e22",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

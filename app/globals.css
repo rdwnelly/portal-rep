@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  --background: #07130f;
+  --foreground: #f4f6f5;
+  --primary-emerald: #0f382a;
+  --accent-gold: #e5a93c;
+  --accent-wood: #c28844;
+  --card-bg: rgba(15, 34, 27, 0.85);
+  --card-border: rgba(229, 169, 60, 0.2);
+}
+
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #07130f;
+  color: #f1f5f3;
+  font-family: var(--font-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Papuan Pattern Overlay */
+.papuan-pattern-overlay {
+  background-image: radial-gradient(rgba(229, 169, 60, 0.08) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.ethnic-border {
+  border-image: linear-gradient(to right, #e5a93c, #c28844, #0f382a) 1;
+}
+
+/* Glassmorphic Cards with full Safari WebKit support */
+.glass-panel {
+  background: rgba(14, 30, 24, 0.82);
+  background-color: rgba(14, 30, 24, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(229, 169, 60, 0.2);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover:hover {
+  transform: translateY(-3px);
+  -webkit-transform: translateY(-3px);
+  border-color: rgba(229, 169, 60, 0.45);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(229, 169, 60, 0.15);
+}
+
+.glass-panel-active {
+  background: rgba(18, 42, 33, 0.9);
+  background-color: rgba(18, 42, 33, 0.9);
+  border-color: rgba(229, 169, 60, 0.5);
+}
+
+/* Button & interactive fixes for Safari */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #091a14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1b4937;
+  border-radius: 4px;
+  border: 1px solid rgba(229, 169, 60, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c28844;
+}
+
+/* Animation utilities */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float {
+  animation: floatSlow 5s ease-in-out infinite;
+}

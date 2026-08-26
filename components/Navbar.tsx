@@ -1,0 +1,354 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import Image from 'next/image';
+import {
+  LayoutGrid,
+  Bell,
+  ShieldCheck,
+  LogOut,
+  Clock,
+  Download,
+  Menu,
+  X,
+  User,
+  ChevronDown
+} from 'lucide-react';
+
+export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void }) {
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
+  const [timeWIT, setTimeWIT] = useState<string>('');
+  const [dateWIT, setDateWIT] = useState<string>('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  // Live WIT Clock (Sorong, Papua Barat Daya - UTC+9)
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const optionsTime: Intl.DateTimeFormatOptions = {
+        timeZone: 'Asia/Jayapura',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      };
+      const optionsDate: Intl.DateTimeFormatOptions = {
+        timeZone: 'Asia/Jayapura',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      };
+      setTimeWIT(new Intl.DateTimeFormat('id-ID', optionsTime).format(now));
+      setDateWIT(new Intl.DateTimeFormat('id-ID', optionsDate).format(now));
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getRoleBadgeStyle = (role?: string) => {
+    switch (role) {
+      case 'IT_ADMIN':
+        return 'bg-purple-900/60 text-purple-300 border-purple-500/40';
+      case 'EXECUTIVE':
+        return 'bg-amber-900/60 text-amber-300 border-amber-500/40';
+      case 'FINANCE_WAREHOUSE':
+        return 'bg-emerald-900/60 text-emerald-300 border-emerald-500/40';
+      default:
+        return 'bg-teal-900/60 text-teal-300 border-teal-500/40';
+    }
+  };
+
+  const navLinks = [
+    {
+      label: 'Hub Aplikasi',
+      href: '/dashboard',
+      icon: LayoutGrid,
+      active: pathname === '/dashboard',
+    },
+    {
+      label: 'Pengumuman',
+      href: '/dashboard/notices',
+      icon: Bell,
+      active: pathname === '/dashboard/notices',
+    },
+    ...(user?.role === 'IT_ADMIN' || user?.role === 'EXECUTIVE'
+      ? [
+          {
+            label: 'Admin & Whitelist',
+            href: '/dashboard/admin',
+            icon: ShieldCheck,
+            active: pathname === '/dashboard/admin',
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <header className="sticky top-0 z-40 w-full border-b border-amber-500/20 bg-[#081812]/90 backdrop-blur-md transition-all">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-18">
+          {/* Brand Logo & Name */}
+          <Link href="/dashboard" className="flex items-center gap-3 group">
+            <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-amber-500/30 shadow-lg shadow-amber-950/40 group-hover:border-amber-400/60 transition-all flex items-center justify-center bg-[#0d281e]">
+              <Image
+                src="/images/rep-logo.jpg"
+                alt="Logo Rumah Etnik Papua"
+                width={44}
+                height={44}
+                className="object-cover"
+                priority
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-lg tracking-wider text-amber-400 group-hover:text-amber-300 transition-colors">
+                  PORTAL REP
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-emerald-900/80 text-emerald-300 border border-emerald-500/30">
+                  SSO
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium line-clamp-1">
+                Yayasan Rumah Etnik Papua • Sorong
+              </p>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1.5 bg-[#0b2118]/80 p-1 rounded-xl border border-amber-500/15">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    link.active
+                      ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-md shadow-amber-950/50'
+                      : 'text-slate-300 hover:text-white hover:bg-emerald-900/40'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right Section: Live WIT Clock & User Menu */}
+          <div className="hidden lg:flex items-center gap-3">
+            {/* Live WIT Clock */}
+            <div className="flex items-center gap-2 bg-[#0d261d] px-3 py-1.5 rounded-lg border border-emerald-500/20 text-xs text-slate-300">
+              <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
+              <div suppressHydrationWarning>
+                <span className="font-bold text-amber-400">{timeWIT || '00:00:00'} WIT</span>
+                <span className="text-[10px] text-slate-400 ml-1.5">{dateWIT}</span>
+              </div>
+            </div>
+
+            {/* PWA Install Button */}
+            {onOpenPwaModal && (
+              <button
+                onClick={onOpenPwaModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-all"
+                title="Pasang di HP / Desktop"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>PWA</span>
+              </button>
+            )}
+
+            {/* User Profile Chip & Dropdown */}
+            {user && (
+              <div className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-[#0e271e] border border-amber-500/25 hover:border-amber-400/50 transition-all text-left"
+                >
+                  <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-amber-400/30 bg-amber-950/50 flex items-center justify-center">
+                    {user.photoURL ? (
+                      <Image
+                        src={user.photoURL}
+                        alt={user.displayName}
+                        width={32}
+                        height={32}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <User className="w-4 h-4 text-amber-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-200 line-clamp-1 leading-tight">
+                      {user.displayName}
+                    </p>
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${getRoleBadgeStyle(
+                        user.role
+                      )}`}
+                    >
+                      {user.roleTitle}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                </button>
+
+                {/* User Dropdown Menu */}
+                {userDropdownOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-64 rounded-xl glass-panel border border-amber-500/30 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150"
+                    onMouseLeave={() => setUserDropdownOpen(false)}
+                  >
+                    <div className="p-2.5 border-b border-amber-500/20 bg-emerald-950/40 rounded-lg mb-2">
+                      <p className="text-xs font-bold text-amber-400">{user.displayName}</p>
+                      <p className="text-[11px] text-slate-300 break-all">{user.email}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">{user.department}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
+                      >
+                        <LayoutGrid className="w-4 h-4 text-amber-400" />
+                        <span>Katalog Aplikasi</span>
+                      </Link>
+                      <Link
+                        href="/dashboard/notices"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
+                      >
+                        <Bell className="w-4 h-4 text-amber-400" />
+                        <span>Papan Pengumuman</span>
+                      </Link>
+
+                      {(user.role === 'IT_ADMIN' || user.role === 'EXECUTIVE') && (
+                        <Link
+                          href="/dashboard/admin"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-purple-400" />
+                          <span>Kelola Whitelist & Admin</span>
+                        </Link>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-300 hover:text-red-100 hover:bg-red-950/50 rounded-lg transition-all mt-1"
+                      >
+                        <LogOut className="w-4 h-4 text-red-400" />
+                        <span>Keluar (Logout SSO)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="flex md:hidden items-center gap-2">
+            {onOpenPwaModal && (
+              <button
+                onClick={onOpenPwaModal}
+                className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-xl bg-[#0e271e] border border-amber-500/30 text-amber-400"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Dropdown Drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-amber-500/20 bg-[#081812] px-4 pt-3 pb-5 space-y-3">
+          {user && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-950/50 border border-amber-500/20">
+              <div className="w-10 h-10 rounded-lg overflow-hidden border border-amber-400/30 bg-amber-950/50 flex items-center justify-center">
+                {user.photoURL ? (
+                  <Image
+                    src={user.photoURL}
+                    alt={user.displayName}
+                    width={40}
+                    height={40}
+                    className="object-cover"
+                  />
+                ) : (
+                  <User className="w-5 h-5 text-amber-400" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">{user.displayName}</p>
+                <p className="text-xs text-slate-300">{user.email}</p>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border inline-block mt-1 ${getRoleBadgeStyle(user.role)}`}>
+                  {user.roleTitle}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0d261d] text-xs text-slate-300 border border-emerald-500/20">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-400" /> Sorong (WIT):
+            </span>
+            <span suppressHydrationWarning className="font-bold text-amber-400">{timeWIT || '00:00:00'} WIT • {dateWIT}</span>
+          </div>
+
+          <div className="space-y-1">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    link.active
+                      ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white'
+                      : 'text-slate-300 hover:bg-emerald-900/40'
+                  }`}
+                >
+                  <Icon className="w-5 h-5 text-amber-400" />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+
+            {user && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-300 hover:bg-red-950/50 transition-all"
+              >
+                <LogOut className="w-5 h-5 text-red-400" />
+                <span>Keluar (Logout SSO)</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
