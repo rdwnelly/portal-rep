@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useSyncExternalStore } from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -9,6 +9,8 @@ interface ThemeContextType {
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
 }
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function applyThemeToDocument(t: Theme) {
   if (typeof document === 'undefined') return;
@@ -24,35 +26,54 @@ function applyThemeToDocument(t: Theme) {
   }
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const themeSubscribers = new Set<() => void>();
+
+function getThemeSnapshot(): Theme {
+  if (typeof window === 'undefined') return 'dark';
+  try {
+    const saved = localStorage.getItem('portal_rep_theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch {
+    // ignore
+  }
+  return 'dark';
+}
+
+function getThemeServerSnapshot(): Theme {
+  return 'dark';
+}
+
+function subscribeTheme(callback: () => void) {
+  themeSubscribers.add(callback);
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key === 'portal_rep_theme') callback();
+  };
+  window.addEventListener('storage', handleStorage);
+  return () => {
+    themeSubscribers.delete(callback);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('portal_rep_theme') as Theme | null;
-        if (saved === 'light' || saved === 'dark') {
-          return saved;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return 'dark';
-  });
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    getThemeSnapshot,
+    getThemeServerSnapshot
+  );
 
   useEffect(() => {
     applyThemeToDocument(theme);
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
     try {
       localStorage.setItem('portal_rep_theme', newTheme);
     } catch {
       // ignore
     }
     applyThemeToDocument(newTheme);
+    themeSubscribers.forEach((cb) => cb());
   };
 
   const toggleTheme = () => {

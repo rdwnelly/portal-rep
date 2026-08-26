@@ -165,6 +165,7 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
 
             {/* Theme Toggle (Dark / Light Mode) */}
             <button
+              suppressHydrationWarning
               onClick={toggleTheme}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0d261d] hover:bg-[#13382b] border border-amber-500/25 text-amber-400 hover:text-amber-300 transition-all cursor-pointer shadow-sm"
               title={theme === 'dark' ? 'Ganti ke Mode Terang (Siang)' : 'Ganti ke Mode Gelap (Malam)'}
@@ -297,6 +298,7 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
           <div className="flex md:hidden items-center gap-2">
             {/* Quick Mobile Theme Toggle */}
             <button
+              suppressHydrationWarning
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-[#0e271e] border border-amber-500/30 text-amber-400 cursor-pointer"
               title="Ganti Tema Terang/Gelap"
@@ -470,6 +472,7 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
 
         {/* 4. Theme Toggle Button in Bottom Nav */}
         <button
+          suppressHydrationWarning
           onClick={toggleTheme}
           className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-amber-400 hover:text-amber-300 transition-all cursor-pointer"
           title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
