@@ -17,6 +17,7 @@ import {
   User,
   ChevronDown
 } from 'lucide-react';
+import AdminLoginModal from '@/components/AdminLoginModal';
 
 export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void }) {
   const { user, logout } = useAuth();
@@ -25,6 +26,7 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
   const [dateWIT, setDateWIT] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
 
   // Live WIT Clock (Sorong, Papua Barat Daya - UTC+9)
   useEffect(() => {
@@ -162,8 +164,8 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
               </button>
             )}
 
-            {/* User Profile Chip & Dropdown */}
-            {user && (
+            {/* User Profile Chip & Dropdown or Admin Login Button */}
+            {user ? (
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -211,7 +213,7 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
 
                     <div className="space-y-1">
                       <Link
-                        href="/dashboard"
+                        href="/"
                         onClick={() => setUserDropdownOpen(false)}
                         className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
                       >
@@ -227,16 +229,14 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
                         <span>Papan Pengumuman</span>
                       </Link>
 
-                      {(user.role === 'IT_ADMIN' || user.role === 'EXECUTIVE') && (
-                        <Link
-                          href="/dashboard/admin"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
-                        >
-                          <ShieldCheck className="w-4 h-4 text-purple-400" />
-                          <span>Kelola Whitelist & Admin</span>
-                        </Link>
-                      )}
+                      <Link
+                        href="/dashboard/admin"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-purple-300 hover:text-white hover:bg-purple-950/50 rounded-lg transition-all font-semibold"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-purple-400" />
+                        <span>Panel Kontrol Admin</span>
+                      </Link>
 
                       <button
                         onClick={() => {
@@ -246,12 +246,20 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-300 hover:text-red-100 hover:bg-red-950/50 rounded-lg transition-all mt-1"
                       >
                         <LogOut className="w-4 h-4 text-red-400" />
-                        <span>Keluar (Logout SSO)</span>
+                        <span>Keluar (Logout)</span>
                       </button>
                     </div>
                   </div>
                 )}
               </div>
+            ) : (
+              <button
+                onClick={() => setAdminModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800 border border-purple-400/40 text-purple-200 hover:text-white text-xs font-bold shadow-md cursor-pointer transition-all active:scale-95"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-purple-300" />
+                <span>Login Sebagai Admin</span>
+              </button>
             )}
           </div>
 
@@ -330,6 +338,19 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
               );
             })}
 
+            {!user && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setAdminModalOpen(true);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-purple-200 bg-purple-950/60 border border-purple-500/40"
+              >
+                <ShieldCheck className="w-5 h-5 text-purple-300" />
+                <span>Login Sebagai Admin</span>
+              </button>
+            )}
+
             {user && (
               <button
                 onClick={() => {
@@ -339,12 +360,18 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-300 hover:bg-red-950/50 transition-all"
               >
                 <LogOut className="w-5 h-5 text-red-400" />
-                <span>Keluar (Logout SSO)</span>
+                <span>Keluar (Logout)</span>
               </button>
             )}
           </div>
         </div>
       )}
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal
+        isOpen={adminModalOpen}
+        onClose={() => setAdminModalOpen(false)}
+      />
     </header>
   );
 }

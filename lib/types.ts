@@ -97,3 +97,16 @@ export interface AuditLog {
   details: string;
   category: 'AUTH' | 'NOTICE' | 'WHITELIST' | 'APP_CONFIG';
 }
+
+export interface FoundationInfo {
+  organizationName: string;
+  tagline: string;
+  heroWelcome: string;
+  heroDescription: string;
+  address: string;
+  itHelpdeskName: string;
+  itHelpdeskPhone: string;
+  itHelpdeskEmail: string;
+  operationalHours: string;
+  lastUpdated: string;
+}

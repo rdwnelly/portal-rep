@@ -1,6 +1,6 @@
 'use client';
 
-import { AppItem, NoticeItem, WhitelistedUser, AuditLog, AccessRequest, UserRole } from './types';
+import { AppItem, NoticeItem, WhitelistedUser, AuditLog, AccessRequest, UserRole, FoundationInfo } from './types';
 import { INITIAL_WHITELIST, INITIAL_APPS, INITIAL_NOTICES, INITIAL_LOGS } from './seed-data';
 
 const STORAGE_KEYS = {
@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   LOGS: 'portal_rep_logs_v1',
   REQUESTS: 'portal_rep_requests_v1',
   CUSTOM_USER: 'portal_rep_current_user_v1',
+  INFO: 'portal_rep_foundation_info_v1',
 };
 
 // Safe LocalStorage helpers
@@ -122,6 +123,27 @@ export function getAppsList(): AppItem[] {
   return getItem<AppItem[]>(STORAGE_KEYS.APPS, INITIAL_APPS);
 }
 
+export function addAppItem(app: Omit<AppItem, 'id' | 'order'>, adminName: string): AppItem {
+  const current = getAppsList();
+  const newApp: AppItem = {
+    ...app,
+    id: `app-${Date.now()}`,
+    order: current.length + 1,
+  };
+  const updated = [...current, newApp];
+  setItem(STORAGE_KEYS.APPS, updated);
+
+  addAuditLog({
+    userEmail: 'admin@rumahetnikpapua.org',
+    userName: adminName,
+    action: 'CREATE_APP_ITEM',
+    details: `Menambahkan modul aplikasi baru: ${newApp.title}`,
+    category: 'APP_CONFIG',
+  });
+
+  return newApp;
+}
+
 export function updateAppItem(id: string, updates: Partial<AppItem>, adminName: string): void {
   const current = getAppsList();
   const index = current.findIndex((a) => a.id === id);
@@ -135,6 +157,23 @@ export function updateAppItem(id: string, updates: Partial<AppItem>, adminName: 
       userName: adminName,
       action: 'UPDATE_APP_CONFIG',
       details: `Memperbarui konfigurasi aplikasi: ${old.title}`,
+      category: 'APP_CONFIG',
+    });
+  }
+}
+
+export function deleteAppItem(id: string, adminName: string): void {
+  const current = getAppsList();
+  const target = current.find((a) => a.id === id);
+  if (target) {
+    const updated = current.filter((a) => a.id !== id);
+    setItem(STORAGE_KEYS.APPS, updated);
+
+    addAuditLog({
+      userEmail: 'admin@rumahetnikpapua.org',
+      userName: adminName,
+      action: 'DELETE_APP_ITEM',
+      details: `Menghapus modul aplikasi: ${target.title}`,
       category: 'APP_CONFIG',
     });
   }
@@ -167,6 +206,24 @@ export function addNotice(notice: Omit<NoticeItem, 'id' | 'createdAt'>): NoticeI
   return newNotice;
 }
 
+export function updateNotice(id: string, updates: Partial<NoticeItem>, adminName: string): void {
+  const current = getNotices();
+  const index = current.findIndex((n) => n.id === id);
+  if (index !== -1) {
+    const old = current[index];
+    current[index] = { ...old, ...updates };
+    setItem(STORAGE_KEYS.NOTICES, current);
+
+    addAuditLog({
+      userEmail: 'admin@rumahetnikpapua.org',
+      userName: adminName,
+      action: 'UPDATE_NOTICE',
+      details: `Memperbarui pengumuman: "${old.title.substring(0, 40)}..."`,
+      category: 'NOTICE',
+    });
+  }
+}
+
 export function togglePinNotice(id: string): void {
   const current = getNotices();
   const index = current.findIndex((n) => n.id === id);
@@ -191,6 +248,44 @@ export function deleteNotice(id: string, adminName: string): void {
       category: 'NOTICE',
     });
   }
+}
+
+// Foundation Information
+export const INITIAL_FOUNDATION_INFO: FoundationInfo = {
+  organizationName: 'Yayasan Rumah Etnik Papua',
+  tagline: 'Pusat Kebudayaan, Homestay Etnik, Edukasi & Usaha Kreatif Papua',
+  heroWelcome: 'Pilih & Buka Aplikasi Langsung',
+  heroDescription: 'Klik salah satu kotak aplikasi di bawah untuk langsung membuka sistem kerja yang Anda butuhkan di tab baru. Verifikasi login dilakukan langsung pada masing-masing aplikasi.',
+  address: 'Jalan Baru Aimas - Klamono Km. 21, Kabupaten Sorong, Papua Barat Daya',
+  itHelpdeskName: 'Ridwan Elly (IT Developer)',
+  itHelpdeskPhone: '0812-4800-0000',
+  itHelpdeskEmail: 'ridwanelly123@gmail.com',
+  operationalHours: 'Senin - Sabtu: 08.00 - 17.00 WIT',
+  lastUpdated: '2026-08-26T08:00:00Z',
+};
+
+export function getFoundationInfo(): FoundationInfo {
+  return getItem<FoundationInfo>(STORAGE_KEYS.INFO, INITIAL_FOUNDATION_INFO);
+}
+
+export function updateFoundationInfo(info: Partial<FoundationInfo>, adminName: string): FoundationInfo {
+  const current = getFoundationInfo();
+  const updated: FoundationInfo = {
+    ...current,
+    ...info,
+    lastUpdated: new Date().toISOString(),
+  };
+  setItem(STORAGE_KEYS.INFO, updated);
+
+  addAuditLog({
+    userEmail: 'admin@rumahetnikpapua.org',
+    userName: adminName,
+    action: 'UPDATE_FOUNDATION_INFO',
+    details: 'Memperbarui informasi profil & pengaturan yayasan',
+    category: 'APP_CONFIG',
+  });
+
+  return updated;
 }
 
 // Audit Logs

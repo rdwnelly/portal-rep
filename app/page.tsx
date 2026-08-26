@@ -27,6 +27,7 @@ import { AppItem, NoticeItem } from '@/lib/types';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
 import RequestAccessModal from '@/components/RequestAccessModal';
+import AdminLoginModal from '@/components/AdminLoginModal';
 import { PapuanMotifDivider, PapuanBorderCorner } from '@/components/PapuanMotif';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -46,6 +47,7 @@ export default function OpenPortalHomePage() {
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
   const [requestAccessModalOpen, setRequestAccessModalOpen] = useState(false);
+  const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false);
   const [selectedAppForRequest, setSelectedAppForRequest] = useState<AppItem | null>(null);
   const [copiedAppId, setCopiedAppId] = useState<string | null>(null);
 
@@ -219,14 +221,15 @@ export default function OpenPortalHomePage() {
                 <span className="hidden sm:inline">Pasang PWA</span>
               </button>
 
-              {/* Admin Link */}
-              <Link
-                href="/dashboard/admin"
-                className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold transition-all"
+              {/* Tombol Login Sebagai Admin di Bagian Atas */}
+              <button
+                onClick={() => setAdminLoginModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800 border border-purple-400/50 text-purple-200 hover:text-white text-xs font-extrabold shadow-lg shadow-purple-950/60 transition-all cursor-pointer"
+                title="Masuk sebagai Administrator Portal"
               >
-                <ShieldCheck className="w-4 h-4 text-purple-400" />
-                <span>Admin</span>
-              </Link>
+                <ShieldCheck className="w-4 h-4 text-purple-300" />
+                <span>Login Sebagai Admin</span>
+              </button>
             </div>
           </div>
         </div>
@@ -485,6 +488,12 @@ export default function OpenPortalHomePage() {
           setRequestAccessModalOpen(false);
           setSelectedAppForRequest(null);
         }}
+      />
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal
+        isOpen={adminLoginModalOpen}
+        onClose={() => setAdminLoginModalOpen(false)}
       />
     </div>
   );
