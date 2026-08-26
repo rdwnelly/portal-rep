@@ -48,12 +48,6 @@ export default function DashboardPage() {
     return () => window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
   }, []);
 
-  useEffect(() => {
-    if (isInitialized && !user && typeof window !== 'undefined') {
-      window.location.replace('/');
-    }
-  }, [isInitialized, user]);
-
   if (!isClient || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07130f] text-amber-400">
@@ -63,10 +57,6 @@ export default function DashboardPage() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   const currentApps = apps.length > 0 ? apps : getAppsList();
@@ -116,7 +106,7 @@ export default function DashboardPage() {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight mb-2">
-              Selamat Datang, <span className="text-amber-400">{user.displayName}</span>
+              Selamat Datang, <span className="text-amber-400">{user?.displayName || 'Staf Yayasan'}</span>
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
@@ -144,8 +134,8 @@ export default function DashboardPage() {
               <div className="p-3 rounded-xl bg-[#091b14]/80 border border-amber-500/15 flex items-center gap-2.5">
                 <UserCheck className="w-4 h-4 text-amber-400 shrink-0" />
                 <div>
-                  <p className="text-[10px] text-slate-400">Hak Akses Anda</p>
-                  <p className="font-bold text-amber-300 text-xs">{user.roleTitle}</p>
+                  <p className="text-[10px] text-slate-400">Hak Akses</p>
+                  <p className="font-bold text-amber-300 text-xs">{user?.roleTitle || 'Staf Resmi'}</p>
                 </div>
               </div>
 
@@ -153,7 +143,7 @@ export default function DashboardPage() {
                 <MapPin className="w-4 h-4 text-teal-400 shrink-0" />
                 <div>
                   <p className="text-[10px] text-slate-400">Lokasi Utama</p>
-                  <p className="font-bold text-white text-xs truncate">Sorong, Papua B.D.</p>
+                  <p className="font-bold text-teal-300 text-xs">Sorong, Papua</p>
                 </div>
               </div>
             </div>
@@ -211,7 +201,7 @@ export default function DashboardPage() {
               <AppCard
                 key={app.id}
                 app={app}
-                userRole={user.role}
+                userRole={user?.role}
                 onLaunch={(item) => setActiveLaunchApp(item)}
               />
             ))}

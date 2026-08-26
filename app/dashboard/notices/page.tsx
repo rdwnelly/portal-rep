@@ -46,22 +46,12 @@ export default function NoticesPage() {
     return () => window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
   }, []);
 
-  useEffect(() => {
-    if (isInitialized && !user && typeof window !== 'undefined') {
-      window.location.replace('/');
-    }
-  }, [isInitialized, user]);
-
   if (!isClient || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07130f] text-amber-400">
         <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   const currentNotices = notices.length > 0 ? notices : getNotices();
@@ -75,7 +65,7 @@ export default function NoticesPage() {
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (confirm('Apakah Anda yakin ingin menghapus pengumuman ini?')) {
-      deleteNotice(id, user.displayName);
+      deleteNotice(id, user?.displayName || 'Admin');
       setNotices(getNotices());
     }
   };

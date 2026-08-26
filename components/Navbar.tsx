@@ -68,10 +68,10 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
 
   const navLinks = [
     {
-      label: 'Hub Aplikasi',
-      href: '/dashboard',
+      label: 'Portal Aplikasi',
+      href: '/',
       icon: LayoutGrid,
-      active: pathname === '/dashboard',
+      active: pathname === '/' || pathname === '/dashboard',
     },
     {
       label: 'Pengumuman',
@@ -79,16 +79,12 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
       icon: Bell,
       active: pathname === '/dashboard/notices',
     },
-    ...(user?.role === 'IT_ADMIN' || user?.role === 'EXECUTIVE'
-      ? [
-          {
-            label: 'Admin & Whitelist',
-            href: '/dashboard/admin',
-            icon: ShieldCheck,
-            active: pathname === '/dashboard/admin',
-          },
-        ]
-      : []),
+    {
+      label: 'Kelola Sistem (Admin)',
+      href: '/dashboard/admin',
+      icon: ShieldCheck,
+      active: pathname === '/dashboard/admin',
+    },
   ];
 
   return (
@@ -96,7 +92,7 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Brand Logo & Name */}
-          <Link href="/dashboard" className="flex items-center gap-3 group">
+          <Link href="/" className="flex items-center gap-3 group">
             <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-amber-500/30 shadow-lg shadow-amber-950/40 group-hover:border-amber-400/60 transition-all flex items-center justify-center bg-[#0d281e]">
               <Image
                 src="/images/rep-logo.jpg"
