@@ -78,7 +78,7 @@ const SESSION_KEY = 'portal_rep_session_user';
 function getInitialUser(): UserProfile | null {
   if (typeof window === 'undefined') return null;
   try {
-    const savedSession = sessionStorage.getItem(SESSION_KEY);
+    const savedSession = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
     if (savedSession) {
       const parsed = JSON.parse(savedSession) as UserProfile;
       const whitelisted = findWhitelistedUser(parsed.email);
@@ -125,7 +125,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthError(null);
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile));
-        if (shouldRedirect) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(profile));
+        if (shouldRedirect && !window.location.pathname.startsWith('/dashboard')) {
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = '/dashboard';
         }
@@ -157,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isConfigured) {
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
         if (firebaseUser && firebaseUser.email) {
-          handleAuthUserEmail(firebaseUser.email, firebaseUser.displayName || 'Pengguna Google', firebaseUser.photoURL || undefined, true);
+          handleAuthUserEmail(firebaseUser.email, firebaseUser.displayName || 'Pengguna Google', firebaseUser.photoURL || undefined, false);
         }
       });
       return () => unsubscribe();
@@ -236,6 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
     }
   };
 
