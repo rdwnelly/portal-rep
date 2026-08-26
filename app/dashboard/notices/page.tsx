@@ -25,7 +25,7 @@ import Link from 'next/link';
 const subscribeClient = () => () => {};
 
 export default function NoticesPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isInitialized } = useAuth();
   const isClient = useSyncExternalStore(subscribeClient, () => true, () => false);
 
   const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : []));
@@ -47,17 +47,21 @@ export default function NoticesPage() {
   }, []);
 
   useEffect(() => {
-    if (isClient && !isLoading && !user && typeof window !== 'undefined') {
+    if (isInitialized && !user && typeof window !== 'undefined') {
       window.location.replace('/');
     }
-  }, [isClient, user, isLoading]);
+  }, [isInitialized, user]);
 
-  if (!isClient || isLoading || !user) {
+  if (!isClient || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07130f] text-amber-400">
         <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   const currentNotices = notices.length > 0 ? notices : getNotices();

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { UserProfile, UserRole } from './types';
 import { findWhitelistedUser, addAuditLog, submitAccessRequest } from './storage';
 import { auth, googleProvider, isConfigured } from './firebase';
@@ -15,6 +15,7 @@ import {
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
+  isInitialized: boolean;
   isWhitelisted: boolean;
   unauthorizedEmail: string | null;
   authError: string | null;
@@ -80,13 +81,31 @@ const DEMO_ACCOUNTS = {
 };
 
 const SESSION_KEY = 'portal_rep_session_user';
+const subscribeClient = () => () => {};
 
-function getInitialUser(): UserProfile | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const savedSession = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
-    if (savedSession) {
-      const parsed = JSON.parse(savedSession) as UserProfile;
+function getSessionSnapshot(): string {
+  if (typeof window === 'undefined') return '';
+  return sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || '';
+}
+
+function subscribeSession(callback: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener('storage', callback);
+  window.addEventListener('portal_rep_session_update', callback);
+  return () => {
+    window.removeEventListener('storage', callback);
+    window.removeEventListener('portal_rep_session_update', callback);
+  };
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const isInitialized = useSyncExternalStore(subscribeClient, () => true, () => false);
+  const sessionRaw = useSyncExternalStore(subscribeSession, getSessionSnapshot, () => '');
+
+  const user = useMemo<UserProfile | null>(() => {
+    if (!sessionRaw) return null;
+    try {
+      const parsed = JSON.parse(sessionRaw) as UserProfile;
       const whitelisted = findWhitelistedUser(parsed.email);
       if (whitelisted) {
         return {
@@ -99,15 +118,12 @@ function getInitialUser(): UserProfile | null {
       } else if (parsed.role === 'IT_ADMIN' || parsed.role === 'EXECUTIVE') {
         return parsed;
       }
+    } catch (e) {
+      console.error('Session load error:', e);
     }
-  } catch (e) {
-    console.error('Session load error:', e);
-  }
-  return null;
-}
+    return null;
+  }, [sessionRaw]);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(getInitialUser);
   const [isLoading, setIsLoading] = useState(false);
   const [unauthorizedEmail, setUnauthorizedEmail] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -126,12 +142,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isWhitelisted: true,
         lastLogin: new Date().toISOString(),
       };
-      setUser(profile);
       setUnauthorizedEmail(null);
       setAuthError(null);
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile));
         localStorage.setItem(SESSION_KEY, JSON.stringify(profile));
+        window.dispatchEvent(new Event('portal_rep_session_update'));
         if (shouldRedirect && !window.location.pathname.startsWith('/dashboard')) {
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = '/dashboard';
@@ -146,9 +162,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         category: 'AUTH',
       });
     } else {
-      setUser(null);
       setUnauthorizedEmail(email);
       setAuthError(null);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SESSION_KEY);
+        window.dispatchEvent(new Event('portal_rep_session_update'));
+      }
 
       addAuditLog({
         userEmail: email,
@@ -247,10 +267,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
     const target = DEMO_ACCOUNTS[demoKey];
     if (demoKey === 'UNAUTHORIZED_DEMO') {
-      setUser(null);
       setUnauthorizedEmail(target.email);
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SESSION_KEY);
+        window.dispatchEvent(new Event('portal_rep_session_update'));
       }
       addAuditLog({
         userEmail: target.email,
@@ -273,12 +294,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Logout error:', e);
     }
-    setUser(null);
     setUnauthorizedEmail(null);
     setAuthError(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(SESSION_KEY);
+      window.dispatchEvent(new Event('portal_rep_session_update'));
     }
   };
 
@@ -306,6 +327,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
+        isInitialized,
         isWhitelisted: Boolean(user?.isWhitelisted),
         unauthorizedEmail,
         authError,

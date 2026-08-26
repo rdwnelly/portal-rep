@@ -40,7 +40,7 @@ import confetti from 'canvas-confetti';
 const subscribeClient = () => () => {};
 
 export default function AdminPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isInitialized } = useAuth();
   const isClient = useSyncExternalStore(subscribeClient, () => true, () => false);
 
   const [activeTab, setActiveTab] = useState<'WHITELIST' | 'REQUESTS' | 'APPS' | 'LOGS' | 'FIREBASE'>('WHITELIST');
@@ -81,17 +81,21 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (isClient && !isLoading && (!user || (user.role !== 'IT_ADMIN' && user.role !== 'EXECUTIVE')) && typeof window !== 'undefined') {
+    if (isInitialized && (!user || (user.role !== 'IT_ADMIN' && user.role !== 'EXECUTIVE')) && typeof window !== 'undefined') {
       window.location.replace('/dashboard');
     }
-  }, [isClient, user, isLoading]);
+  }, [isInitialized, user]);
 
-  if (!isClient || isLoading || !user) {
+  if (!isClient || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07130f] text-amber-400">
         <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (!user || (user.role !== 'IT_ADMIN' && user.role !== 'EXECUTIVE')) {
+    return null;
   }
 
   const currentWhitelist = whitelist.length > 0 ? whitelist : getWhitelist();

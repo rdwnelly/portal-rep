@@ -24,7 +24,7 @@ import {
 const subscribeClient = () => () => {};
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isInitialized } = useAuth();
   const isClient = useSyncExternalStore(subscribeClient, () => true, () => false);
 
   const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : []));
@@ -49,12 +49,12 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (isClient && !isLoading && !user && typeof window !== 'undefined') {
+    if (isInitialized && !user && typeof window !== 'undefined') {
       window.location.replace('/');
     }
-  }, [isClient, user, isLoading]);
+  }, [isInitialized, user]);
 
-  if (!isClient || isLoading || !user) {
+  if (!isClient || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07130f] text-amber-400">
         <div className="flex flex-col items-center gap-3">
@@ -63,6 +63,10 @@ export default function DashboardPage() {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   const currentApps = apps.length > 0 ? apps : getAppsList();
