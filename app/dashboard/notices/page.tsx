@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
 import CreateNoticeModal from '@/components/CreateNoticeModal';
 import PWAInstallModal from '@/components/PWAInstallModal';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
 import Image from 'next/image';
 import {
   Bell,
@@ -309,6 +310,8 @@ export default function NoticesPage() {
         isOpen={pwaModalOpen}
         onClose={() => setPwaModalOpen(false)}
       />
+
+      <PWAInstallBanner onOpenModal={() => setPwaModalOpen(true)} />
     </div>
   );
 }

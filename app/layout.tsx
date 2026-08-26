@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import { ThemeProvider } from '@/lib/theme-context';
 import PWARegister from '@/components/PWARegister';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -43,11 +44,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`${jakarta.variable} font-sans dark`}>
-      <body className="min-h-screen flex flex-col bg-[#07130f] text-slate-100 antialiased selection:bg-amber-500 selection:text-black">
-        <AuthProvider>
-          <PWARegister />
-          {children}
-        </AuthProvider>
+      <body className="min-h-screen flex flex-col bg-[#07130f] text-slate-100 antialiased selection:bg-amber-500 selection:text-black transition-colors duration-300">
+        <ThemeProvider>
+          <AuthProvider>
+            <PWARegister />
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

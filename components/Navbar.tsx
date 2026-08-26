@@ -16,9 +16,12 @@ import {
   X,
   User,
   ChevronDown,
-  UserPlus
+  UserPlus,
+  Sun,
+  Moon
 } from 'lucide-react';
 import AdminLoginModal from '@/components/AdminLoginModal';
+import { useTheme } from '@/lib/theme-context';
 
 interface NavbarProps {
   onOpenPwaModal?: () => void;
@@ -28,6 +31,7 @@ interface NavbarProps {
 export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const [timeWIT, setTimeWIT] = useState<string>('');
   const [dateWIT, setDateWIT] = useState<string>('');
@@ -159,6 +163,25 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
               </div>
             </div>
 
+            {/* Theme Toggle (Dark / Light Mode) */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0d261d] hover:bg-[#13382b] border border-amber-500/25 text-amber-400 hover:text-amber-300 transition-all cursor-pointer shadow-sm"
+              title={theme === 'dark' ? 'Ganti ke Mode Terang (Siang)' : 'Ganti ke Mode Gelap (Malam)'}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="text-[11px] font-bold text-amber-300">Siang</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-[11px] font-bold text-indigo-400">Malam</span>
+                </>
+              )}
+            </button>
+
             {/* PWA Install Button */}
             {onOpenPwaModal && (
               <button
@@ -270,12 +293,22 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu & Quick Controls Button */}
           <div className="flex md:hidden items-center gap-2">
+            {/* Quick Mobile Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg bg-[#0e271e] border border-amber-500/30 text-amber-400 cursor-pointer"
+              title="Ganti Tema Terang/Gelap"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+            </button>
+
             {onOpenPwaModal && (
               <button
                 onClick={onOpenPwaModal}
                 className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs"
+                title="Pasang Aplikasi"
               >
                 <Download className="w-4 h-4" />
               </button>
@@ -292,7 +325,7 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
 
       {/* Mobile Dropdown Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-amber-500/20 bg-[#081812] px-4 pt-3 pb-5 space-y-3">
+        <div className="md:hidden border-t border-amber-500/20 bg-[#081812] px-4 pt-3 pb-5 space-y-3 animate-in fade-in slide-in-from-top-3">
           {user && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-950/50 border border-amber-500/20">
               <div className="w-10 h-10 rounded-lg overflow-hidden border border-amber-400/30 bg-amber-950/50 flex items-center justify-center">
@@ -345,6 +378,18 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
               );
             })}
 
+            {/* Mobile Drawer Theme Switch */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-200 bg-[#0c241b] border border-amber-500/20 cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-300" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+                <span>{theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}</span>
+              </div>
+              <span className="text-xs font-bold text-amber-400 uppercase">{theme}</span>
+            </button>
+
             {!user && (
               <button
                 onClick={() => {
@@ -383,58 +428,68 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
       {/* ========================================================================= */}
       {/* NATIVE MOBILE BOTTOM NAVIGATION BAR (KHUSUS LAYAR HP STAF KARYAWAN)      */}
       {/* ========================================================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#071711]/95 backdrop-blur-xl border-t border-amber-500/25 px-2 py-1.5 pb-safe-bottom shadow-2xl flex items-center justify-around">
-        {/* Beranda Aplikasi */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#071711]/95 backdrop-blur-xl border-t border-amber-500/25 px-1 py-1.5 pb-safe-bottom shadow-2xl flex items-center justify-around">
+        {/* 1. Beranda Aplikasi */}
         <Link
           href="/"
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
             pathname === '/' || pathname === '/dashboard'
               ? 'text-amber-400 bg-amber-950/60 font-black scale-105'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <LayoutGrid className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px]">Aplikasi</span>
+          <span className="text-[9px] font-bold">Aplikasi</span>
         </Link>
 
-        {/* Papan Pengumuman */}
+        {/* 2. Papan Pengumuman */}
         <Link
           href="/dashboard/notices"
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
             pathname === '/dashboard/notices'
               ? 'text-amber-400 bg-amber-950/60 font-black scale-105'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <Bell className="w-5 h-5 mb-0.5 text-amber-400" />
-          <span className="text-[10px]">Pengumuman</span>
+          <span className="text-[9px] font-bold">Info</span>
         </Link>
 
-        {/* Minta Akses Button */}
+        {/* 3. Minta Akses Button (Floating Action) */}
         {onOpenRequestModal && (
           <button
             onClick={onOpenRequestModal}
-            className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-amber-300 hover:text-amber-200 transition-all cursor-pointer"
+            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-amber-300 hover:text-amber-200 transition-all cursor-pointer"
           >
             <div className="w-9 h-9 -mt-4 rounded-full bg-gradient-to-tr from-amber-600 to-amber-800 border-2 border-amber-300 flex items-center justify-center shadow-xl shadow-amber-950">
               <UserPlus className="w-4 h-4 text-white" />
             </div>
-            <span className="text-[10px] font-extrabold text-amber-300 mt-0.5">Daftar</span>
+            <span className="text-[9px] font-extrabold text-amber-300 mt-0.5">Daftar</span>
           </button>
         )}
 
-        {/* Pasang PWA */}
+        {/* 4. Theme Toggle Button in Bottom Nav */}
+        <button
+          onClick={toggleTheme}
+          className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-amber-400 hover:text-amber-300 transition-all cursor-pointer"
+          title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+        >
+          {theme === 'dark' ? <Sun className="w-5 h-5 mb-0.5 text-amber-300" /> : <Moon className="w-5 h-5 mb-0.5 text-indigo-400" />}
+          <span className="text-[9px] font-bold">{theme === 'dark' ? 'Siang' : 'Malam'}</span>
+        </button>
+
+        {/* 5. Pasang PWA */}
         {onOpenPwaModal && (
           <button
             onClick={onOpenPwaModal}
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-emerald-400 hover:text-emerald-300 transition-all cursor-pointer"
+            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-emerald-400 hover:text-emerald-300 transition-all cursor-pointer"
           >
             <Download className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px]">Pasang</span>
+            <span className="text-[9px] font-bold">Pasang</span>
           </button>
         )}
 
-        {/* Admin Panel */}
+        {/* 6. Admin Panel */}
         <button
           onClick={() => {
             if (user && (user.role === 'IT_ADMIN' || user.role === 'EXECUTIVE')) {
@@ -443,14 +498,14 @@ export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarPro
               setAdminModalOpen(true);
             }
           }}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
             pathname === '/dashboard/admin'
               ? 'text-purple-400 bg-purple-950/60 font-black scale-105'
               : 'text-purple-300/80 hover:text-purple-200'
           }`}
         >
           <ShieldCheck className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px]">Admin</span>
+          <span className="text-[9px] font-bold">Admin</span>
         </button>
       </nav>
     </header>

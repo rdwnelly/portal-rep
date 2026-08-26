@@ -21,6 +21,7 @@ import { getAppsList, getNotices } from '@/lib/storage';
 import { AppItem, NoticeItem } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import PWAInstallModal from '@/components/PWAInstallModal';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
 import RequestAccessModal from '@/components/RequestAccessModal';
 import { PapuanMotifDivider, PapuanBorderCorner } from '@/components/PapuanMotif';
@@ -368,6 +369,9 @@ export default function OpenPortalHomePage() {
           setSelectedAppForRequest(null);
         }}
       />
+
+      {/* PWA Floating Install Pop-Up / Banner */}
+      <PWAInstallBanner onOpenModal={() => setPwaModalOpen(true)} />
     </div>
   );
 }

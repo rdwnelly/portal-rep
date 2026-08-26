@@ -58,6 +58,66 @@ body {
   border-image: linear-gradient(to right, #e5a93c, #c28844, #0f382a) 1;
 }
 
+/* Light Mode Theme Overrides */
+html.light body, [data-theme="light"] body {
+  background-color: #f6f8f7;
+  color: #122c22;
+}
+
+html.light .papuan-pattern-overlay {
+  background-image: radial-gradient(rgba(180, 83, 9, 0.12) 1px, transparent 0);
+}
+
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(180, 83, 9, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(15, 56, 42, 0.07), 0 0 15px rgba(229, 169, 60, 0.08);
+}
+
+html.light .glass-panel-hover:hover {
+  border-color: rgba(180, 83, 9, 0.5);
+  box-shadow: 0 16px 30px -10px rgba(15, 56, 42, 0.12), 0 0 20px rgba(229, 169, 60, 0.15);
+}
+
+html.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(180, 83, 9, 0.2) !important;
+}
+
+html.light nav {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(180, 83, 9, 0.2) !important;
+}
+
+html.light .text-slate-100,
+html.light .text-white {
+  color: #0d281e;
+}
+
+html.light .text-slate-200,
+html.light .text-slate-300 {
+  color: #1a3c2f;
+}
+
+html.light .text-slate-400 {
+  color: #4b6b5e;
+}
+
+html.light .bg-\[\#091d15\],
+html.light .bg-\[\#091b14\],
+html.light .bg-\[\#091e16\],
+html.light .bg-\[\#081812\],
+html.light .bg-\[\#07130f\],
+html.light .bg-\[\#0e291e\] {
+  background-color: #ffffff;
+}
+
+html.light .bg-\[\#06140e\],
+html.light .bg-\[\#06160f\] {
+  background-color: #f1f5f3;
+}
+
 /* Glassmorphic Cards with full Safari WebKit support */
 .glass-panel {
   background: rgba(14, 30, 24, 0.82);

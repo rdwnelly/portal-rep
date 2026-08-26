@@ -34,6 +34,7 @@ import {
 } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import PWAInstallModal from '@/components/PWAInstallModal';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -1349,6 +1350,8 @@ export default function AdminDashboardPage() {
       {pwaModalOpen && (
         <PWAInstallModal isOpen={pwaModalOpen} onClose={() => setPwaModalOpen(false)} />
       )}
+
+      <PWAInstallBanner onOpenModal={() => setPwaModalOpen(true)} />
     </div>
   );
 }
