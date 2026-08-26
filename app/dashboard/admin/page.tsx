@@ -353,10 +353,10 @@ export default function AdminDashboardPage() {
       {/* Navbar */}
       <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
-      {/* Main Admin View */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+      {/* Main Admin View with safe mobile bottom spacing */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 pb-28 md:pb-8">
         {/* Admin Header Banner */}
-        <div className="relative rounded-3xl overflow-hidden border-2 border-purple-500/30 shadow-2xl bg-gradient-to-r from-[#140b24] via-[#0e1e17] to-[#071711] p-6 sm:p-8 mb-8">
+        <div className="relative rounded-3xl overflow-hidden border-2 border-purple-500/30 shadow-2xl bg-gradient-to-r from-[#140b24] via-[#0e1e17] to-[#071711] p-5 sm:p-8 mb-6 sm:mb-8">
           <PapuanBorderCorner />
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
@@ -1045,15 +1045,15 @@ export default function AdminDashboardPage() {
 
       {/* ================= MODAL TAMBAH / EDIT NOTIFIKASI ================= */}
       {showNoticeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-lg rounded-3xl glass-panel bg-[#091e16] border-2 border-amber-500/40 shadow-2xl p-6 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-amber-500/40 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
             <PapuanBorderCorner />
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <Bell className="w-5 h-5 text-amber-400" />
                 <span>{editingNotice ? 'Edit Notifikasi Pengumuman' : 'Buat Notifikasi Pengumuman Baru'}</span>
               </h3>
-              <button onClick={() => setShowNoticeModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white">
+              <button onClick={() => setShowNoticeModal(false)} className="p-1.5 rounded-lg text-slate-300 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1067,17 +1067,17 @@ export default function AdminDashboardPage() {
                   value={noticeTitle}
                   onChange={(e) => setNoticeTitle(e.target.value)}
                   placeholder="misal: Jadwal Operasional Homestay Libur Nasional"
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Kategori</label>
                   <select
                     value={noticeCategory}
                     onChange={(e) => setNoticeCategory(e.target.value as NoticeCategory)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-slate-200 focus:outline-none cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
                   >
                     <option value="INSTRUCTION">Instruksi Kerja</option>
                     <option value="AGENDA">Agenda Kegiatan</option>
@@ -1094,7 +1094,7 @@ export default function AdminDashboardPage() {
                     value={noticeAuthor}
                     onChange={(e) => setNoticeAuthor(e.target.value)}
                     placeholder="Bpk. Fricky / Ibu Mitshi / Ridwan"
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -1107,7 +1107,7 @@ export default function AdminDashboardPage() {
                   value={noticeContent}
                   onChange={(e) => setNoticeContent(e.target.value)}
                   placeholder="Tuliskan instruksi atau pengumuman resmi di sini..."
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none resize-none"
                 />
               </div>
 
@@ -1128,13 +1128,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowNoticeModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold"
                 >
                   Simpan Notifikasi
                 </button>
@@ -1146,22 +1146,22 @@ export default function AdminDashboardPage() {
 
       {/* ================= MODAL TAMBAH / EDIT APLIKASI ================= */}
       {showAppModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-lg rounded-3xl glass-panel bg-[#091e16] border-2 border-emerald-500/40 shadow-2xl p-6 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-emerald-500/40 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
             <PapuanBorderCorner />
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <Link2 className="w-5 h-5 text-emerald-400" />
                 <span>{editingApp ? 'Edit Tautan & Konfigurasi Aplikasi' : 'Tambah Modul Aplikasi Baru'}</span>
               </h3>
-              <button onClick={() => setShowAppModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white">
+              <button onClick={() => setShowAppModal(false)} className="p-1.5 rounded-lg text-slate-300 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveApp} className="space-y-3.5">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-300 mb-1">Nama Aplikasi</label>
                   <input
                     type="text"
@@ -1169,7 +1169,7 @@ export default function AdminDashboardPage() {
                     value={appTitle}
                     onChange={(e) => setAppTitle(e.target.value)}
                     placeholder="misal: Sistem Manajemen Reservasi"
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1180,7 +1180,7 @@ export default function AdminDashboardPage() {
                     value={appShortCode}
                     onChange={(e) => setAppShortCode(e.target.value)}
                     placeholder="RESERVASI"
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white uppercase focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white uppercase focus:outline-none"
                   />
                 </div>
               </div>
@@ -1193,17 +1193,17 @@ export default function AdminDashboardPage() {
                   value={appUrl}
                   onChange={(e) => setAppUrl(e.target.value)}
                   placeholder="https://apk-reservasi-homestay-rep.vercel.app"
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-amber-300 font-mono focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-amber-300 font-mono focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Kategori</label>
                   <select
                     value={appCategory}
                     onChange={(e) => setAppCategory(e.target.value as AppCategory)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-slate-200 focus:outline-none cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
                   >
                     <option value="OPERASIONAL">Homestay & Operasional</option>
                     <option value="KEUANGAN">Keuangan (SIK-REP)</option>
@@ -1217,7 +1217,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={appStatus}
                     onChange={(e) => setAppStatus(e.target.value as AppStatus)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-slate-200 focus:outline-none cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
                   >
                     <option value="ONLINE">ONLINE (Aktif Live)</option>
                     <option value="MAINTENANCE">MAINTENANCE (Perawatan)</option>
@@ -1234,7 +1234,7 @@ export default function AdminDashboardPage() {
                   value={appDescription}
                   onChange={(e) => setAppDescription(e.target.value)}
                   placeholder="Keterangan fungsi aplikasi..."
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none resize-none"
                 />
               </div>
 
@@ -1242,13 +1242,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowAppModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-bold"
                 >
                   Simpan Aplikasi
                 </button>
@@ -1260,15 +1260,15 @@ export default function AdminDashboardPage() {
 
       {/* ================= MODAL TAMBAH STAF WHITELIST MANUAL ================= */}
       {showAddUserModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-3xl glass-panel bg-[#091e16] border-2 border-purple-500/40 shadow-2xl p-6 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-purple-500/40 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
             <PapuanBorderCorner />
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-purple-400" />
                 <span>Tambah Staf ke Whitelist Manual</span>
               </h3>
-              <button onClick={() => setShowAddUserModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white">
+              <button onClick={() => setShowAddUserModal(false)} className="p-1.5 rounded-lg text-slate-300 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1282,7 +1282,7 @@ export default function AdminDashboardPage() {
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
                   placeholder="misal: Johanes Kambu"
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white focus:outline-none"
                 />
               </div>
 
@@ -1294,17 +1294,17 @@ export default function AdminDashboardPage() {
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
                   placeholder="staf@gmail.com"
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Role / Peran</label>
                   <select
                     value={newUserRole}
                     onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-slate-200 focus:outline-none cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
                   >
                     <option value="OPERATIONAL">Staf Operasional</option>
                     <option value="FINANCE_WAREHOUSE">Staf Keuangan/Gudang</option>
@@ -1320,7 +1320,7 @@ export default function AdminDashboardPage() {
                     value={newUserDept}
                     onChange={(e) => setNewUserDept(e.target.value)}
                     placeholder="Frontdesk / Cafe"
-                    className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -1329,13 +1329,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddUserModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold"
                 >
                   Daftarkan Staf
                 </button>

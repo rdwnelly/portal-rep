@@ -51,12 +51,12 @@ export default function PWAInstallModal({ isOpen, onClose }: PWAInstallModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-2xl glass-panel bg-[#091d16] border border-amber-500/30 shadow-2xl p-6 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-2xl glass-panel bg-[#091d16] border-t-2 sm:border border-amber-500/30 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-white transition-all border border-slate-700"
+          className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700"
         >
           <X className="w-5 h-5" />
         </button>

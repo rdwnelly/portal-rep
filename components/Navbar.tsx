@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
 import {
@@ -15,11 +15,18 @@ import {
   Menu,
   X,
   User,
-  ChevronDown
+  ChevronDown,
+  UserPlus
 } from 'lucide-react';
 import AdminLoginModal from '@/components/AdminLoginModal';
 
-export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void }) {
+interface NavbarProps {
+  onOpenPwaModal?: () => void;
+  onOpenRequestModal?: () => void;
+}
+
+export default function Navbar({ onOpenPwaModal, onOpenRequestModal }: NavbarProps) {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [timeWIT, setTimeWIT] = useState<string>('');
@@ -372,6 +379,80 @@ export default function Navbar({ onOpenPwaModal }: { onOpenPwaModal?: () => void
         isOpen={adminModalOpen}
         onClose={() => setAdminModalOpen(false)}
       />
+
+      {/* ========================================================================= */}
+      {/* NATIVE MOBILE BOTTOM NAVIGATION BAR (KHUSUS LAYAR HP STAF KARYAWAN)      */}
+      {/* ========================================================================= */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#071711]/95 backdrop-blur-xl border-t border-amber-500/25 px-2 py-1.5 pb-safe-bottom shadow-2xl flex items-center justify-around">
+        {/* Beranda Aplikasi */}
+        <Link
+          href="/"
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+            pathname === '/' || pathname === '/dashboard'
+              ? 'text-amber-400 bg-amber-950/60 font-black scale-105'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <LayoutGrid className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Aplikasi</span>
+        </Link>
+
+        {/* Papan Pengumuman */}
+        <Link
+          href="/dashboard/notices"
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+            pathname === '/dashboard/notices'
+              ? 'text-amber-400 bg-amber-950/60 font-black scale-105'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Bell className="w-5 h-5 mb-0.5 text-amber-400" />
+          <span className="text-[10px]">Pengumuman</span>
+        </Link>
+
+        {/* Minta Akses Button */}
+        {onOpenRequestModal && (
+          <button
+            onClick={onOpenRequestModal}
+            className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-amber-300 hover:text-amber-200 transition-all cursor-pointer"
+          >
+            <div className="w-9 h-9 -mt-4 rounded-full bg-gradient-to-tr from-amber-600 to-amber-800 border-2 border-amber-300 flex items-center justify-center shadow-xl shadow-amber-950">
+              <UserPlus className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-[10px] font-extrabold text-amber-300 mt-0.5">Daftar</span>
+          </button>
+        )}
+
+        {/* Pasang PWA */}
+        {onOpenPwaModal && (
+          <button
+            onClick={onOpenPwaModal}
+            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-emerald-400 hover:text-emerald-300 transition-all cursor-pointer"
+          >
+            <Download className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Pasang</span>
+          </button>
+        )}
+
+        {/* Admin Panel */}
+        <button
+          onClick={() => {
+            if (user && (user.role === 'IT_ADMIN' || user.role === 'EXECUTIVE')) {
+              router.push('/dashboard/admin');
+            } else {
+              setAdminModalOpen(true);
+            }
+          }}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
+            pathname === '/dashboard/admin'
+              ? 'text-purple-400 bg-purple-950/60 font-black scale-105'
+              : 'text-purple-300/80 hover:text-purple-200'
+          }`}
+        >
+          <ShieldCheck className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Admin</span>
+        </button>
+      </nav>
     </header>
   );
 }

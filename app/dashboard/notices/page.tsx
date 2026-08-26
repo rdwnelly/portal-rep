@@ -113,7 +113,7 @@ export default function NoticesPage() {
     <div className="min-h-screen flex flex-col bg-[#07130f] papuan-pattern-overlay text-slate-100 selection:bg-amber-500 selection:text-black">
       <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 pb-28 md:pb-8">
         {/* Breadcrumb & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

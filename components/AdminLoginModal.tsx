@@ -73,8 +73,8 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-3xl glass-panel bg-[#091e16] border-2 border-purple-500/40 shadow-2xl overflow-hidden p-6 sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-purple-500/40 shadow-2xl overflow-hidden p-6 sm:p-8 pb-safe-bottom max-h-[92dvh] overflow-y-auto">
         <PapuanBorderCorner />
 
         {/* Ambient Glows */}
@@ -84,7 +84,7 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-white transition-all border border-slate-700 z-20 cursor-pointer"
+          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700 z-20 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -131,7 +131,7 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 placeholder="Masukkan kata sandi admin (misal: admin2026)"
-                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all font-mono"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all font-mono"
               />
               <button
                 type="button"

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   BedDouble,
@@ -11,23 +10,19 @@ import {
   Search,
   ExternalLink,
   Sparkles,
-  Clock,
-  Download,
-  Bell,
   Check,
   Copy,
   Layers,
-  ShieldCheck,
-  UserPlus,
   KeyRound,
+  Bell
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getAppsList, getNotices } from '@/lib/storage';
 import { AppItem, NoticeItem } from '@/lib/types';
+import Navbar from '@/components/Navbar';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
 import RequestAccessModal from '@/components/RequestAccessModal';
-import AdminLoginModal from '@/components/AdminLoginModal';
 import { PapuanMotifDivider, PapuanBorderCorner } from '@/components/PapuanMotif';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -47,48 +42,17 @@ export default function OpenPortalHomePage() {
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
   const [requestAccessModalOpen, setRequestAccessModalOpen] = useState(false);
-  const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false);
   const [selectedAppForRequest, setSelectedAppForRequest] = useState<AppItem | null>(null);
   const [copiedAppId, setCopiedAppId] = useState<string | null>(null);
 
-  // Live WIT Clock (Sorong, Papua Barat Daya - UTC+9)
-  const [timeWIT, setTimeWIT] = useState<string>('');
-  const [dateWIT, setDateWIT] = useState<string>('');
-
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const optionsTime: Intl.DateTimeFormatOptions = {
-        timeZone: 'Asia/Jayapura',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      };
-      const optionsDate: Intl.DateTimeFormatOptions = {
-        timeZone: 'Asia/Jayapura',
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      };
-      setTimeWIT(new Intl.DateTimeFormat('id-ID', optionsTime).format(now));
-      setDateWIT(new Intl.DateTimeFormat('id-ID', optionsDate).format(now));
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-
     const handleStorageUpdate = () => {
       setApps(getAppsList());
       setNotices(getNotices());
     };
 
     window.addEventListener('portal_rep_storage_update', handleStorageUpdate);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
-    };
+    return () => window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
   }, []);
 
   const currentApps = apps.length > 0 ? apps : getAppsList();
@@ -141,102 +105,17 @@ export default function OpenPortalHomePage() {
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-600/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-amber-600/15 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-40 w-full border-b border-amber-500/20 bg-[#081812]/95 backdrop-blur-md transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Brand Logo & Title */}
-            <div className="flex items-center gap-3.5">
-              <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-lg shadow-amber-950/40 flex items-center justify-center bg-[#0d281e]">
-                <Image
-                  src="/images/rep-logo.jpg"
-                  alt="Logo Rumah Etnik Papua"
-                  width={48}
-                  height={48}
-                  className="object-cover"
-                  priority
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-xl tracking-wider text-amber-400">
-                    PORTAL REP
-                  </span>
-                  <span className="text-[10px] uppercase font-extrabold tracking-widest px-2 py-0.5 rounded bg-emerald-900/80 text-emerald-300 border border-emerald-500/40">
-                    Pusat Sistem Staf
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 font-medium">
-                  Yayasan Rumah Etnik Papua • Sorong, Papua Barat Daya
-                </p>
-              </div>
-            </div>
+      {/* Unified Top Navbar & Mobile Bottom Nav */}
+      <Navbar
+        onOpenPwaModal={() => setPwaModalOpen(true)}
+        onOpenRequestModal={() => {
+          setSelectedAppForRequest(null);
+          setRequestAccessModalOpen(true);
+        }}
+      />
 
-            {/* Right Tools: Live Clock, PWA, Notices */}
-            <div className="flex items-center gap-3">
-              {/* Live WIT Clock */}
-              <div className="hidden sm:flex items-center gap-2 bg-[#0d261d] px-3.5 py-2 rounded-xl border border-emerald-500/25 text-xs text-slate-300 shadow-inner">
-                <Clock className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
-                <div suppressHydrationWarning>
-                  <span className="font-bold text-amber-400">{timeWIT || '00:00:00'} WIT</span>
-                  <span className="text-[10px] text-slate-400 ml-1.5">{dateWIT}</span>
-                </div>
-              </div>
-
-              {/* Notice Quick Button */}
-              <Link
-                href="/dashboard/notices"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-all shadow-sm"
-                title="Papan Pengumuman Yayasan"
-              >
-                <Bell className="w-4 h-4 text-amber-400" />
-                <span className="hidden md:inline">Pengumuman</span>
-                {currentNotices.length > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-amber-500 text-black font-bold text-[10px] flex items-center justify-center">
-                    {currentNotices.length}
-                  </span>
-                )}
-              </Link>
-
-              {/* Minta Akses Quick Button */}
-              <button
-                onClick={() => {
-                  setSelectedAppForRequest(null);
-                  setRequestAccessModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all shadow-sm cursor-pointer"
-                title="Daftar Akun & Minta Akses Login Staf"
-              >
-                <UserPlus className="w-4 h-4 text-amber-400" />
-                <span className="hidden sm:inline">Minta Akses</span>
-              </button>
-
-              {/* PWA Install Button */}
-              <button
-                onClick={() => setPwaModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all shadow-sm cursor-pointer"
-                title="Pasang Aplikasi di HP / Desktop"
-              >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Pasang PWA</span>
-              </button>
-
-              {/* Tombol Login Sebagai Admin di Bagian Atas */}
-              <button
-                onClick={() => setAdminLoginModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800 border border-purple-400/50 text-purple-200 hover:text-white text-xs font-extrabold shadow-lg shadow-purple-950/60 transition-all cursor-pointer"
-                title="Masuk sebagai Administrator Portal"
-              >
-                <ShieldCheck className="w-4 h-4 text-purple-300" />
-                <span>Login Sebagai Admin</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+      {/* Main Container with Safe Bottom Spacing for Mobile Bottom Nav */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 pb-28 md:pb-8">
         {/* Banner Hero */}
         <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 shadow-2xl bg-gradient-to-r from-[#0d2a20] via-[#0b2118] to-[#071711] p-6 sm:p-10 mb-8">
           <div className="relative z-10 max-w-2xl">
@@ -488,12 +367,6 @@ export default function OpenPortalHomePage() {
           setRequestAccessModalOpen(false);
           setSelectedAppForRequest(null);
         }}
-      />
-
-      {/* Admin Login Modal */}
-      <AdminLoginModal
-        isOpen={adminLoginModalOpen}
-        onClose={() => setAdminLoginModalOpen(false)}
       />
     </div>
   );

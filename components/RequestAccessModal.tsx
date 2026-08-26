@@ -119,8 +119,8 @@ export default function RequestAccessModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-      <div className="relative w-full max-w-xl rounded-3xl glass-panel bg-[#091d15] border-2 border-amber-500/40 shadow-2xl overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-xl rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091d15] border-t-2 sm:border-2 border-amber-500/40 shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-none overflow-y-auto my-0 sm:my-6 pb-safe-bottom">
         <PapuanBorderCorner />
 
         {/* Ambient Glows */}
@@ -130,7 +130,7 @@ export default function RequestAccessModal({
         {/* Close Button */}
         <button
           onClick={handleResetAndClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-white transition-all border border-slate-700 z-20 cursor-pointer"
+          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700 z-20 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
