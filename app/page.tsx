@@ -9,13 +9,15 @@ import {
   MapPin,
   Lock,
   Users,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import AccessDeniedModal from '@/components/AccessDeniedModal';
 import { PapuanMotifDivider } from '@/components/PapuanMotif';
 
 export default function LoginPage() {
-  const { user, loginWithGoogle, loginAsDemo, isLoading, isWhitelisted } = useAuth();
+  const { user, loginWithGoogle, loginAsDemo, isLoading, isWhitelisted, authError, clearAuthError } = useAuth();
 
   useEffect(() => {
     if (user && isWhitelisted && typeof window !== 'undefined') {
@@ -139,6 +141,24 @@ export default function LoginPage() {
                   Masuk menggunakan Akun Google resmi yang telah di-whitelist
                 </p>
               </div>
+
+              {/* Error Banner if Firebase/Google SSO Error */}
+              {authError && (
+                <div className="mb-4 p-3.5 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs flex items-start gap-2.5 shadow-lg shadow-red-950/40 relative animate-in fade-in duration-200">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-red-300">Pemberitahuan Autentikasi Google:</p>
+                    <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">{authError}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearAuthError}
+                    className="p-1 rounded hover:bg-red-900/60 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Main Google SSO Button */}
               <button

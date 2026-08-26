@@ -11,11 +11,13 @@ interface AuthContextType {
   isLoading: boolean;
   isWhitelisted: boolean;
   unauthorizedEmail: string | null;
+  authError: string | null;
   loginWithGoogle: () => Promise<void>;
   loginAsDemo: (demoKey: 'FRICKY' | 'MITSHI' | 'RIDWAN' | 'FRONTDESK' | 'FINANCE' | 'UNAUTHORIZED_DEMO') => void;
   logout: () => void;
   requestAccess: (data: { name: string; email: string; department: string; reason: string }) => Promise<void>;
   clearUnauthorizedState: () => void;
+  clearAuthError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(getInitialUser);
   const [isLoading, setIsLoading] = useState(false);
   const [unauthorizedEmail, setUnauthorizedEmail] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleAuthUserEmail = useCallback((email: string, displayName: string, photoURL?: string, shouldRedirect: boolean = true) => {
     const whitelisted = findWhitelistedUser(email);
@@ -119,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       setUser(profile);
       setUnauthorizedEmail(null);
+      setAuthError(null);
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile));
         if (shouldRedirect) {
@@ -137,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setUser(null);
       setUnauthorizedEmail(email);
+      setAuthError(null);
 
       addAuditLog({
         userEmail: email,
@@ -161,10 +166,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async () => {
     setIsLoading(true);
+    setAuthError(null);
     try {
       if (isConfigured) {
         const result = await signInWithPopup(auth, googleProvider);
-        if (result.user.email) {
+        if (result?.user?.email) {
           handleAuthUserEmail(result.user.email, result.user.displayName || 'Pengguna Google', result.user.photoURL || undefined, true);
         }
       } else {
@@ -173,13 +179,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: unknown) {
       console.error('Google Sign In Error:', error);
       const authErr = error as { code?: string; message?: string };
-      if (authErr?.code === 'auth/popup-blocked') {
-        alert('Popup Google diblokir oleh browser. Harap izinkan popup di pengaturan browser Anda.');
+      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      
+      if (authErr?.code === 'auth/operation-not-allowed') {
+        setAuthError('Google Sign-In belum diaktifkan di Firebase Console. Buka Firebase Console > Authentication > Sign-in method > aktifkan Google.');
       } else if (authErr?.code === 'auth/unauthorized-domain') {
-        alert('Domain localhost belum didaftarkan di Firebase Console (Authentication > Settings > Authorized domains).');
-      } else if (authErr?.code !== 'auth/popup-closed-by-user') {
-        // Fallback demo jika konfigurasi Firebase belum lengkap
-        handleAuthUserEmail(DEMO_ACCOUNTS.RIDWAN.email, DEMO_ACCOUNTS.RIDWAN.displayName, DEMO_ACCOUNTS.RIDWAN.photoURL, true);
+        setAuthError(`Domain "${currentHost}" belum diizinkan di Firebase Console. Buka Firebase Console > Authentication > Settings > Authorized domains > tambahkan "${currentHost}".`);
+      } else if (authErr?.code === 'auth/popup-blocked') {
+        setAuthError('Popup Google diblokir oleh browser. Harap izinkan popup di pengaturan URL browser Anda.');
+      } else if (authErr?.code === 'auth/popup-closed-by-user' || authErr?.code === 'auth/cancelled-popup-request') {
+        // User sengaja menutup popup
+        setAuthError(null);
+      } else if (authErr?.code === 'auth/network-request-failed') {
+        setAuthError('Koneksi ke server Google Firebase gagal. Periksa jaringan internet Anda.');
+      } else {
+        setAuthError(`Gagal autentikasi Google: ${authErr?.message || authErr?.code || 'Terjadi kesalahan sistem'}`);
       }
     } finally {
       setIsLoading(false);
@@ -188,6 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginAsDemo = (demoKey: keyof typeof DEMO_ACCOUNTS) => {
     setIsLoading(true);
+    setAuthError(null);
     const target = DEMO_ACCOUNTS[demoKey];
     if (demoKey === 'UNAUTHORIZED_DEMO') {
       setUser(null);
@@ -218,6 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     setUnauthorizedEmail(null);
+    setAuthError(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem(SESSION_KEY);
     }
@@ -238,6 +254,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUnauthorizedEmail(null);
   };
 
+  const clearAuthError = () => {
+    setAuthError(null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -245,11 +265,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isWhitelisted: Boolean(user?.isWhitelisted),
         unauthorizedEmail,
+        authError,
         loginWithGoogle,
         loginAsDemo,
         logout,
         requestAccess,
         clearUnauthorizedState,
+        clearAuthError,
       }}
     >
       {children}
