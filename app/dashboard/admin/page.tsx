@@ -182,6 +182,8 @@ export default function AdminDashboardPage() {
             origin: { y: 0.6 },
             colors: ['#e5a93c', '#0f382a', '#10b981', '#a855f7'],
           });
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+          window.location.href = '/dashboard/admin';
         }
       }
     };

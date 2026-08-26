@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   X,
   ShieldCheck,
@@ -24,7 +23,6 @@ interface AdminLoginModalProps {
 }
 
 export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
-  const router = useRouter();
   const { loginWithEmailPassword, isLoading, authError, clearAuthError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,7 +52,8 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
         });
       }
       onClose();
-      router.push('/dashboard/admin');
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.href = '/dashboard/admin';
     }
   };
 

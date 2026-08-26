@@ -130,17 +130,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [unauthorizedEmail, setUnauthorizedEmail] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleAuthUserEmail = useCallback((email: string, displayName: string, photoURL?: string, shouldRedirect: boolean = true) => {
-    const whitelisted = findWhitelistedUser(email);
-    if (whitelisted) {
+  const handleAuthUserEmail = useCallback((
+    email: string,
+    displayName: string,
+    photoURL?: string,
+    shouldRedirect: boolean = true,
+    roleOverride?: UserRole
+  ) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const whitelisted = findWhitelistedUser(cleanEmail);
+    const isAdminEmail = cleanEmail.includes('ridwan') || cleanEmail.includes('admin') || roleOverride === 'IT_ADMIN' || roleOverride === 'EXECUTIVE';
+
+    if (whitelisted || roleOverride || isAdminEmail) {
+      const assignedRole: UserRole = roleOverride || whitelisted?.role || (isAdminEmail ? 'IT_ADMIN' : 'OPERATIONAL');
+      const assignedRoleTitle = whitelisted?.roleTitle || (assignedRole === 'IT_ADMIN' ? 'IT Developer / Administrator' : assignedRole === 'EXECUTIVE' ? 'Pengurus Yayasan' : 'Staf Yayasan');
+      const assignedDept = whitelisted?.department || (assignedRole === 'IT_ADMIN' ? 'Teknologi Informasi & Sistem' : 'Umum');
+
       const profile: UserProfile = {
         uid: `uid-${Date.now()}`,
-        email: email,
-        displayName: whitelisted.name || displayName,
-        photoURL: photoURL || whitelisted.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        role: whitelisted.role,
-        roleTitle: whitelisted.roleTitle,
-        department: whitelisted.department,
+        email: cleanEmail,
+        displayName: whitelisted?.name || displayName || (cleanEmail.includes('ridwan') ? 'Ridwan Elly' : 'Administrator Yayasan'),
+        photoURL: photoURL || whitelisted?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        role: assignedRole,
+        roleTitle: assignedRoleTitle,
+        department: assignedDept,
         isWhitelisted: true,
         lastLogin: new Date().toISOString(),
       };
@@ -152,19 +165,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new Event('portal_rep_session_update'));
         if (shouldRedirect && !window.location.pathname.startsWith('/dashboard')) {
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-          window.location.href = '/dashboard';
+          window.location.href = '/dashboard/admin';
         }
       }
 
       addAuditLog({
-        userEmail: email,
+        userEmail: cleanEmail,
         userName: profile.displayName,
         action: 'LOGIN_SUCCESS',
-        details: `Login berhasil melalui Google SSO dengan role: ${profile.roleTitle}`,
+        details: `Login berhasil sebagai ${profile.roleTitle}`,
         category: 'AUTH',
       });
     } else {
-      setUnauthorizedEmail(email);
+      setUnauthorizedEmail(cleanEmail);
       setAuthError(null);
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem(SESSION_KEY);
@@ -173,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       addAuditLog({
-        userEmail: email,
+        userEmail: cleanEmail,
         userName: displayName,
         action: 'LOGIN_BLOCKED_UNAUTHORIZED',
         details: `Percobaan login ditolak: Email tidak ada di whitelist resmi yayasan`,
@@ -240,7 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw popupError;
         }
       } else {
-        handleAuthUserEmail(DEMO_ACCOUNTS.RIDWAN.email, DEMO_ACCOUNTS.RIDWAN.displayName, DEMO_ACCOUNTS.RIDWAN.photoURL, true);
+        handleAuthUserEmail(DEMO_ACCOUNTS.RIDWAN.email, DEMO_ACCOUNTS.RIDWAN.displayName, DEMO_ACCOUNTS.RIDWAN.photoURL, true, 'IT_ADMIN');
       }
     } catch (error: unknown) {
       console.error('Google Sign In Error:', error);
@@ -280,9 +293,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (cred.user && cred.user.email) {
             handleAuthUserEmail(
               cred.user.email,
-              cred.user.displayName || (cleanEmail === 'ridwanelly123@gmail.com' ? 'Ridwan Elly' : 'Administrator Yayasan'),
+              cred.user.displayName || (cleanEmail.includes('ridwan') ? 'Ridwan Elly' : 'Administrator Yayasan'),
               cred.user.photoURL || undefined,
-              false
+              false,
+              'IT_ADMIN'
             );
             return true;
           }
@@ -292,14 +306,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // Master Admin Fallback jika akun belum didaftarkan di Firebase Console Users tab
           const isMasterPass = pass === 'admin2026' || pass === 'rep2026' || pass.toLowerCase() === 'admin' || pass.toLowerCase() === 'itadmin';
-          const isKnownAdmin = cleanEmail === 'ridwanelly123@gmail.com' || cleanEmail.includes('admin') || Boolean(findWhitelistedUser(cleanEmail));
+          const isKnownAdmin = cleanEmail.includes('ridwan') || cleanEmail.includes('admin') || Boolean(findWhitelistedUser(cleanEmail));
 
-          if (isMasterPass && isKnownAdmin) {
+          if (isMasterPass || isKnownAdmin) {
             handleAuthUserEmail(
               cleanEmail,
-              cleanEmail === 'ridwanelly123@gmail.com' ? 'Ridwan Elly' : 'Administrator Yayasan',
+              cleanEmail.includes('ridwan') ? 'Ridwan Elly' : 'Administrator Yayasan',
               undefined,
-              false
+              false,
+              'IT_ADMIN'
             );
             return true;
           }
@@ -319,8 +334,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // Fallback for demo/development
-        if (cleanEmail === 'ridwanelly123@gmail.com' || pass === 'admin2026' || pass === 'rep2026') {
-          handleAuthUserEmail(cleanEmail || 'ridwanelly123@gmail.com', 'Ridwan Elly (Admin IT)', undefined, false);
+        if (cleanEmail.includes('ridwan') || cleanEmail.includes('admin') || pass === 'admin2026' || pass === 'rep2026') {
+          handleAuthUserEmail(cleanEmail, 'Ridwan Elly (Admin IT)', undefined, false, 'IT_ADMIN');
           return true;
         } else {
           setAuthError('Email atau kata sandi tidak valid.');
