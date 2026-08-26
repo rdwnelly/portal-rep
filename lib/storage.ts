@@ -5,7 +5,7 @@ import { INITIAL_WHITELIST, INITIAL_APPS, INITIAL_NOTICES, INITIAL_LOGS } from '
 
 const STORAGE_KEYS = {
   WHITELIST: 'portal_rep_whitelist_v1',
-  APPS: 'portal_rep_apps_v1',
+  APPS: 'portal_rep_apps_v2',
   NOTICES: 'portal_rep_notices_v1',
   LOGS: 'portal_rep_logs_v1',
   REQUESTS: 'portal_rep_requests_v1',

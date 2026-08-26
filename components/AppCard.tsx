@@ -7,10 +7,10 @@ import {
   Landmark,
   ShoppingBag,
   Camera,
-  ShieldCheck,
   Sparkles,
   Layers,
-  ArrowRight
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PapuanBorderCorner } from './PapuanMotif';
@@ -31,8 +31,7 @@ interface AppCardProps {
 export default function AppCard({ app, onLaunch }: AppCardProps) {
   const IconComponent = ICON_MAP[app.iconName] || Layers;
 
-  const handleLaunchClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleDirectClick = () => {
     if (typeof window !== 'undefined') {
       confetti({
         particleCount: 25,
@@ -41,7 +40,6 @@ export default function AppCard({ app, onLaunch }: AppCardProps) {
         colors: ['#e5a93c', '#0f382a', '#c28844', '#10b981'],
       });
     }
-    onLaunch(app);
   };
 
   return (
@@ -101,18 +99,26 @@ export default function AppCard({ app, onLaunch }: AppCardProps) {
 
       {/* Card Action Footer */}
       <div className="p-4 pt-2 bg-[#091a13]/90 border-t border-amber-500/15 flex items-center justify-between gap-2 relative z-10">
-        <div className="text-[10px] text-slate-400 flex items-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Akses Terverifikasi</span>
-        </div>
-
         <button
-          onClick={handleLaunchClick}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold shadow-md shadow-amber-950/60 hover:shadow-amber-600/30 transition-all active:scale-95"
+          type="button"
+          onClick={() => onLaunch(app)}
+          className="text-[11px] text-slate-300 hover:text-amber-300 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-emerald-900/40 transition-colors cursor-pointer"
+          title="Lihat Detail SSO & Info Modul"
+        >
+          <Info className="w-3.5 h-3.5 text-amber-400" />
+          <span>Info SSO</span>
+        </button>
+
+        <a
+          href={app.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleDirectClick}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold shadow-md shadow-amber-950/60 hover:shadow-amber-600/30 transition-all active:scale-95 cursor-pointer"
         >
           <span>Buka Aplikasi</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </button>
+          <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+        </a>
       </div>
     </div>
   );
