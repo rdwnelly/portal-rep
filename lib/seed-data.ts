@@ -27,6 +27,18 @@ export const INITIAL_WHITELIST: WhitelistedUser[] = [
   },
   {
     id: 'user-ridwan',
+    email: 'ridwanelly123@gmail.com',
+    name: 'Ridwan Elly',
+    role: 'IT_ADMIN',
+    roleTitle: 'IT Developer Internal',
+    department: 'Teknologi Informasi & Sistem',
+    active: true,
+    addedAt: '2026-01-01T08:00:00Z',
+    addedBy: 'System Root',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'user-ridwan-org',
     email: 'ridwan.elly@rumahetnikpapua.org',
     name: 'Ridwan Elly',
     role: 'IT_ADMIN',

@@ -45,7 +45,11 @@ export function getWhitelist(): WhitelistedUser[] {
 
 export function findWhitelistedUser(email: string): WhitelistedUser | undefined {
   const list = getWhitelist();
-  return list.find((u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.active);
+  const normalized = email.trim().toLowerCase();
+  const found = list.find((u) => u.email.toLowerCase() === normalized && u.active);
+  if (found) return found;
+
+  return INITIAL_WHITELIST.find((u) => u.email.toLowerCase() === normalized && u.active);
 }
 
 export function addWhitelistedUser(

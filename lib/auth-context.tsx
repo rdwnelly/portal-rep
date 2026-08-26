@@ -40,7 +40,7 @@ const DEMO_ACCOUNTS = {
     photoURL: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
   },
   RIDWAN: {
-    email: 'ridwan.elly@rumahetnikpapua.org',
+    email: 'ridwanelly123@gmail.com',
     displayName: 'Ridwan Elly',
     role: 'IT_ADMIN' as UserRole,
     roleTitle: 'IT Developer Internal',
