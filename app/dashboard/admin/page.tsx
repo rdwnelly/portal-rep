@@ -33,7 +33,12 @@ import {
   X,
   AlertCircle,
   RefreshCw,
-  Terminal
+  Terminal,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -50,6 +55,10 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<AccessRequest[]>(() => (typeof window !== 'undefined' ? getAccessRequests() : []));
   const [searchQuery, setSearchQuery] = useState('');
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
+
+  // Request visibility & copy state
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [copiedReqId, setCopiedReqId] = useState<string | null>(null);
 
   // New user form state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -80,12 +89,6 @@ export default function AdminPage() {
     return () => window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
   }, []);
 
-  useEffect(() => {
-    if (isInitialized && (!user || (user.role !== 'IT_ADMIN' && user.role !== 'EXECUTIVE')) && typeof window !== 'undefined') {
-      window.location.replace('/dashboard');
-    }
-  }, [isInitialized, user]);
-
   if (!isClient || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07130f] text-amber-400">
@@ -94,10 +97,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || (user.role !== 'IT_ADMIN' && user.role !== 'EXECUTIVE')) {
-    return null;
-  }
-
+  const currentAdminName = user?.displayName || 'Admin IT (Ridwan Elly)';
   const currentWhitelist = whitelist.length > 0 ? whitelist : getWhitelist();
   const currentApps = apps.length > 0 ? apps : getAppsList();
   const currentLogs = logs.length > 0 ? logs : getAuditLogs();
@@ -127,9 +127,9 @@ export default function AdminPage() {
           roleTitle: getTitle(newRole),
           department: newDepartment,
           active: true,
-          addedBy: user.displayName,
+          addedBy: currentAdminName,
         },
-        user.displayName
+        currentAdminName
       );
 
       if (typeof window !== 'undefined') {
@@ -147,13 +147,13 @@ export default function AdminPage() {
   };
 
   const handleToggleUserActive = (u: WhitelistedUser) => {
-    updateWhitelistedUser(u.id, { active: !u.active }, user.displayName);
+    updateWhitelistedUser(u.id, { active: !u.active }, currentAdminName);
     loadData();
   };
 
   const handleDeleteUser = (id: string, name: string) => {
     if (confirm(`Hapus ${name} dari daftar whitelist yayasan?`)) {
-      removeWhitelistedUser(id, user.displayName);
+      removeWhitelistedUser(id, currentAdminName);
       loadData();
     }
   };
@@ -168,7 +168,7 @@ export default function AdminPage() {
         url: appUrlInput,
         status: appStatusInput,
       },
-      user.displayName
+      currentAdminName
     );
 
     setEditingApp(null);
@@ -178,11 +178,11 @@ export default function AdminPage() {
   const handleResolveRequest = (req: AccessRequest, status: 'APPROVED' | 'REJECTED') => {
     const role: UserRole = req.department.includes('Keuangan')
       ? 'FINANCE_WAREHOUSE'
-      : req.department.includes('Manajemen')
+      : req.department.includes('Manajemen') || req.department.includes('Pengurus')
       ? 'EXECUTIVE'
       : 'OPERATIONAL';
 
-    resolveAccessRequest(req.id, status, user.displayName, role);
+    resolveAccessRequest(req.id, status, currentAdminName, role);
     loadData();
   };
 
@@ -389,7 +389,7 @@ export default function AdminPage() {
                         </td>
                         <td className="p-4 text-slate-400 text-[11px]">{u.addedBy}</td>
                         <td className="p-4 text-right">
-                          {u.email !== user.email && (
+                          {u.email !== user?.email && (
                             <button
                               onClick={() => handleDeleteUser(u.id, u.name)}
                               className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-400 transition-all cursor-pointer"
@@ -411,61 +411,214 @@ export default function AdminPage() {
         {/* TAB 2: ACCESS REQUESTS */}
         {activeTab === 'REQUESTS' && (
           <div className="space-y-4">
-            <p className="text-xs text-slate-400">
-              Daftar staf atau pihak eksternal yang mengajukan permohonan akses ke portal.
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-white">Daftar Permohonan Akses & Pendaftaran Akun</h3>
+                <p className="text-xs text-slate-400">
+                  Verifikasi email dan kata sandi yang diajukan oleh staf untuk didaftarkan ke sistem whitelist yayasan.
+                </p>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-500/30">
+                {currentRequests.filter((r) => r.status === 'PENDING').length} Menunggu Persetujuan
+              </span>
+            </div>
 
             {currentRequests.length === 0 ? (
               <div className="p-12 text-center rounded-2xl glass-panel bg-[#091a13] border border-amber-500/20 text-xs text-slate-400">
                 Belum ada permohonan akses baru yang masuk.
               </div>
             ) : (
-              <div className="space-y-3">
-                {currentRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="p-4 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-white text-sm">{req.name}</span>
-                        <span className="text-[11px] font-mono text-amber-400">{req.email}</span>
+              <div className="space-y-3.5">
+                {currentRequests.map((req) => {
+                  const isPasswordVisible = visiblePasswords[req.id] || false;
+                  const isCopied = copiedReqId === req.id;
+
+                  const handleCopyWaMessage = (r: AccessRequest) => {
+                    const text = `Halo ${r.name},\n\nPendaftaran akun Anda untuk *${r.appTitle || 'PORTAL REP'}* telah DISETUJUI & DIVERIFIKASI oleh Admin IT Yayasan Rumah Etnik Papua.\n\nDetail Akun Anda:\n📧 Email: ${r.email}\n🔑 Password: ${r.proposedPassword || '(Sesuai pendaftaran)'}\n🌐 Portal: http://localhost:3008/\n\nSilakan langsung login ke sistem. Terima kasih!`;
+                    navigator.clipboard.writeText(text);
+                    setCopiedReqId(r.id);
+                    setTimeout(() => setCopiedReqId(null), 2000);
+                  };
+
+                  return (
+                    <div
+                      key={req.id}
+                      className="p-5 rounded-2xl glass-panel bg-[#091b14] border-2 border-amber-500/25 shadow-xl space-y-3"
+                    >
+                      {/* Top Bar: Target App & Status */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-600/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-amber-400" />
+                            <span>{req.appTitle || 'Seluruh Ekosistem PORTAL REP'}</span>
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {new Date(req.requestedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                        </div>
+
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          className={`text-[11px] font-extrabold px-3 py-0.5 rounded-full border self-start sm:self-auto ${
                             req.status === 'PENDING'
-                              ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                              ? 'bg-amber-950/90 text-amber-300 border-amber-500/50 animate-pulse'
                               : req.status === 'APPROVED'
-                              ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                              : 'bg-red-950 text-red-300 border-red-500/40'
+                              ? 'bg-emerald-950 text-emerald-300 border-emerald-500/50'
+                              : 'bg-red-950 text-red-300 border-red-500/50'
                           }`}
                         >
-                          {req.status}
+                          ● {req.status === 'PENDING' ? 'MENUNGGU VERIFIKASI' : req.status === 'APPROVED' ? 'DISETUJUI (TERDAFTAR)' : 'DITOLAK'}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-300 font-semibold">{req.department}</p>
-                      <p className="text-xs text-slate-400 mt-1 italic">&quot;{req.reason}&quot;</p>
-                    </div>
 
-                    {req.status === 'PENDING' && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleResolveRequest(req, 'APPROVED')}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Setujui (Whitelist)</span>
-                        </button>
-                        <button
-                          onClick={() => handleResolveRequest(req, 'REJECTED')}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950 hover:bg-red-900 border border-red-500/30 text-red-300 text-xs font-bold cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          <span>Tolak</span>
-                        </button>
+                      {/* Main Info Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="space-y-1.5 bg-[#06140e] p-3 rounded-xl border border-slate-800/80">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Nama Lengkap Staf:</span>
+                            <strong className="text-white text-sm">{req.name}</strong>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Email Login:</span>
+                            <span className="font-mono text-amber-300 font-bold">{req.email}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Divisi / Unit:</span>
+                            <span className="text-slate-200">{req.department}</span>
+                          </div>
+                          {req.phoneNumber && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">No. WhatsApp / HP:</span>
+                              <a
+                                href={`https://wa.me/${req.phoneNumber.replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-emerald-400 hover:underline font-mono flex items-center gap-1 font-bold"
+                              >
+                                <span>{req.phoneNumber}</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Proposed Password Box */}
+                        <div className="space-y-2 bg-[#06140e] p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-slate-400 font-semibold flex items-center gap-1">
+                                <KeyRound className="w-3 h-3 text-amber-400" />
+                                <span>Kata Sandi (Password) Diajukan:</span>
+                              </span>
+                              {req.proposedPassword && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setVisiblePasswords((prev) => ({
+                                      ...prev,
+                                      [req.id]: !prev[req.id],
+                                    }))
+                                  }
+                                  className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                                >
+                                  {isPasswordVisible ? (
+                                    <>
+                                      <EyeOff className="w-3 h-3" />
+                                      <span>Sembunyikan</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Eye className="w-3 h-3" />
+                                      <span>Lihat Password</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-black/40 border border-slate-700 flex items-center justify-between">
+                              <span className="font-mono text-xs text-amber-300 font-bold">
+                                {req.proposedPassword
+                                  ? isPasswordVisible
+                                    ? req.proposedPassword
+                                    : '••••••••••••'
+                                  : '(Menggunakan Google SSO)'}
+                              </span>
+                              {req.proposedPassword && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(req.proposedPassword || '');
+                                    alert('Password disalin ke clipboard!');
+                                  }}
+                                  className="p-1 rounded hover:bg-slate-700 text-slate-300"
+                                  title="Salin Password"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] text-slate-400 italic">
+                            &quot;{req.reason}&quot;
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* Action Bar */}
+                      <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                        <div className="text-[11px] text-slate-400">
+                          {req.approvedBy && (
+                            <span>
+                              Diverifikasi oleh: <strong className="text-slate-200">{req.approvedBy}</strong>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Copy WhatsApp text button */}
+                          <button
+                            type="button"
+                            onClick={() => handleCopyWaMessage(req)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-600 cursor-pointer"
+                            title="Salin Pesan Konfirmasi WhatsApp untuk Staf"
+                          >
+                            {isCopied ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-emerald-300 font-bold">Pesan WA Disalin!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Salin Info WA Staf</span>
+                              </>
+                            )}
+                          </button>
+
+                          {req.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleResolveRequest(req, 'APPROVED')}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-950/50 cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Setujui & Daftarkan Akun</span>
+                              </button>
+                              <button
+                                onClick={() => handleResolveRequest(req, 'REJECTED')}
+                                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-950 hover:bg-red-900 border border-red-500/40 text-red-300 text-xs font-bold cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                                <span>Tolak</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

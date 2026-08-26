@@ -18,12 +18,15 @@ import {
   Copy,
   Layers,
   ShieldCheck,
+  UserPlus,
+  KeyRound,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getAppsList, getNotices } from '@/lib/storage';
 import { AppItem, NoticeItem } from '@/lib/types';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
+import RequestAccessModal from '@/components/RequestAccessModal';
 import { PapuanMotifDivider, PapuanBorderCorner } from '@/components/PapuanMotif';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -42,6 +45,8 @@ export default function OpenPortalHomePage() {
   // Modals state
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
+  const [requestAccessModalOpen, setRequestAccessModalOpen] = useState(false);
+  const [selectedAppForRequest, setSelectedAppForRequest] = useState<AppItem | null>(null);
   const [copiedAppId, setCopiedAppId] = useState<string | null>(null);
 
   // Live WIT Clock (Sorong, Papua Barat Daya - UTC+9)
@@ -191,10 +196,23 @@ export default function OpenPortalHomePage() {
                 )}
               </Link>
 
+              {/* Minta Akses Quick Button */}
+              <button
+                onClick={() => {
+                  setSelectedAppForRequest(null);
+                  setRequestAccessModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                title="Daftar Akun & Minta Akses Login Staf"
+              >
+                <UserPlus className="w-4 h-4 text-amber-400" />
+                <span className="hidden sm:inline">Minta Akses</span>
+              </button>
+
               {/* PWA Install Button */}
               <button
                 onClick={() => setPwaModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all shadow-sm"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all shadow-sm cursor-pointer"
                 title="Pasang Aplikasi di HP / Desktop"
               >
                 <Download className="w-4 h-4" />
@@ -332,7 +350,7 @@ export default function OpenPortalHomePage() {
                 </div>
 
                 <div className="p-6 pt-3 bg-[#06140e]/95 border-t border-amber-500/20 relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={(e) => handleCopyLink(e, app.id, app.url)}
@@ -351,9 +369,20 @@ export default function OpenPortalHomePage() {
                         </>
                       )}
                     </button>
-                    <span className="text-[11px] font-mono text-slate-400 truncate max-w-[140px] sm:max-w-[160px]">
-                      {app.url.replace('https://', '')}
-                    </span>
+
+                    {/* Tombol Minta Akses Login Khusus Aplikasi Ini */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAppForRequest(app);
+                        setRequestAccessModalOpen(true);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-amber-950/70 hover:bg-amber-900/90 text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center gap-1.5 border border-amber-500/40 transition-all cursor-pointer shadow-sm"
+                      title={`Minta Akun & Password untuk ${app.title}`}
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Minta Akses Login</span>
+                    </button>
                   </div>
 
                   <a
@@ -361,9 +390,9 @@ export default function OpenPortalHomePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={handleLaunchClick}
-                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-sm font-extrabold shadow-xl shadow-amber-950/70 hover:shadow-amber-600/40 transition-all active:scale-95 cursor-pointer border border-amber-400/40 text-center"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs sm:text-sm font-extrabold shadow-xl shadow-amber-950/70 hover:shadow-amber-600/40 transition-all active:scale-95 cursor-pointer border border-amber-400/40 text-center"
                   >
-                    <span>Buka Sistem Sekarang</span>
+                    <span>Buka Sistem</span>
                     <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   </a>
                 </div>
@@ -446,6 +475,17 @@ export default function OpenPortalHomePage() {
 
       {/* PWA Install Modal */}
       <PWAInstallModal isOpen={pwaModalOpen} onClose={() => setPwaModalOpen(false)} />
+
+      {/* Request Access / Registration Modal */}
+      <RequestAccessModal
+        isOpen={requestAccessModalOpen}
+        preselectedApp={selectedAppForRequest}
+        availableApps={currentApps}
+        onClose={() => {
+          setRequestAccessModalOpen(false);
+          setSelectedAppForRequest(null);
+        }}
+      />
     </div>
   );
 }

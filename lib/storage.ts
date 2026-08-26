@@ -227,12 +227,21 @@ export function submitAccessRequest(request: Omit<AccessRequest, 'id' | 'request
   return newReq;
 }
 
-export function resolveAccessRequest(id: string, status: 'APPROVED' | 'REJECTED', adminName: string, role?: UserRole): void {
+export function resolveAccessRequest(
+  id: string,
+  status: 'APPROVED' | 'REJECTED',
+  adminName: string,
+  role?: UserRole,
+  adminNotes?: string
+): void {
   const current = getAccessRequests();
   const index = current.findIndex((r) => r.id === id);
   if (index !== -1) {
     const req = current[index];
     req.status = status;
+    req.approvedAt = new Date().toISOString();
+    req.approvedBy = adminName;
+    if (adminNotes) req.adminNotes = adminNotes;
     setItem(STORAGE_KEYS.REQUESTS, current);
 
     if (status === 'APPROVED' && role) {
@@ -241,13 +250,36 @@ export function resolveAccessRequest(id: string, status: 'APPROVED' | 'REJECTED'
           name: req.name,
           email: req.email,
           role: role,
-          roleTitle: role === 'OPERATIONAL' ? 'Staf Operasional' : role === 'FINANCE_WAREHOUSE' ? 'Staf Keuangan/Gudang' : 'Staf Yayasan',
+          roleTitle:
+            role === 'OPERATIONAL'
+              ? 'Staf Operasional'
+              : role === 'FINANCE_WAREHOUSE'
+              ? 'Staf Keuangan/Gudang'
+              : role === 'EXECUTIVE'
+              ? 'Pengurus Yayasan'
+              : 'Staf Yayasan',
           department: req.department || 'Operasional',
           active: true,
           addedBy: adminName,
         },
         adminName
       );
+
+      addAuditLog({
+        userEmail: req.email,
+        userName: adminName,
+        action: 'APPROVE_ACCESS_REQUEST',
+        details: `Menyetujui permohonan akses aplikasi ${req.appTitle || 'PORTAL'} untuk ${req.name} (${req.email})`,
+        category: 'WHITELIST',
+      });
+    } else if (status === 'REJECTED') {
+      addAuditLog({
+        userEmail: req.email,
+        userName: adminName,
+        action: 'REJECT_ACCESS_REQUEST',
+        details: `Menolak permohonan akses untuk ${req.name} (${req.email})${adminNotes ? ': ' + adminNotes : ''}`,
+        category: 'WHITELIST',
+      });
     }
   }
 }

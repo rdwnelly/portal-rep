@@ -75,10 +75,17 @@ export interface AccessRequest {
   id: string;
   name: string;
   email: string;
+  proposedPassword?: string;
+  appId?: string;
+  appTitle?: string;
   department: string;
+  phoneNumber?: string;
   reason: string;
   requestedAt: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  adminNotes?: string;
+  approvedAt?: string;
+  approvedBy?: string;
 }
 
 export interface AuditLog {
