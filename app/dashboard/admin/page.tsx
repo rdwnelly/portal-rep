@@ -503,7 +503,7 @@ export default function AdminDashboardPage() {
       <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
       {/* Main Admin View with safe mobile bottom spacing */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 pb-28 md:pb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 pb-32 md:pb-8">
         {/* Admin Header Banner */}
         <div className="relative rounded-3xl overflow-hidden border-2 border-purple-500/30 shadow-2xl bg-gradient-to-r from-[#140b24] via-[#0e1e17] to-[#071711] p-5 sm:p-8 mb-6 sm:mb-8">
           <PapuanBorderCorner />

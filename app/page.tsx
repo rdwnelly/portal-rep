@@ -110,7 +110,7 @@ export default function OpenPortalHomePage() {
       <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
       {/* Main Container with Safe Bottom Spacing for Mobile Bottom Nav */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 pb-28 md:pb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 pb-32 md:pb-8">
         {/* Banner Hero with high contrast in both themes */}
         <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 shadow-2xl bg-gradient-to-r from-[#0d2a20] via-[#0b2118] to-[#071711] p-6 sm:p-10 mb-8">
           <div className="relative z-10 max-w-2xl hero-banner-content">

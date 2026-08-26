@@ -437,35 +437,33 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
       )}
 
       {/* ========================================================================= */}
-      {/* ULTRA-MODERN FLOATING BOTTOM DOCK (STAND-ALONE VIEWPORT FIXED BOTTOM)     */}
+      {/* PERMANENT EXPANDED MOBILE BOTTOM NAVIGATION BAR                           */}
       {/* ========================================================================= */}
-      <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 pointer-events-none flex justify-center">
-        <nav
-          className="pointer-events-auto w-full max-w-sm rounded-3xl bg-[#081c14]/94 backdrop-blur-2xl border border-amber-500/35 p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.6)] flex items-center justify-around transition-all duration-300 floating-bottom-nav"
-        >
+      <div className="md:hidden mobile-fixed-bottom-bar">
+        <nav className="mobile-bottom-dock">
           {/* 1. Beranda Aplikasi */}
           <Link
             href="/"
-            className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-2xl transition-all duration-200 ${
+            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-2xl transition-all duration-200 ${
               pathname === '/' || pathname === '/dashboard'
                 ? 'text-amber-400 bg-amber-500/15 font-black scale-105 shadow-inner'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <LayoutGrid className="w-5 h-5 mb-1" />
+            <LayoutGrid className="w-5 h-5 mb-1 shrink-0" />
             <span className="text-[10px] font-bold tracking-tight">Aplikasi</span>
           </Link>
 
           {/* 2. Papan Pengumuman */}
           <Link
             href="/dashboard/notices"
-            className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-2xl transition-all duration-200 ${
+            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-2xl transition-all duration-200 ${
               pathname === '/dashboard/notices'
                 ? 'text-amber-400 bg-amber-500/15 font-black scale-105 shadow-inner'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Bell className="w-5 h-5 mb-1 text-amber-400" />
+            <Bell className="w-5 h-5 mb-1 text-amber-400 shrink-0" />
             <span className="text-[10px] font-bold tracking-tight">Info</span>
           </Link>
 
@@ -473,13 +471,13 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
           <button
             suppressHydrationWarning
             onClick={toggleTheme}
-            className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-2xl text-amber-400 hover:text-amber-300 transition-all duration-200 cursor-pointer"
+            className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-2xl text-amber-400 hover:text-amber-300 transition-all duration-200 cursor-pointer"
             title={theme === 'dark' ? 'Mode Terang (Siang)' : 'Mode Gelap (Malam)'}
           >
             {theme === 'dark' ? (
-              <Sun className="w-5 h-5 mb-1 text-amber-300" />
+              <Sun className="w-5 h-5 mb-1 text-amber-300 shrink-0" />
             ) : (
-              <Moon className="w-5 h-5 mb-1 text-indigo-400" />
+              <Moon className="w-5 h-5 mb-1 text-indigo-400 shrink-0" />
             )}
             <span className="text-[10px] font-bold tracking-tight">
               {theme === 'dark' ? 'Siang' : 'Malam'}
@@ -495,14 +493,14 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
                 setAdminModalOpen(true);
               }
             }}
-            className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-2xl transition-all duration-200 ${
+            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-2xl transition-all duration-200 ${
               pathname === '/dashboard/admin' || pathname === '/dashboard/admin/login'
                 ? 'text-purple-400 bg-purple-500/15 font-black scale-105'
                 : 'text-purple-300/80 hover:text-purple-200'
             }`}
             title="Panel Admin"
           >
-            <ShieldCheck className="w-5 h-5 mb-1" />
+            <ShieldCheck className="w-5 h-5 mb-1 shrink-0" />
             <span className="text-[10px] font-bold tracking-tight">Admin</span>
           </button>
         </nav>
