@@ -5,9 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
-  getWhitelist,
-  addWhitelistedUser,
-  removeWhitelistedUser,
   getAppsList,
   addAppItem,
   updateAppItem,
@@ -23,9 +20,8 @@ import {
   updateFoundationInfo,
   INITIAL_FOUNDATION_INFO
 } from '@/lib/storage';
-import { INITIAL_APPS, INITIAL_NOTICES, INITIAL_WHITELIST } from '@/lib/seed-data';
+import { INITIAL_APPS, INITIAL_NOTICES } from '@/lib/seed-data';
 import {
-  WhitelistedUser,
   AppItem,
   NoticeItem,
   AccessRequest,
@@ -44,11 +40,8 @@ import {
   Bell,
   Link2,
   Info,
-  Users,
-  UserPlus,
   Trash2,
   Edit2,
-  Layers,
   ArrowLeft,
   Check,
   X,
@@ -57,17 +50,15 @@ import {
   KeyRound,
   Eye,
   EyeOff,
-  Copy,
   Pin,
   Save,
   Building,
-  Phone,
-  Clock,
   Sparkles,
   Mail,
   Lock,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  MessageCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
@@ -92,14 +83,13 @@ export default function AdminDashboardPage() {
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [loginLocalError, setLoginLocalError] = useState('');
 
-  // Active Admin Core Tab: NOTICES (Kelola Notifikasi), APPS (Kelola Link Aplikasi), INFO (Kelola Informasi), REQUESTS (Permohonan Akses), WHITELIST (Kelola Staf)
-  const [activeTab, setActiveTab] = useState<'NOTICES' | 'APPS' | 'INFO' | 'REQUESTS' | 'WHITELIST'>('NOTICES');
+  // 4 Core Admin Tabs: NOTICES, APPS, INFO, REQUESTS
+  const [activeTab, setActiveTab] = useState<'NOTICES' | 'APPS' | 'INFO' | 'REQUESTS'>('NOTICES');
 
   // Data States
   const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : INITIAL_NOTICES));
   const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : INITIAL_APPS));
   const [requests, setRequests] = useState<AccessRequest[]>(() => (typeof window !== 'undefined' ? getAccessRequests() : []));
-  const [whitelist, setWhitelist] = useState<WhitelistedUser[]>(() => (typeof window !== 'undefined' ? getWhitelist() : INITIAL_WHITELIST));
 
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
@@ -130,19 +120,11 @@ export default function AdminDashboardPage() {
   const [infoForm, setInfoForm] = useState<FoundationInfo>(() => (typeof window !== 'undefined' ? getFoundationInfo() : INITIAL_FOUNDATION_INFO));
   const [infoSavedSuccess, setInfoSavedSuccess] = useState(false);
 
-  // Form States: Tambah Whitelist
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<UserRole>('OPERATIONAL');
-  const [newUserDept, setNewUserDept] = useState('Operasional & Frontdesk');
-
   const loadData = () => {
     setNotices(getNotices());
     setApps(getAppsList());
     setInfoForm(getFoundationInfo());
     setRequests(getAccessRequests());
-    setWhitelist(getWhitelist());
   };
 
   useEffect(() => {
@@ -193,21 +175,21 @@ export default function AdminDashboardPage() {
         <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
         <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 pb-28 sm:pb-12 w-full max-w-md mx-auto my-auto">
-          <div className="relative w-full rounded-3xl glass-panel bg-[#091e16]/95 border-2 border-purple-500/40 shadow-2xl overflow-hidden p-6 sm:p-8">
+          <div className="relative w-full rounded-3xl glass-panel bg-[#091e16]/95 border-2 border-amber-500/40 shadow-2xl overflow-hidden p-6 sm:p-8">
             <PapuanBorderCorner />
 
-            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
 
             <div className="text-center mb-6 relative z-10">
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-700 to-indigo-950 border-2 border-purple-400/50 text-purple-200 mx-auto flex items-center justify-center shadow-xl shadow-black/50 mb-3">
-                <ShieldCheck className="w-8 h-8 text-purple-300" />
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[#113527] to-[#0a2319] border-2 border-amber-400/50 text-amber-300 mx-auto flex items-center justify-center shadow-xl shadow-black/50 mb-3">
+                <ShieldCheck className="w-8 h-8 text-amber-400" />
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-[10px] font-extrabold uppercase tracking-wider mb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider mb-2">
                 <Sparkles className="w-3 h-3" />
                 <span>Otentikasi Firebase Admin</span>
               </div>
-              <h1 className="text-2xl font-black text-white">Login Admin Diperlukan</h1>
+              <h1 className="text-2xl font-black text-white">Login Administrator</h1>
               <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                 Halaman ini dilindungi. Masukkan <strong>Email & Kata Sandi Firebase</strong> Anda untuk mengakses Panel Kontrol.
               </p>
@@ -222,8 +204,8 @@ export default function AdminDashboardPage() {
 
             <form onSubmit={handleGuardEmailSubmit} className="space-y-4 relative z-10">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5 text-purple-400" />
+                <label className="text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 text-amber-400" />
                   <span>Email Administrator</span>
                 </label>
                 <input
@@ -232,13 +214,13 @@ export default function AdminDashboardPage() {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   placeholder="Masukkan email admin terdaftar..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5 text-purple-400" />
+                <label className="text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
                   <span>Kata Sandi (Password)</span>
                 </label>
                 <div className="relative">
@@ -248,12 +230,12 @@ export default function AdminDashboardPage() {
                     value={loginPass}
                     onChange={(e) => setLoginPass(e.target.value)}
                     placeholder="Masukkan kata sandi Firebase"
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all font-mono"
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowLoginPass(!showLoginPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-300 p-1 cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-300 p-1 cursor-pointer"
                   >
                     {showLoginPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -263,13 +245,13 @@ export default function AdminDashboardPage() {
               <button
                 type="submit"
                 disabled={isAuthLoading}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-purple-950/60 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-purple-400/40 disabled:opacity-50 mt-2"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-xs shadow-lg shadow-amber-950/60 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-amber-400/40 disabled:opacity-50 mt-2"
               >
                 {isAuthLoading ? (
                   <span>Memverifikasi akun Firebase...</span>
                 ) : (
                   <>
-                    <KeyRound className="w-4 h-4 text-purple-300" />
+                    <KeyRound className="w-4 h-4 text-amber-300" />
                     <span>Masuk dengan Email & Password</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
@@ -283,7 +265,7 @@ export default function AdminDashboardPage() {
                 className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali ke Halaman Utama</span>
+                <span>Kembali ke Beranda Portal</span>
               </Link>
             </div>
           </div>
@@ -473,30 +455,6 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedReqId(null), 2000);
   };
 
-  // ================= WHITELIST HANDLERS =================
-  const handleAddUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUserName || !newUserEmail) return;
-
-    addWhitelistedUser(
-      {
-        name: newUserName.trim(),
-        email: newUserEmail.trim().toLowerCase(),
-        role: newUserRole,
-        roleTitle: newUserRole === 'EXECUTIVE' ? 'Pengurus Yayasan' : newUserRole === 'FINANCE_WAREHOUSE' ? 'Staf Keuangan/Gudang' : newUserRole === 'IT_ADMIN' ? 'IT Developer' : 'Staf Operasional',
-        department: newUserDept,
-        active: true,
-        addedBy: currentAdminName,
-      },
-      currentAdminName
-    );
-
-    setShowAddUserModal(false);
-    setNewUserName('');
-    setNewUserEmail('');
-    loadData();
-  };
-
   return (
     <div className="relative min-h-screen flex flex-col justify-between bg-[#07130f] papuan-pattern-overlay text-slate-100 selection:bg-amber-500 selection:text-black">
       {/* Navbar */}
@@ -532,7 +490,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 3 CORE ADMIN TABS: KELOLA NOTIFIKASI, KELOLA LINK APLIKASI, KELOLA INFO   */}
+        {/* 4 CORE ADMIN TABS: NOTIFIKASI, LINK APLIKASI, INFORMASI, PERMOHONAN AKSES */}
         {/* ========================================================================= */}
         <div className="flex items-center gap-2 border-b border-amber-500/20 pb-3 mb-8 overflow-x-auto scrollbar-none">
           {/* TAB 1: KELOLA NOTIFIKASI */}
@@ -579,25 +537,12 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab('REQUESTS')}
             className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'REQUESTS'
-                ? 'bg-gradient-to-r from-purple-700 to-indigo-800 text-white shadow-lg shadow-purple-950/60 border border-purple-400/40'
-                : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-purple-950/40 border border-purple-500/15'
+                ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-950/60 border border-amber-400/40'
+                : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
             }`}
           >
-            <KeyRound className="w-4 h-4 text-purple-400" />
-            <span>Permohonan Akses ({requests.filter((r) => r.status === 'PENDING').length})</span>
-          </button>
-
-          {/* TAB 5: WHITELIST & AUDIT LOGS */}
-          <button
-            onClick={() => setActiveTab('WHITELIST')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'WHITELIST'
-                ? 'bg-gradient-to-r from-purple-700 to-indigo-800 text-white shadow-lg shadow-purple-950/60 border border-purple-400/40'
-                : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-purple-950/40 border border-purple-500/15'
-            }`}
-          >
-            <Users className="w-4 h-4 text-slate-400" />
-            <span>Daftar Whitelist ({whitelist.length})</span>
+            <KeyRound className="w-4 h-4 text-amber-400" />
+            <span>4. Permohonan Akses ({requests.filter((r) => r.status === 'PENDING').length})</span>
           </button>
         </div>
 
@@ -650,45 +595,47 @@ export default function AdminDashboardPage() {
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-white leading-snug">{n.title}</h3>
-                    <p className="text-xs text-slate-300 mt-2 leading-relaxed line-clamp-4">{n.content}</p>
+                    <h3 className="text-base font-extrabold text-white leading-snug">{n.title}</h3>
+                    <p className="text-xs text-slate-300 mt-2 line-clamp-3 leading-relaxed">{n.content}</p>
+
+                    <div className="mt-3 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+                      <span>Penulis: <strong className="text-slate-200">{n.authorName}</strong></span>
+                    </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-slate-400 truncate">
-                      Oleh: <strong className="text-slate-200">{n.authorName}</strong>
-                    </span>
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-amber-500/15">
+                    <button
+                      onClick={() => {
+                        togglePinNotice(n.id);
+                        loadData();
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        n.isPinned
+                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <Pin className="w-3 h-3" />
+                      <span>{n.isPinned ? 'Lepas Pin' : 'Sematkan (Pin)'}</span>
+                    </button>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => {
-                          togglePinNotice(n.id);
-                          loadData();
-                        }}
-                        className={`p-2 rounded-xl text-xs font-semibold border cursor-pointer ${
-                          n.isPinned
-                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
-                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                        }`}
-                        title={n.isPinned ? 'Lepas Sematan' : 'Sematkan ke Beranda'}
-                      >
-                        <Pin className="w-3.5 h-3.5" />
-                      </button>
-
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleOpenEditNotice(n)}
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                        className="p-2 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
                         title="Edit Notifikasi"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
                       </button>
 
                       <button
                         onClick={() => handleDeleteNotice(n.id, n.title)}
-                        className="p-2 rounded-xl bg-red-950/80 hover:bg-red-900 border border-red-500/40 text-red-300 transition-all cursor-pointer"
+                        className="p-2 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
                         title="Hapus Notifikasi"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
+                        <span>Hapus</span>
                       </button>
                     </div>
                   </div>
@@ -707,10 +654,10 @@ export default function AdminDashboardPage() {
               <div>
                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                   <Link2 className="w-5 h-5 text-emerald-400" />
-                  <span>Kelola Tautan Resmi & Status Aplikasi Ekosistem</span>
+                  <span>Kelola Link & Konfigurasi Modul Aplikasi</span>
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Perbarui URL target Vercel/Website dan ubah status operasional modul sistem.
+                  Ubah target tautan Vercel, nama modul, status operasional, dan keterangan sistem.
                 </p>
               </div>
 
@@ -723,64 +670,60 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {apps.map((app) => (
                 <div
                   key={app.id}
-                  className="p-6 rounded-2xl glass-panel bg-[#091b14] border-2 border-amber-500/25 shadow-xl space-y-4 flex flex-col justify-between"
+                  className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col justify-between space-y-4"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="text-xs font-black text-amber-400 uppercase tracking-widest bg-amber-950/80 px-2.5 py-1 rounded-lg border border-amber-500/30">
-                        {app.shortCode}
-                      </span>
-                      <span
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                          app.status === 'ONLINE'
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                            : 'bg-amber-950 text-amber-300 border-amber-500/40'
-                        }`}
-                      >
-                        ● {app.status === 'ONLINE' ? 'LIVE ONLINE' : app.status}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30">
+                          {app.shortCode}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                          {app.category}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded ${app.status === 'ONLINE' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-red-950 text-red-300 border border-red-500/40'}`}>
+                        ● {app.status}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white">{app.title}</h3>
-                    <p className="text-xs text-slate-300 mt-1 leading-relaxed line-clamp-2">{app.description}</p>
+                    <h3 className="text-base font-extrabold text-white leading-snug">{app.title}</h3>
+                    <p className="text-xs text-slate-300 mt-1 line-clamp-2">{app.description}</p>
 
-                    {/* URL Display */}
-                    <div className="mt-3 p-2.5 rounded-xl bg-black/40 border border-slate-700 flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-amber-300 truncate">{app.url}</span>
+                    <div className="mt-3 p-2 rounded-xl bg-[#06140e] border border-slate-800 text-[11px] font-mono text-emerald-400 break-all flex items-center justify-between gap-2">
+                      <span className="truncate">{app.url}</span>
                       <a
                         href={app.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-300 hover:bg-emerald-900 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1 shrink-0"
+                        className="p-1 text-slate-400 hover:text-white shrink-0"
+                        title="Buka Link di Tab Baru"
                       >
-                        <span>Tes Link</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400 font-semibold">{app.badgeText}</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditApp(app)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit Link</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteApp(app.id, app.title)}
-                        className="p-2 rounded-xl bg-red-950 hover:bg-red-900 text-red-300 border border-red-500/30 cursor-pointer"
-                        title="Hapus Aplikasi"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-amber-500/15">
+                    <button
+                      onClick={() => handleOpenEditApp(app)}
+                      className="px-3 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Edit Link</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteApp(app.id, app.title)}
+                      className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Hapus</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -789,434 +732,284 @@ export default function AdminDashboardPage() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 3: KELOLA INFORMASI YAYASAN & PROFIL                                  */}
+        {/* TAB 3: KELOLA INFORMASI YAYASAN & SOP                                     */}
         {/* ========================================================================= */}
         {activeTab === 'INFO' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-black text-white flex items-center gap-2">
-                  <Info className="w-5 h-5 text-cyan-400" />
-                  <span>Kelola Informasi Yayasan & Pengaturan Tampilan Portal</span>
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Ubah profil yayasan, teks sambutan beranda, alamat kantor di Sorong, dan kontak IT Helpdesk.
-                </p>
+          <div className="max-w-3xl mx-auto">
+            <div className="rounded-3xl glass-panel bg-[#091b14] border-2 border-amber-500/30 p-6 sm:p-8 shadow-2xl">
+              <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-amber-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-950/60 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
+                    <Building className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-white">Profil & Pengaturan Portal Yayasan</h2>
+                    <p className="text-xs text-slate-400">Informasi operasional, helpdesk IT, dan panduan akses staf</p>
+                  </div>
+                </div>
+
+                {infoSavedSuccess && (
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950 px-3 py-1 rounded-full border border-emerald-500/40 animate-in fade-in">
+                    ✓ Tersimpan!
+                  </span>
+                )}
               </div>
 
-              {infoSavedSuccess && (
-                <span className="px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 animate-pulse">
-                  <Check className="w-4 h-4" />
-                  <span>Informasi Berhasil Disimpan!</span>
-                </span>
-              )}
-            </div>
-
-            <form onSubmit={handleSaveFoundationInfo} className="p-6 rounded-3xl glass-panel bg-[#091b14] border-2 border-amber-500/25 shadow-xl space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleSaveFoundationInfo} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Nama Yayasan / Organisasi</span>
-                  </label>
+                  <label className="block font-bold text-slate-300 mb-1">Nama Yayasan / Lembaga</label>
                   <input
                     type="text"
-                    required
                     value={infoForm.organizationName}
                     onChange={(e) => setInfoForm({ ...infoForm, organizationName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Tagline / Slogan</span>
-                  </label>
+                  <label className="block font-bold text-slate-300 mb-1">Slogan / Tagline</label>
                   <input
                     type="text"
                     value={infoForm.tagline}
                     onChange={(e) => setInfoForm({ ...infoForm, tagline: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                  Alamat Kantor & Lokasi (Sorong, Papua Barat Daya)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={infoForm.address}
-                  onChange={(e) => setInfoForm({ ...infoForm, address: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Kontak IT Developer / Helpdesk</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={infoForm.itHelpdeskName}
-                    onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Nomor WhatsApp IT Helpdesk</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={infoForm.itHelpdeskPhone}
-                    onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskPhone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
+                  <label className="block font-bold text-slate-300 mb-1">Alamat Kantor & Operasional</label>
+                  <textarea
+                    rows={2}
+                    value={infoForm.address}
+                    onChange={(e) => setInfoForm({ ...infoForm, address: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Jam Operasional Staf (WIT)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={infoForm.operationalHours}
-                    onChange={(e) => setInfoForm({ ...infoForm, operationalHours: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">Nama IT Developer / Helpdesk</label>
+                    <input
+                      type="text"
+                      value={infoForm.itHelpdeskName}
+                      onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskName: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">No. WhatsApp Helpdesk IT</label>
+                    <input
+                      type="text"
+                      value={infoForm.itHelpdeskPhone}
+                      onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskPhone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                  Teks Deskripsi Sambutan Beranda
-                </label>
-                <textarea
-                  rows={2}
-                  value={infoForm.heroDescription}
-                  onChange={(e) => setInfoForm({ ...infoForm, heroDescription: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400 resize-none"
-                />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">Email Resmi Helpdesk</label>
+                    <input
+                      type="email"
+                      value={infoForm.itHelpdeskEmail}
+                      onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskEmail: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
 
-              <div className="flex justify-end pt-3 border-t border-slate-800">
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white text-xs font-bold shadow-lg shadow-cyan-950/60 transition-all cursor-pointer active:scale-95"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Simpan Informasi Yayasan</span>
-                </button>
-              </div>
-            </form>
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">Jam Operasional Kantor</label>
+                    <input
+                      type="text"
+                      value={infoForm.operationalHours}
+                      onChange={(e) => setInfoForm({ ...infoForm, operationalHours: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-amber-500/20 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold flex items-center gap-2 shadow-lg shadow-amber-950/60 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Perubahan Profil</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 4: PERMOHONAN AKSES STAF (EMAIL & PASSWORD VERIFIKASI)                */}
+        {/* TAB 4: PERMOHONAN AKSES STAF                                             */}
         {/* ========================================================================= */}
         {activeTab === 'REQUESTS' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-white">Daftar Permohonan Akses & Pendaftaran Akun Staf</h3>
-                <p className="text-xs text-slate-400">
-                  Verifikasi email dan kata sandi yang diajukan oleh staf untuk didaftarkan ke sistem whitelist yayasan.
-                </p>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-500/30">
-                {requests.filter((r) => r.status === 'PENDING').length} Menunggu Persetujuan
-              </span>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-amber-400" />
+                <span>Daftar Permohonan Akun & Akses Login Staf</span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                Verifikasi email dan kata sandi yang diajukan oleh staf untuk diberikan akses ke sistem yayasan.
+              </p>
             </div>
 
             {requests.length === 0 ? (
-              <div className="p-12 text-center rounded-2xl glass-panel bg-[#091a13] border border-amber-500/20 text-xs text-slate-400">
+              <div className="p-8 rounded-2xl bg-[#091b14] border border-amber-500/20 text-center text-slate-400 text-xs">
                 Belum ada permohonan akses baru yang masuk.
               </div>
             ) : (
-              <div className="space-y-3.5">
-                {requests.map((req) => {
-                  const isPasswordVisible = visiblePasswords[req.id] || false;
-                  const isCopied = copiedReqId === req.id;
-
-                  return (
-                    <div
-                      key={req.id}
-                      className="p-5 rounded-2xl glass-panel bg-[#091b14] border-2 border-amber-500/25 shadow-xl space-y-3"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-600/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{req.appTitle || 'Seluruh Ekosistem PORTAL REP'}</span>
-                          </span>
-                          <span className="text-[11px] text-slate-400">
-                            {new Date(req.requestedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
-                          </span>
-                        </div>
-
-                        <span
-                          className={`text-[11px] font-extrabold px-3 py-0.5 rounded-full border self-start sm:self-auto ${
-                            req.status === 'PENDING'
-                              ? 'bg-amber-950/90 text-amber-300 border-amber-500/50 animate-pulse'
-                              : req.status === 'APPROVED'
-                              ? 'bg-emerald-950 text-emerald-300 border-emerald-500/50'
-                              : 'bg-red-950 text-red-300 border-red-500/50'
-                          }`}
-                        >
-                          ● {req.status === 'PENDING' ? 'MENUNGGU VERIFIKASI' : req.status === 'APPROVED' ? 'DISETUJUI (TERDAFTAR)' : 'DITOLAK'}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {requests.map((req) => (
+                  <div
+                    key={req.id}
+                    className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col justify-between space-y-4"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md ${
+                          req.status === 'APPROVED'
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
+                            : req.status === 'REJECTED'
+                            ? 'bg-red-950 text-red-300 border border-red-500/30'
+                            : 'bg-amber-950 text-amber-300 border border-amber-500/30 animate-pulse'
+                        }`}>
+                          {req.status}
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {new Date(req.requestedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                        <div className="space-y-1.5 bg-[#06140e] p-3 rounded-xl border border-slate-800/80">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-400">Nama Lengkap Staf:</span>
-                            <strong className="text-white text-sm">{req.name}</strong>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-400">Email Login:</span>
-                            <span className="font-mono text-amber-300 font-bold">{req.email}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-400">Divisi / Unit:</span>
-                            <span className="text-slate-200">{req.department}</span>
-                          </div>
-                          {req.phoneNumber && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-400">No. WhatsApp:</span>
-                              <a
-                                href={`https://wa.me/${req.phoneNumber.replace(/[^0-9]/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-emerald-400 hover:underline font-mono flex items-center gap-1 font-bold"
-                              >
-                                <span>{req.phoneNumber}</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </div>
-                          )}
+                      <h3 className="text-base font-extrabold text-white">{req.name}</h3>
+                      <p className="text-xs text-amber-300 font-mono mt-0.5">{req.email}</p>
+                      
+                      <div className="mt-3 p-3 rounded-xl bg-[#06140e] border border-slate-800 space-y-1.5 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Aplikasi Diminta:</span>
+                          <strong className="text-white">{req.appTitle || 'Seluruh Portal'}</strong>
                         </div>
-
-                        <div className="space-y-2 bg-[#06140e] p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-slate-400 font-semibold flex items-center gap-1">
-                                <KeyRound className="w-3 h-3 text-amber-400" />
-                                <span>Kata Sandi (Password) Diajukan:</span>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Divisi / Unit:</span>
+                          <span className="text-slate-200">{req.department}</span>
+                        </div>
+                        {req.proposedPassword && (
+                          <div className="flex justify-between items-center pt-1 border-t border-slate-800">
+                            <span className="text-slate-400">Kata Sandi Diajukan:</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-amber-400 font-bold">
+                                {visiblePasswords[req.id] ? req.proposedPassword : '••••••••'}
                               </span>
-                              {req.proposedPassword && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setVisiblePasswords((prev) => ({
-                                      ...prev,
-                                      [req.id]: !prev[req.id],
-                                    }))
-                                  }
-                                  className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-                                >
-                                  {isPasswordVisible ? (
-                                    <>
-                                      <EyeOff className="w-3 h-3" />
-                                      <span>Sembunyikan</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Eye className="w-3 h-3" />
-                                      <span>Lihat Password</span>
-                                    </>
-                                  )}
-                                </button>
-                              )}
-                            </div>
-
-                            <div className="p-2 rounded-lg bg-black/40 border border-slate-700 flex items-center justify-between">
-                              <span className="font-mono text-xs text-amber-300 font-bold">
-                                {req.proposedPassword
-                                  ? isPasswordVisible
-                                    ? req.proposedPassword
-                                    : '••••••••••••'
-                                  : '(Menggunakan Google SSO)'}
-                              </span>
-                              {req.proposedPassword && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(req.proposedPassword || '');
-                                    alert('Password disalin ke clipboard!');
-                                  }}
-                                  className="p-1 rounded hover:bg-slate-700 text-slate-300"
-                                  title="Salin Password"
-                                >
-                                  <Copy className="w-3 h-3" />
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setVisiblePasswords({
+                                    ...visiblePasswords,
+                                    [req.id]: !visiblePasswords[req.id],
+                                  })
+                                }
+                                className="text-slate-400 hover:text-white"
+                              >
+                                {visiblePasswords[req.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
                             </div>
                           </div>
-
-                          <p className="text-[11px] text-slate-400 italic">
-                            &quot;{req.reason}&quot;
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-                        <div className="text-[11px] text-slate-400">
-                          {req.approvedBy && (
-                            <span>
-                              Diverifikasi oleh: <strong className="text-slate-200">{req.approvedBy}</strong>
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => handleCopyWaMessage(req)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-600 cursor-pointer"
-                          >
-                            {isCopied ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                <span className="text-emerald-300 font-bold">Pesan WA Disalin!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Salin Info WA Staf</span>
-                              </>
-                            )}
-                          </button>
-
-                          {req.status === 'PENDING' && (
-                            <>
-                              <button
-                                onClick={() => handleResolveRequest(req, 'APPROVED')}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-950/50 cursor-pointer"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Setujui & Daftarkan Akun</span>
-                              </button>
-                              <button
-                                onClick={() => handleResolveRequest(req, 'REJECTED')}
-                                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-950 hover:bg-red-900 border border-red-500/40 text-red-300 text-xs font-bold cursor-pointer"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                                <span>Tolak</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        )}
+                        {req.phoneNumber && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">No. WhatsApp:</span>
+                            <span className="text-slate-200 font-mono">{req.phoneNumber}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div className="pt-2 border-t border-amber-500/15 flex flex-wrap items-center justify-between gap-2">
+                      <button
+                        onClick={() => handleCopyWaMessage(req)}
+                        className="px-3 py-1.5 rounded-lg bg-[#0c261e] hover:bg-[#12382c] border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                        title="Salin Pesan Konfirmasi WhatsApp"
+                      >
+                        {copiedReqId === req.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Pesan Disalin!</span>
+                          </>
+                        ) : (
+                          <>
+                            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Salin Pesan WA</span>
+                          </>
+                        )}
+                      </button>
+
+                      {req.status === 'PENDING' && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleResolveRequest(req, 'REJECTED')}
+                            className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-300 text-xs font-bold cursor-pointer"
+                          >
+                            Tolak
+                          </button>
+                          <button
+                            onClick={() => handleResolveRequest(req, 'APPROVED')}
+                            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md cursor-pointer"
+                          >
+                            Setujui Akun
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 5: WHITELIST STAF                                                    */}
-        {/* ========================================================================= */}
-        {activeTab === 'WHITELIST' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-white">Daftar Akun Terdaftar & Ter-Whitelist</h3>
-                <p className="text-xs text-slate-400">Seluruh staf resmi Yayasan Rumah Etnik Papua yang berhak mengakses sistem.</p>
-              </div>
-
-              <button
-                onClick={() => setShowAddUserModal(true)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold cursor-pointer"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>Tambah Staf Manual</span>
-              </button>
-            </div>
-
-            <div className="rounded-2xl glass-panel bg-[#091b14] border border-amber-500/20 overflow-hidden shadow-xl">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#0c241b] text-slate-300 border-b border-slate-800">
-                  <tr>
-                    <th className="p-3.5 font-bold">Nama Staf</th>
-                    <th className="p-3.5 font-bold">Email</th>
-                    <th className="p-3.5 font-bold">Role / Divisi</th>
-                    <th className="p-3.5 font-bold">Status</th>
-                    <th className="p-3.5 font-bold text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {whitelist.map((u) => (
-                    <tr key={u.id} className="hover:bg-emerald-950/20">
-                      <td className="p-3.5 font-bold text-white">{u.name}</td>
-                      <td className="p-3.5 font-mono text-amber-300">{u.email}</td>
-                      <td className="p-3.5 text-slate-300">{u.roleTitle} ({u.department})</td>
-                      <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${u.active ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-red-950 text-red-300 border border-red-500/40'}`}>
-                          {u.active ? 'Aktif' : 'Nonaktif'}
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-right">
-                        {u.email !== 'ridwanelly123@gmail.com' && (
-                          <button
-                            onClick={() => {
-                              if (confirm(`Hapus ${u.name} dari whitelist?`)) {
-                                removeWhitelistedUser(u.id, currentAdminName);
-                                loadData();
-                              }
-                            }}
-                            className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-400 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
       </main>
 
       {/* ================= MODAL TAMBAH / EDIT NOTIFIKASI ================= */}
       {showNoticeModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-amber-500/40 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+          <div className="relative w-full max-w-lg my-auto rounded-3xl glass-panel bg-[#091e16] border-2 border-amber-500/40 shadow-2xl p-6 overflow-hidden max-h-[90dvh] overflow-y-auto">
             <PapuanBorderCorner />
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <Bell className="w-5 h-5 text-amber-400" />
                 <span>{editingNotice ? 'Edit Notifikasi Pengumuman' : 'Buat Notifikasi Pengumuman Baru'}</span>
               </h3>
-              <button onClick={() => setShowNoticeModal(false)} className="p-1.5 rounded-lg text-slate-300 hover:text-white">
+              <button onClick={() => setShowNoticeModal(false)} className="p-1.5 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveNotice} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Judul Notifikasi</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Judul Pengumuman</label>
                 <input
                   type="text"
                   required
                   value={noticeTitle}
                   onChange={(e) => setNoticeTitle(e.target.value)}
-                  placeholder="misal: Jadwal Operasional Homestay Libur Nasional"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none"
+                  placeholder="misal: Briefing Operasional Staf Yayasan"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Isi Lengkap Informasi / Instruksi</label>
+                <textarea
+                  rows={4}
+                  required
+                  value={noticeContent}
+                  onChange={(e) => setNoticeContent(e.target.value)}
+                  placeholder="Tuliskan detail pengumuman atau instruksi resmi..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
                 />
               </div>
 
@@ -1228,48 +1021,38 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setNoticeCategory(e.target.value as NoticeCategory)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
                   >
-                    <option value="INSTRUCTION">Instruksi Kerja</option>
-                    <option value="AGENDA">Agenda Kegiatan</option>
-                    <option value="SOP">SOP Yayasan</option>
-                    <option value="ANNOUNCEMENT">Pengumuman Umum</option>
-                    <option value="URGENT">Penting / Darurat</option>
+                    <option value="INSTRUCTION">INSTRUCTION (Instruksi Resmi)</option>
+                    <option value="AGENDA">AGENDA (Jadwal & Kunjungan)</option>
+                    <option value="SOP">SOP (Standar Operasional)</option>
+                    <option value="UPDATE">UPDATE (Pembaruan Sistem)</option>
+                    <option value="SECURITY">SECURITY (Keamanan & Akses)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Penulis Pengumuman</label>
-                  <input
-                    type="text"
-                    value={noticeAuthor}
-                    onChange={(e) => setNoticeAuthor(e.target.value)}
-                    placeholder="Bpk. Fricky / Ibu Mitshi / Ridwan"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none"
-                  />
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Prioritas</label>
+                  <select
+                    value={noticePriority}
+                    onChange={(e) => setNoticePriority(e.target.value as NoticePriority)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
+                  >
+                    <option value="HIGH">HIGH (Penting / Utama)</option>
+                    <option value="URGENT">URGENT (Mendesak / Segera)</option>
+                    <option value="NORMAL">NORMAL (Biasa)</option>
+                  </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Isi Lengkap Pengumuman</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={noticeContent}
-                  onChange={(e) => setNoticeContent(e.target.value)}
-                  placeholder="Tuliskan instruksi atau pengumuman resmi di sini..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none resize-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex items-center gap-3 pt-2">
                 <input
                   type="checkbox"
-                  id="pinCheck"
+                  id="noticePinnedCheckbox"
                   checked={noticeIsPinned}
                   onChange={(e) => setNoticeIsPinned(e.target.checked)}
-                  className="w-4 h-4 rounded text-amber-500 focus:ring-0 cursor-pointer"
+                  className="w-4 h-4 rounded text-amber-500 bg-[#06140e] border-amber-500/40"
                 />
-                <label htmlFor="pinCheck" className="text-xs text-slate-300 cursor-pointer">
-                  Sematkan pengumuman ini di halaman utama (Pinned)
+                <label htmlFor="noticePinnedCheckbox" className="text-xs font-bold text-slate-200 cursor-pointer">
+                  Sematkan di Beranda Utama (Pinned Notice)
                 </label>
               </div>
 
@@ -1277,15 +1060,15 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowNoticeModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold shadow-md cursor-pointer"
                 >
-                  Simpan Notifikasi
+                  Simpan Pengumuman
                 </button>
               </div>
             </form>
@@ -1295,15 +1078,15 @@ export default function AdminDashboardPage() {
 
       {/* ================= MODAL TAMBAH / EDIT APLIKASI ================= */}
       {showAppModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-emerald-500/40 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+          <div className="relative w-full max-w-lg my-auto rounded-3xl glass-panel bg-[#091e16] border-2 border-emerald-500/40 shadow-2xl p-6 overflow-hidden max-h-[90dvh] overflow-y-auto">
             <PapuanBorderCorner />
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <Link2 className="w-5 h-5 text-emerald-400" />
-                <span>{editingApp ? 'Edit Tautan & Konfigurasi Aplikasi' : 'Tambah Modul Aplikasi Baru'}</span>
+                <span>{editingApp ? 'Edit Konfigurasi Aplikasi' : 'Tambah Aplikasi Baru ke Portal'}</span>
               </h3>
-              <button onClick={() => setShowAppModal(false)} className="p-1.5 rounded-lg text-slate-300 hover:text-white">
+              <button onClick={() => setShowAppModal(false)} className="p-1.5 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1317,10 +1100,11 @@ export default function AdminDashboardPage() {
                     required
                     value={appTitle}
                     onChange={(e) => setAppTitle(e.target.value)}
-                    placeholder="misal: Sistem Manajemen Reservasi"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none"
+                    placeholder="misal: Reservasi Homestay"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-emerald-400"
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Kode Singkat</label>
                   <input
@@ -1328,21 +1112,32 @@ export default function AdminDashboardPage() {
                     required
                     value={appShortCode}
                     onChange={(e) => setAppShortCode(e.target.value)}
-                    placeholder="RESERVASI"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white uppercase focus:outline-none"
+                    placeholder="HOMESTAY"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white font-mono uppercase focus:outline-none focus:border-emerald-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">URL Target Resmi (Link Vercel / Website)</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">URL Target Vercel (Produksi)</label>
                 <input
                   type="url"
                   required
                   value={appUrl}
                   onChange={(e) => setAppUrl(e.target.value)}
                   placeholder="https://apk-reservasi-homestay-rep.vercel.app"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-amber-300 font-mono focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Deskripsi Singkat</label>
+                <textarea
+                  rows={2}
+                  value={appDescription}
+                  onChange={(e) => setAppDescription(e.target.value)}
+                  placeholder="Penjelasan fungsi operasional sistem..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -1354,139 +1149,40 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setAppCategory(e.target.value as AppCategory)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
                   >
-                    <option value="OPERASIONAL">Homestay & Operasional</option>
-                    <option value="KEUANGAN">Keuangan (SIK-REP)</option>
-                    <option value="GUDANG_POS">POS Kasir & Logistik</option>
-                    <option value="MEDIA_KREATIF">Media Kreatif (Zeey Studio)</option>
+                    <option value="OPERASIONAL">OPERASIONAL (Homestay & Tamu)</option>
+                    <option value="KEUANGAN">KEUANGAN (SIK-REP Pembukuan)</option>
+                    <option value="GUDANG_POS">GUDANG_POS (Kasir & Suvenir)</option>
+                    <option value="MEDIA_KREATIF">MEDIA_KREATIF (Zeestudio)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Status Operasional</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Status Sistem</label>
                   <select
                     value={appStatus}
                     onChange={(e) => setAppStatus(e.target.value as AppStatus)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
                   >
-                    <option value="ONLINE">ONLINE (Aktif Live)</option>
-                    <option value="MAINTENANCE">MAINTENANCE (Perawatan)</option>
-                    <option value="UPDATED">UPDATED (Versi Baru)</option>
+                    <option value="ONLINE">ONLINE (Aktif)</option>
+                    <option value="MAINTENANCE">MAINTENANCE (Pemeliharaan)</option>
                     <option value="OFFLINE">OFFLINE (Nonaktif)</option>
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Deskripsi Singkat</label>
-                <textarea
-                  rows={2}
-                  value={appDescription}
-                  onChange={(e) => setAppDescription(e.target.value)}
-                  placeholder="Keterangan fungsi aplikasi..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none resize-none"
-                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAppModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Simpan Aplikasi
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL TAMBAH STAF WHITELIST MANUAL ================= */}
-      {showAddUserModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl glass-panel bg-[#091e16] border-t-2 sm:border-2 border-purple-500/40 shadow-2xl p-6 pb-safe-bottom overflow-hidden max-h-[92dvh] overflow-y-auto">
-            <PapuanBorderCorner />
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-purple-400" />
-                <span>Tambah Staf ke Whitelist Manual</span>
-              </h3>
-              <button onClick={() => setShowAddUserModal(false)} className="p-1.5 rounded-lg text-slate-300 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddUser} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Nama Staf</label>
-                <input
-                  type="text"
-                  required
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  placeholder="misal: Johanes Kambu"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Email Staf</label>
-                <input
-                  type="email"
-                  required
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                  placeholder="staf@gmail.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Role / Peran</label>
-                  <select
-                    value={newUserRole}
-                    onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
-                  >
-                    <option value="OPERATIONAL">Staf Operasional</option>
-                    <option value="FINANCE_WAREHOUSE">Staf Keuangan/Gudang</option>
-                    <option value="EXECUTIVE">Pengurus Yayasan</option>
-                    <option value="IT_ADMIN">IT Admin</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Divisi Kerja</label>
-                  <input
-                    type="text"
-                    value={newUserDept}
-                    onChange={(e) => setNewUserDept(e.target.value)}
-                    placeholder="Frontdesk / Cafe"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-purple-500/30 text-base sm:text-xs text-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowAddUserModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold"
-                >
-                  Daftarkan Staf
                 </button>
               </div>
             </form>
