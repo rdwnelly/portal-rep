@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import {
   CalendarDays,
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getAppsList, getNotices } from '@/lib/storage';
+import { INITIAL_APPS, INITIAL_NOTICES } from '@/lib/seed-data';
 import { AppItem, NoticeItem } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import PWAInstallModal from '@/components/PWAInstallModal';
@@ -28,9 +29,41 @@ import RequestAccessModal from '@/components/RequestAccessModal';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
 import AdminLoginModal from '@/components/AdminLoginModal';
 
+let cachedApps: AppItem[] = INITIAL_APPS;
+let cachedNotices: NoticeItem[] = INITIAL_NOTICES;
+
+function subscribeStorage(callback: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  cachedApps = getAppsList();
+  cachedNotices = getNotices();
+  
+  const handler = () => {
+    cachedApps = getAppsList();
+    cachedNotices = getNotices();
+    callback();
+  };
+
+  window.addEventListener('portal_rep_storage_update', handler);
+  window.addEventListener('storage', handler);
+  return () => {
+    window.removeEventListener('portal_rep_storage_update', handler);
+    window.removeEventListener('storage', handler);
+  };
+}
+
 export default function AppsCatalogPage() {
-  const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : []));
-  const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : []));
+  const apps = useSyncExternalStore(
+    subscribeStorage,
+    () => (typeof window !== 'undefined' ? cachedApps : INITIAL_APPS),
+    () => INITIAL_APPS
+  );
+
+  const notices = useSyncExternalStore(
+    subscribeStorage,
+    () => (typeof window !== 'undefined' ? cachedNotices : INITIAL_NOTICES),
+    () => INITIAL_NOTICES
+  );
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
@@ -46,18 +79,8 @@ export default function AppsCatalogPage() {
   // Active App Detail Modal
   const [activeAppDrawer, setActiveAppDrawer] = useState<AppItem | null>(null);
 
-  useEffect(() => {
-    const handleStorageUpdate = () => {
-      setApps(getAppsList());
-      setNotices(getNotices());
-    };
-
-    window.addEventListener('portal_rep_storage_update', handleStorageUpdate);
-    return () => window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
-  }, []);
-
-  const currentApps = apps.length > 0 ? apps : getAppsList();
-  const currentNotices = notices.length > 0 ? notices : getNotices();
+  const currentApps = apps;
+  const currentNotices = notices;
 
   const filteredApps = currentApps.filter((app) => {
     const matchesSearch =

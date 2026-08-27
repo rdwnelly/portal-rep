@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getAppsList, getNotices } from '@/lib/storage';
+import { INITIAL_APPS, INITIAL_NOTICES } from '@/lib/seed-data';
 import { AppItem, NoticeItem } from '@/lib/types';
 import { useAuth } from '@/lib/auth-context';
 import Navbar from '@/components/Navbar';
@@ -27,11 +28,43 @@ import PWAInstallBanner from '@/components/PWAInstallBanner';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
 import RequestAccessModal from '@/components/RequestAccessModal';
 
+let cachedApps: AppItem[] = INITIAL_APPS;
+let cachedNotices: NoticeItem[] = INITIAL_NOTICES;
+
+function subscribeStorage(callback: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  cachedApps = getAppsList();
+  cachedNotices = getNotices();
+  
+  const handler = () => {
+    cachedApps = getAppsList();
+    cachedNotices = getNotices();
+    callback();
+  };
+
+  window.addEventListener('portal_rep_storage_update', handler);
+  window.addEventListener('storage', handler);
+  return () => {
+    window.removeEventListener('portal_rep_storage_update', handler);
+    window.removeEventListener('storage', handler);
+  };
+}
+
 export default function OpenPortalHomePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : []));
-  const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : []));
+  
+  const apps = useSyncExternalStore(
+    subscribeStorage,
+    () => (typeof window !== 'undefined' ? cachedApps : INITIAL_APPS),
+    () => INITIAL_APPS
+  );
+
+  const notices = useSyncExternalStore(
+    subscribeStorage,
+    () => (typeof window !== 'undefined' ? cachedNotices : INITIAL_NOTICES),
+    () => INITIAL_NOTICES
+  );
 
   // Modals state
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
@@ -49,16 +82,6 @@ export default function OpenPortalHomePage() {
   const [monthYear, setMonthYear] = useState({ month: 'AGU', year: '2026' });
   const [timeWIT, setTimeWIT] = useState('08.42');
   const [greetingText, setGreetingText] = useState('Selamat pagi,');
-
-  useEffect(() => {
-    const handleStorageUpdate = () => {
-      setApps(getAppsList());
-      setNotices(getNotices());
-    };
-
-    window.addEventListener('portal_rep_storage_update', handleStorageUpdate);
-    return () => window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
-  }, []);
 
   // Update Live WIT Time and Date
   useEffect(() => {
@@ -264,10 +287,10 @@ export default function OpenPortalHomePage() {
           <div className="flex items-end justify-between gap-4 pt-1">
             {/* Left Greeting Text */}
             <div className="space-y-1">
-              <p className="text-[11px] font-bold tracking-wider text-emerald-200/90 uppercase font-mono">
+              <p suppressHydrationWarning className="text-[11px] font-bold tracking-wider text-emerald-200/90 uppercase font-mono">
                 {dateHeader}
               </p>
-              <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight leading-tight">
+              <h1 suppressHydrationWarning className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight leading-tight">
                 {greetingText}{' '}
                 <span className="font-serif italic font-normal text-[#e5a93c] drop-shadow-sm">
                   {userGreetingName}
@@ -279,7 +302,7 @@ export default function OpenPortalHomePage() {
             </div>
 
             {/* Right Compact Calendar Widget */}
-            <div className="flex items-center gap-3 border-l border-emerald-600/40 pl-4 sm:pl-6 shrink-0 pb-1">
+            <div suppressHydrationWarning className="flex items-center gap-3 border-l border-emerald-600/40 pl-4 sm:pl-6 shrink-0 pb-1">
               <span className="text-4xl sm:text-5xl font-serif font-black text-white leading-none tracking-tight">
                 {dayNumber}
               </span>
@@ -321,7 +344,7 @@ export default function OpenPortalHomePage() {
             <h2 className="text-sm sm:text-base font-black text-stone-900 dark:text-white line-clamp-1 group-hover:text-[#11382b] dark:group-hover:text-amber-300 transition-colors mt-0.5">
               {latestNotice.title}
             </h2>
-            <p className="text-xs text-stone-500 dark:text-stone-300 line-clamp-1 mt-0.5">
+            <p suppressHydrationWarning className="text-xs text-stone-500 dark:text-stone-300 line-clamp-1 mt-0.5">
               {latestNotice.id === 'default-notice'
                 ? latestNotice.content
                 : `${new Date(latestNotice.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIT · ${latestNotice.category}`}
@@ -422,7 +445,7 @@ export default function OpenPortalHomePage() {
             <span>Sistem berjalan normal</span>
           </div>
 
-          <span className="text-[11px] text-stone-500 dark:text-stone-400 font-mono">
+          <span suppressHydrationWarning className="text-[11px] text-stone-500 dark:text-stone-400 font-mono">
             Terakhir diperbarui {timeWIT} WIT
           </span>
         </div>
