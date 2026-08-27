@@ -603,9 +603,9 @@ export default function Navbar({ onOpenPwaModal, hideHeaderOnHome = false }: Nav
 
           {/* 2. Aplikasi */}
           <Link
-            href="/#pusat-aplikasi"
+            href="/apps"
             className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl transition-all duration-200 ${
-              pathname.includes('#pusat-aplikasi') || pathname === '/dashboard'
+              pathname === '/apps' || pathname === '/dashboard'
                 ? 'text-[#11382b] dark:text-amber-400 font-extrabold'
                 : 'text-stone-400 hover:text-stone-600 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
             }`}

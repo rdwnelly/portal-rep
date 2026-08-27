@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Landmark,
-  Search,
   ExternalLink,
   Sparkles,
   Check,
@@ -16,8 +15,7 @@ import {
   CalendarDays,
   Wallet,
   Store,
-  X,
-  SlidersHorizontal
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getAppsList, getNotices } from '@/lib/storage';
@@ -34,9 +32,6 @@ export default function OpenPortalHomePage() {
   const { user } = useAuth();
   const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : []));
   const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : []));
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   // Modals state
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
@@ -135,18 +130,6 @@ export default function OpenPortalHomePage() {
 
   const currentApps = apps.length > 0 ? apps : getAppsList();
   const currentNotices = notices.length > 0 ? notices : getNotices();
-
-  const filteredApps = currentApps.filter((app) => {
-    const matchesSearch =
-      app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.shortCode.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesCategory =
-      selectedCategory === 'ALL' || app.category === selectedCategory;
-
-    return matchesSearch && matchesCategory;
-  });
 
   const handleLaunchClick = (url: string) => {
     if (typeof window !== 'undefined') {
@@ -365,58 +348,19 @@ export default function OpenPortalHomePage() {
             </h2>
           </div>
 
-          {/* Action: Filter & Search Trigger */}
-          <button
-            type="button"
-            onClick={() => setShowFilterDrawer(!showFilterDrawer)}
+          {/* Action: Lihat semua -> Buka Halaman Grid 2 Kolom /apps */}
+          <Link
+            href="/apps"
             className="text-xs sm:text-sm font-bold text-[#b45309] dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
           >
-            <span>{showFilterDrawer ? 'Tutup Filter' : 'Lihat semua'}</span>
-            <SlidersHorizontal className="w-3.5 h-3.5 ml-0.5" />
-          </button>
+            <span>Lihat semua</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
-
-        {/* Optional Search & Category Filters (Expandable) */}
-        {showFilterDrawer && (
-          <div className="mb-5 p-4 rounded-2xl bg-white dark:bg-[#0c241b] border border-stone-200 dark:border-amber-500/30 shadow-md animate-in fade-in slide-in-from-top-2">
-            <div className="relative w-full mb-3">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari sistem / modul..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-stone-50 dark:bg-[#06160f] border border-stone-200 dark:border-amber-500/20 text-xs text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none focus:border-[#11382b]"
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {[
-                { id: 'ALL', label: 'Semua' },
-                { id: 'OPERASIONAL', label: 'Homestay' },
-                { id: 'KEUANGAN', label: 'Keuangan' },
-                { id: 'GUDANG_POS', label: 'Kasir & Gudang' },
-                { id: 'MEDIA_KREATIF', label: 'Media' },
-              ].map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-[#11382b] text-white shadow-sm'
-                      : 'bg-stone-100 dark:bg-[#0a1e16] text-stone-600 dark:text-slate-300 hover:bg-stone-200'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Numbered Vertical Cards List */}
         <div className="space-y-3">
-          {filteredApps.map((app, index) => {
+          {currentApps.map((app, index) => {
             const meta = getItemMetadata(index, app);
             const IconComp = meta.icon;
 
