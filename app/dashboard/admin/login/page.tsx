@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
   Mail,
@@ -20,6 +21,7 @@ import { PapuanBorderCorner } from '@/components/PapuanMotif';
 import Navbar from '@/components/Navbar';
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const { loginWithEmailPassword, isLoading, authError, clearAuthError } = useAuth();
   
   const [email, setEmail] = useState('');
@@ -44,11 +46,10 @@ export default function AdminLoginPage() {
           particleCount: 50,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#e5a93c', '#0f382a', '#10b981', '#a855f7'],
+          colors: ['#e5a93c', '#113527', '#10b981', '#a855f7'],
         });
       }
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.href = '/dashboard/admin';
+      router.push('/dashboard/admin');
     }
   };
 

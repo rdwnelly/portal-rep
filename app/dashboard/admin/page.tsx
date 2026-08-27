@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useSyncExternalStore } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
   getWhitelist,
@@ -18,8 +20,10 @@ import {
   getAccessRequests,
   resolveAccessRequest,
   getFoundationInfo,
-  updateFoundationInfo
+  updateFoundationInfo,
+  INITIAL_FOUNDATION_INFO
 } from '@/lib/storage';
+import { INITIAL_APPS, INITIAL_NOTICES, INITIAL_WHITELIST } from '@/lib/seed-data';
 import {
   WhitelistedUser,
   AppItem,
@@ -35,7 +39,6 @@ import {
 import Navbar from '@/components/Navbar';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
-import Link from 'next/link';
 import {
   ShieldCheck,
   Bell,
@@ -72,6 +75,7 @@ import { PapuanBorderCorner } from '@/components/PapuanMotif';
 const subscribeClient = () => () => {};
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const {
     user,
     isInitialized,
@@ -92,11 +96,10 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'NOTICES' | 'APPS' | 'INFO' | 'REQUESTS' | 'WHITELIST'>('NOTICES');
 
   // Data States
-  const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : []));
-  const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : []));
-  const [info, setInfo] = useState<FoundationInfo>(() => (typeof window !== 'undefined' ? getFoundationInfo() : getFoundationInfo()));
+  const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : INITIAL_NOTICES));
+  const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : INITIAL_APPS));
   const [requests, setRequests] = useState<AccessRequest[]>(() => (typeof window !== 'undefined' ? getAccessRequests() : []));
-  const [whitelist, setWhitelist] = useState<WhitelistedUser[]>(() => (typeof window !== 'undefined' ? getWhitelist() : []));
+  const [whitelist, setWhitelist] = useState<WhitelistedUser[]>(() => (typeof window !== 'undefined' ? getWhitelist() : INITIAL_WHITELIST));
 
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
@@ -124,7 +127,7 @@ export default function AdminDashboardPage() {
   const [appBadgeText, setAppBadgeText] = useState('');
 
   // Form States: Kelola Informasi Yayasan
-  const [infoForm, setInfoForm] = useState<FoundationInfo>(info);
+  const [infoForm, setInfoForm] = useState<FoundationInfo>(() => (typeof window !== 'undefined' ? getFoundationInfo() : INITIAL_FOUNDATION_INFO));
   const [infoSavedSuccess, setInfoSavedSuccess] = useState(false);
 
   // Form States: Tambah Whitelist
@@ -137,9 +140,7 @@ export default function AdminDashboardPage() {
   const loadData = () => {
     setNotices(getNotices());
     setApps(getAppsList());
-    const loadedInfo = getFoundationInfo();
-    setInfo(loadedInfo);
-    setInfoForm(loadedInfo);
+    setInfoForm(getFoundationInfo());
     setRequests(getAccessRequests());
     setWhitelist(getWhitelist());
   };
@@ -180,11 +181,10 @@ export default function AdminDashboardPage() {
             particleCount: 50,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#e5a93c', '#0f382a', '#10b981', '#a855f7'],
+            colors: ['#e5a93c', '#113527', '#10b981', '#a855f7'],
           });
-          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-          window.location.href = '/dashboard/admin';
         }
+        router.push('/dashboard/admin');
       }
     };
 
@@ -503,27 +503,27 @@ export default function AdminDashboardPage() {
       <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
       {/* Main Admin View with safe mobile bottom spacing */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 pb-32 md:pb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 pb-36 md:pb-12">
         {/* Admin Header Banner */}
-        <div className="relative rounded-3xl overflow-hidden border-2 border-purple-500/30 shadow-2xl bg-gradient-to-r from-[#140b24] via-[#0e1e17] to-[#071711] p-5 sm:p-8 mb-6 sm:mb-8">
+        <div className="relative rounded-3xl overflow-hidden border-2 border-amber-500/30 shadow-2xl bg-gradient-to-r from-[#0d281e] via-[#11382b] to-[#091f16] p-5 sm:p-8 mb-6 sm:mb-8">
           <PapuanBorderCorner />
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-xs font-bold mb-2">
-                <ShieldCheck className="w-4 h-4 text-purple-400" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold mb-2 shadow-sm">
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
                 <span>Panel Kontrol Administrator Yayasan</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white">
+              <h1 className="text-2xl sm:text-3xl font-serif font-black text-white tracking-tight">
                 Kelola Portal Rumah Etnik Papua
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1">
+              <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
                 Administrator Aktif: <strong className="text-amber-400">{currentAdminName}</strong>
               </p>
             </div>
 
             <Link
               href="/"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#091e16] hover:bg-[#0d2b1f] border border-amber-500/30 text-amber-200 hover:text-white text-xs font-bold transition-all shadow-md active:scale-95"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Kembali ke Beranda Portal</span>
