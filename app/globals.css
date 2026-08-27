@@ -2,17 +2,23 @@
 
 @theme {
   --font-sans: var(--font-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
   --background: #07130f;
   --foreground: #f4f6f5;
-  --primary-emerald: #0f382a;
+  --primary-emerald: #11382b;
   --accent-gold: #e5a93c;
-  --accent-wood: #c28844;
+  --accent-copper: #c28844;
+  --bg-ivory: #f6f4ee;
   --card-bg: rgba(15, 34, 27, 0.85);
   --card-border: rgba(229, 169, 60, 0.2);
+}
+
+.font-serif {
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
 html {

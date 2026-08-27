@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider } from '@/lib/theme-context';
@@ -9,6 +9,13 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-jakarta',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['600', '700', '800', '900'],
+  style: ['normal', 'italic'],
+  variable: '--font-playfair',
 });
 
 export const metadata: Metadata = {
@@ -45,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${jakarta.variable} font-sans dark`}>
+    <html lang="id" className={`${jakarta.variable} ${playfair.variable} font-sans dark`}>
       <body className="min-h-screen flex flex-col bg-[#07130f] text-slate-100 antialiased selection:bg-amber-500 selection:text-black transition-colors duration-300">
         <ThemeProvider>
           <AuthProvider>
