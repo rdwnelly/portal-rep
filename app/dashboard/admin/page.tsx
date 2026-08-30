@@ -18,9 +18,30 @@ import {
   resolveAccessRequest,
   getFoundationInfo,
   updateFoundationInfo,
-  INITIAL_FOUNDATION_INFO
+  INITIAL_FOUNDATION_INFO,
+  getEvents,
+  addEvent,
+  updateEvent,
+  deleteEvent,
+  getDocuments,
+  addDocument,
+  updateDocument,
+  deleteDocument,
+  getWhitelist,
+  addWhitelistedUser,
+  updateWhitelistedUser,
+  removeWhitelistedUser,
+  getAuditLogs,
+  resetToDefaults
 } from '@/lib/storage';
-import { INITIAL_APPS, INITIAL_NOTICES } from '@/lib/seed-data';
+import {
+  INITIAL_APPS,
+  INITIAL_NOTICES,
+  INITIAL_EVENTS,
+  INITIAL_DOCUMENTS,
+  INITIAL_WHITELIST,
+  INITIAL_LOGS
+} from '@/lib/seed-data';
 import {
   AppItem,
   NoticeItem,
@@ -30,13 +51,23 @@ import {
   AppStatus,
   AppCategory,
   NoticeCategory,
-  NoticePriority
+  NoticePriority,
+  CalendarEvent,
+  FoundationDocument,
+  WhitelistedUser,
+  AuditLog
 } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
+import CreateEventModal from '@/components/CreateEventModal';
+import EventDetailModal, { getCategoryBadge } from '@/components/EventDetailModal';
+import CreateDocumentModal from '@/components/CreateDocumentModal';
+import DocumentDetailModal, { getDocCategoryInfo, getDocFileBadge } from '@/components/DocumentDetailModal';
+import RequestAccessModal from '@/components/RequestAccessModal';
 import {
   ShieldCheck,
+  ShieldAlert,
   Bell,
   Link2,
   Info,
@@ -58,12 +89,90 @@ import {
   Lock,
   AlertTriangle,
   ArrowRight,
-  MessageCircle
+  MessageCircle,
+  CalendarDays,
+  HardDrive,
+  FileText,
+  FolderOpen,
+  Users,
+  UserCheck,
+  UserX,
+  History,
+  Terminal,
+  RotateCcw,
+  Activity,
+  Cpu,
+  Fingerprint,
+  UserPlus,
+  Search,
+  Filter
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
 
 const subscribeClient = () => () => {};
+
+type AdminTab =
+  | 'NOTICES'
+  | 'EVENTS'
+  | 'DOCUMENTS'
+  | 'WHITELIST'
+  | 'REQUESTS'
+  | 'APPS'
+  | 'INFO'
+  | 'LOGS'
+  | 'SYSTEM';
+
+const ROLE_PERMISSIONS: Record<
+  UserRole,
+  {
+    label: string;
+    badgeColor: string;
+    allowedTabs: AdminTab[];
+    description: string;
+  }
+> = {
+  IT_ADMIN: {
+    label: 'IT Superadmin',
+    badgeColor: 'bg-purple-950 text-purple-300 border-purple-500/40',
+    allowedTabs: [
+      'NOTICES',
+      'EVENTS',
+      'DOCUMENTS',
+      'WHITELIST',
+      'REQUESTS',
+      'APPS',
+      'INFO',
+      'LOGS',
+      'SYSTEM',
+    ],
+    description: 'Akses penuh ke seluruh konfigurasi sistem, database, dan manajemen hak akses karyawan.',
+  },
+  EXECUTIVE: {
+    label: 'Manajemen Eksekutif / Pimpinan',
+    badgeColor: 'bg-amber-950 text-amber-300 border-amber-500/40',
+    allowedTabs: ['NOTICES', 'EVENTS', 'DOCUMENTS', 'REQUESTS', 'INFO'],
+    description: 'Akses pengawasan menyeluruh, otorisasi pengumuman, agenda resmi, dan persetujuan staf.',
+  },
+  OPERATIONAL: {
+    label: 'Staf Operasional & Frontdesk',
+    badgeColor: 'bg-teal-950 text-teal-300 border-teal-500/40',
+    allowedTabs: ['NOTICES', 'EVENTS', 'DOCUMENTS'],
+    description: 'Akses terbatas ke jadwal agenda budaya dan panduan SOP operasional homestay.',
+  },
+  FINANCE_WAREHOUSE: {
+    label: 'Staf Keuangan & Logistik (OMG)',
+    badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-500/40',
+    allowedTabs: ['NOTICES', 'DOCUMENTS'],
+    description: 'Akses terbatas ke arsip dokumen keuangan SIK-REP dan SOP kasir / pergudangan.',
+  },
+  UNAUTHORIZED: {
+    label: 'Belum Terdaftar / Tamu',
+    badgeColor: 'bg-stone-900 text-stone-300 border-stone-600/40',
+    allowedTabs: ['NOTICES'],
+    description: 'Akses publik umum.',
+  },
+};
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -73,27 +182,50 @@ export default function AdminDashboardPage() {
     loginWithEmailPassword,
     isLoading: isAuthLoading,
     authError,
-    clearAuthError
+    clearAuthError,
   } = useAuth();
   const isClient = useSyncExternalStore(subscribeClient, () => true, () => false);
 
-  // Login form state for unauthenticated admin access
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPass, setLoginPass] = useState('');
-  const [showLoginPass, setShowLoginPass] = useState(false);
-  const [loginLocalError, setLoginLocalError] = useState('');
+  // Active Role Simulation (Defaults to user's role or IT_ADMIN if not logged in for dev convenience)
+  const actualRole: UserRole = user ? user.role : 'IT_ADMIN';
+  const [simulatedRole, setSimulatedRole] = useState<UserRole>(actualRole);
 
-  // 4 Core Admin Tabs: NOTICES, APPS, INFO, REQUESTS
-  const [activeTab, setActiveTab] = useState<'NOTICES' | 'APPS' | 'INFO' | 'REQUESTS'>('NOTICES');
+  useEffect(() => {
+    if (user) {
+      setSimulatedRole(user.role);
+    }
+  }, [user]);
 
-  // Data States
-  const [notices, setNotices] = useState<NoticeItem[]>(() => (typeof window !== 'undefined' ? getNotices() : INITIAL_NOTICES));
-  const [apps, setApps] = useState<AppItem[]>(() => (typeof window !== 'undefined' ? getAppsList() : INITIAL_APPS));
-  const [requests, setRequests] = useState<AccessRequest[]>(() => (typeof window !== 'undefined' ? getAccessRequests() : []));
+  // Tab State
+  const [activeTab, setActiveTab] = useState<AdminTab>('NOTICES');
+
+  // Data States (Initialized identically with seed data for SSR safety, updated in useEffect)
+  const [notices, setNotices] = useState<NoticeItem[]>(INITIAL_NOTICES);
+  const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);
+  const [documents, setDocuments] = useState<FoundationDocument[]>(INITIAL_DOCUMENTS);
+  const [whitelist, setWhitelist] = useState<WhitelistedUser[]>(INITIAL_WHITELIST);
+  const [apps, setApps] = useState<AppItem[]>(INITIAL_APPS);
+  const [requests, setRequests] = useState<AccessRequest[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_LOGS);
 
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
+  const [requestAccessModalOpen, setRequestAccessModalOpen] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [copiedReqId, setCopiedReqId] = useState<string | null>(null);
+
+  // Search & Filter for Whitelist
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [staffDeptFilter, setStaffDeptFilter] = useState('ALL');
+
+  // Form States: Kelola Dokumen
+  const [showDocModal, setShowDocModal] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<FoundationDocument | null>(null);
+  const [selectedDocForDetail, setSelectedDocForDetail] = useState<FoundationDocument | null>(null);
+
+  // Form States: Kelola Agenda
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
 
   // Form States: Kelola Notifikasi
   const [showNoticeModal, setShowNoticeModal] = useState(false);
@@ -117,164 +249,37 @@ export default function AdminDashboardPage() {
   const [appBadgeText, setAppBadgeText] = useState('');
 
   // Form States: Kelola Informasi Yayasan
-  const [infoForm, setInfoForm] = useState<FoundationInfo>(() => (typeof window !== 'undefined' ? getFoundationInfo() : INITIAL_FOUNDATION_INFO));
+  const [infoForm, setInfoForm] = useState<FoundationInfo>(INITIAL_FOUNDATION_INFO);
   const [infoSavedSuccess, setInfoSavedSuccess] = useState(false);
 
+  // Form States: Tambah Karyawan Whitelist
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [staffName, setStaffName] = useState('');
+  const [staffEmail, setStaffEmail] = useState('');
+  const [staffRole, setStaffRole] = useState<UserRole>('OPERATIONAL');
+  const [staffRoleTitle, setStaffRoleTitle] = useState('Staf Operasional Homestay');
+  const [staffDepartment, setStaffDepartment] = useState('Frontdesk & Homestay Etnik');
+
   const loadData = () => {
+    if (typeof window === 'undefined') return;
     setNotices(getNotices());
+    setEvents(getEvents());
+    setDocuments(getDocuments());
+    setWhitelist(getWhitelist());
     setApps(getAppsList());
     setInfoForm(getFoundationInfo());
     setRequests(getAccessRequests());
+    setAuditLogs(getAuditLogs());
   };
 
   useEffect(() => {
-    const handleStorageUpdate = () => {
-      loadData();
-    };
-
-    window.addEventListener('portal_rep_storage_update', handleStorageUpdate);
-    return () => window.removeEventListener('portal_rep_storage_update', handleStorageUpdate);
+    loadData();
   }, []);
 
-  if (!isClient || !isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07130f] text-amber-400">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const currentAdminName = user ? user.displayName : 'Ridwan Elly (IT Developer)';
 
-  // Guard: Otentikasi Admin Firebase Email & Password
-  if (!user || (user.role !== 'IT_ADMIN' && user.role !== 'EXECUTIVE')) {
-    const handleGuardEmailSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setLoginLocalError('');
-      clearAuthError();
-
-      if (!loginEmail.trim() || !loginPass.trim()) {
-        setLoginLocalError('Mohon masukkan email dan kata sandi admin.');
-        return;
-      }
-
-      const success = await loginWithEmailPassword(loginEmail.trim(), loginPass);
-      if (success) {
-        if (typeof window !== 'undefined') {
-          confetti({
-            particleCount: 50,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#e5a93c', '#113527', '#10b981', '#a855f7'],
-          });
-        }
-        router.push('/dashboard/admin');
-      }
-    };
-
-    return (
-      <div className="relative min-h-[100dvh] flex flex-col bg-[#07130f] papuan-pattern-overlay text-slate-100 selection:bg-amber-500 selection:text-black">
-        <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
-
-        <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 pb-28 sm:pb-12 w-full max-w-md mx-auto my-auto">
-          <div className="relative w-full rounded-3xl glass-panel bg-[#091e16]/95 border-2 border-amber-500/40 shadow-2xl overflow-hidden p-6 sm:p-8">
-            <PapuanBorderCorner />
-
-            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
-
-            <div className="text-center mb-6 relative z-10">
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[#113527] to-[#0a2319] border-2 border-amber-400/50 text-amber-300 mx-auto flex items-center justify-center shadow-xl shadow-black/50 mb-3">
-                <ShieldCheck className="w-8 h-8 text-amber-400" />
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider mb-2">
-                <Sparkles className="w-3 h-3" />
-                <span>Otentikasi Firebase Admin</span>
-              </div>
-              <h1 className="text-2xl font-black text-white">Login Administrator</h1>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Halaman ini dilindungi. Masukkan <strong>Email & Kata Sandi Firebase</strong> Anda untuk mengakses Panel Kontrol.
-              </p>
-            </div>
-
-            {(loginLocalError || authError) && (
-              <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs flex items-start gap-2 relative z-10 animate-in fade-in duration-200">
-                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                <span className="leading-snug">{loginLocalError || authError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleGuardEmailSubmit} className="space-y-4 relative z-10">
-              <div>
-                <label className="text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Email Administrator</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="Masukkan email admin terdaftar..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Kata Sandi (Password)</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showLoginPass ? 'text' : 'password'}
-                    required
-                    value={loginPass}
-                    onChange={(e) => setLoginPass(e.target.value)}
-                    placeholder="Masukkan kata sandi Firebase"
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPass(!showLoginPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-300 p-1 cursor-pointer"
-                  >
-                    {showLoginPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isAuthLoading}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold text-xs shadow-lg shadow-amber-950/60 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-amber-400/40 disabled:opacity-50 mt-2"
-              >
-                {isAuthLoading ? (
-                  <span>Memverifikasi akun Firebase...</span>
-                ) : (
-                  <>
-                    <KeyRound className="w-4 h-4 text-amber-300" />
-                    <span>Masuk dengan Email & Password</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="text-center mt-6 relative z-10">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali ke Beranda Portal</span>
-              </Link>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  const currentAdminName = user?.displayName || 'Ridwan Elly (IT Developer)';
+  // Check if active tab is permitted for simulated role
+  const isTabAllowed = ROLE_PERMISSIONS[simulatedRole].allowedTabs.includes(activeTab);
 
   // ================= NOTICES HANDLERS =================
   const handleOpenNewNotice = () => {
@@ -312,7 +317,6 @@ export default function AdminDashboardPage() {
           category: noticeCategory,
           priority: noticePriority,
           isPinned: noticeIsPinned,
-          authorName: noticeAuthor.trim() || currentAdminName,
         },
         currentAdminName
       );
@@ -322,23 +326,145 @@ export default function AdminDashboardPage() {
         content: noticeContent.trim(),
         category: noticeCategory,
         priority: noticePriority,
-        authorName: noticeAuthor.trim() || currentAdminName,
-        authorRole: 'Admin Yayasan REP',
         isPinned: noticeIsPinned,
+        authorName: noticeAuthor.trim() || currentAdminName,
+        authorRole: 'Administrator Yayasan REP',
       });
+      if (typeof window !== 'undefined') {
+        confetti({ particleCount: 25, spread: 50, origin: { y: 0.6 } });
+      }
     }
-
-    if (typeof window !== 'undefined') {
-      confetti({ particleCount: 25, spread: 50, origin: { y: 0.6 } });
-    }
-
     setShowNoticeModal(false);
     loadData();
   };
 
   const handleDeleteNotice = (id: string, title: string) => {
-    if (confirm(`Hapus notifikasi "${title}"?`)) {
+    if (confirm(`Hapus pengumuman "${title}"?`)) {
       deleteNotice(id, currentAdminName);
+      loadData();
+    }
+  };
+
+  const handleTogglePin = (id: string) => {
+    togglePinNotice(id);
+    loadData();
+  };
+
+  // ================= EVENTS HANDLERS =================
+  const handleOpenNewEvent = () => {
+    setEditingEvent(null);
+    setShowEventModal(true);
+  };
+
+  const handleOpenEditEvent = (ev: CalendarEvent) => {
+    setEditingEvent(ev);
+    setShowEventModal(true);
+  };
+
+  const handleSaveEvent = (
+    eventData: Omit<CalendarEvent, 'id' | 'createdAt'>,
+    eventId?: string
+  ) => {
+    if (eventId) {
+      updateEvent(eventId, eventData, currentAdminName);
+    } else {
+      addEvent(eventData, currentAdminName);
+      if (typeof window !== 'undefined') {
+        confetti({ particleCount: 25, spread: 50, origin: { y: 0.6 } });
+      }
+    }
+    setShowEventModal(false);
+    loadData();
+  };
+
+  const handleDeleteEvent = (id: string, title: string) => {
+    if (confirm(`Hapus agenda "${title}"?`)) {
+      deleteEvent(id, currentAdminName);
+      loadData();
+    }
+  };
+
+  // ================= DOCUMENTS HANDLERS =================
+  const handleOpenNewDoc = () => {
+    setEditingDoc(null);
+    setShowDocModal(true);
+  };
+
+  const handleOpenEditDoc = (doc: FoundationDocument) => {
+    setEditingDoc(doc);
+    setShowDocModal(true);
+  };
+
+  const handleSaveDoc = (
+    docData: Omit<FoundationDocument, 'id' | 'lastUpdated'>,
+    docId?: string
+  ) => {
+    if (docId) {
+      updateDocument(docId, docData, currentAdminName);
+    } else {
+      addDocument(docData, currentAdminName);
+      if (typeof window !== 'undefined') {
+        confetti({ particleCount: 25, spread: 50, origin: { y: 0.6 } });
+      }
+    }
+    setShowDocModal(false);
+    loadData();
+  };
+
+  const handleDeleteDoc = (id: string, title: string) => {
+    if (confirm(`Hapus dokumen "${title}"?`)) {
+      deleteDocument(id, currentAdminName);
+      loadData();
+    }
+  };
+
+  // ================= WHITELIST HANDLERS =================
+  const handleSaveStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffEmail.trim() || !staffName.trim()) return;
+
+    addWhitelistedUser(
+      {
+        email: staffEmail.trim().toLowerCase(),
+        name: staffName.trim(),
+        role: staffRole,
+        roleTitle: staffRoleTitle.trim(),
+        department: staffDepartment.trim(),
+        active: true,
+        addedBy: currentAdminName,
+      },
+      currentAdminName
+    );
+
+    if (typeof window !== 'undefined') {
+      confetti({ particleCount: 30, spread: 60, origin: { y: 0.6 } });
+    }
+
+    setShowAddStaffModal(false);
+    setStaffEmail('');
+    setStaffName('');
+    loadData();
+  };
+
+  const handleUpdateStaffRole = (id: string, newRole: UserRole) => {
+    let roleTitle = 'Staf Yayasan';
+    if (newRole === 'EXECUTIVE') roleTitle = 'Pengurus / Pimpinan';
+    if (newRole === 'IT_ADMIN') roleTitle = 'IT Developer & Superadmin';
+    if (newRole === 'OPERATIONAL') roleTitle = 'Staf Frontdesk & Wisata';
+    if (newRole === 'FINANCE_WAREHOUSE') roleTitle = 'Staf Keuangan & Kasir OMG';
+
+    updateWhitelistedUser(id, { role: newRole, roleTitle }, currentAdminName);
+    loadData();
+  };
+
+  const handleToggleStaffActive = (id: string, currentActive: boolean) => {
+    updateWhitelistedUser(id, { active: !currentActive }, currentAdminName);
+    loadData();
+  };
+
+  const handleDeleteStaff = (id: string, name: string) => {
+    if (confirm(`Hapus karyawan "${name}" dari whitelist akses?`)) {
+      removeWhitelistedUser(id, currentAdminName);
       loadData();
     }
   };
@@ -348,23 +474,23 @@ export default function AdminDashboardPage() {
     setEditingApp(null);
     setAppTitle('');
     setAppShortCode('');
-    setAppUrl('https://');
+    setAppUrl('');
     setAppDescription('');
     setAppCategory('OPERASIONAL');
     setAppStatus('ONLINE');
-    setAppBadgeText('Modul Baru');
+    setAppBadgeText('');
     setShowAppModal(true);
   };
 
-  const handleOpenEditApp = (a: AppItem) => {
-    setEditingApp(a);
-    setAppTitle(a.title);
-    setAppShortCode(a.shortCode);
-    setAppUrl(a.url);
-    setAppDescription(a.description);
-    setAppCategory(a.category);
-    setAppStatus(a.status);
-    setAppBadgeText(a.badgeText);
+  const handleOpenEditApp = (app: AppItem) => {
+    setEditingApp(app);
+    setAppTitle(app.title);
+    setAppShortCode(app.shortCode);
+    setAppUrl(app.url);
+    setAppDescription(app.description);
+    setAppCategory(app.category);
+    setAppStatus(app.status);
+    setAppBadgeText(app.badgeText || '');
     setShowAppModal(true);
   };
 
@@ -377,7 +503,7 @@ export default function AdminDashboardPage() {
         editingApp.id,
         {
           title: appTitle.trim(),
-          shortCode: appShortCode.trim().toUpperCase() || 'APP',
+          shortCode: appShortCode.trim(),
           url: appUrl.trim(),
           description: appDescription.trim(),
           category: appCategory,
@@ -390,62 +516,73 @@ export default function AdminDashboardPage() {
       addAppItem(
         {
           title: appTitle.trim(),
-          shortCode: appShortCode.trim().toUpperCase() || 'APP',
-          description: appDescription.trim() || 'Modul sistem terintegrasi Yayasan Rumah Etnik Papua.',
-          category: appCategory,
-          iconName: appCategory === 'OPERASIONAL' ? 'BedDouble' : appCategory === 'KEUANGAN' ? 'Landmark' : appCategory === 'GUDANG_POS' ? 'ShoppingBag' : 'Camera',
+          shortCode: appShortCode.trim() || 'APP',
           url: appUrl.trim(),
+          description: appDescription.trim(),
+          category: appCategory,
           status: appStatus,
+          iconName: 'LayoutGrid',
           allowedRoles: ['EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE', 'IT_ADMIN'],
-          badgeText: appBadgeText.trim() || 'Live Vercel',
+          badgeText: appBadgeText.trim() || 'Sub-Aplikasi',
           colorTheme: {
-            from: 'from-amber-700',
-            to: 'to-amber-950',
-            accent: 'text-amber-400',
-            border: 'border-amber-500/30',
+            from: 'from-emerald-700',
+            to: 'to-emerald-900',
+            accent: 'text-emerald-400',
+            border: 'border-emerald-500/30',
           },
         },
         currentAdminName
       );
+      if (typeof window !== 'undefined') {
+        confetti({ particleCount: 25, spread: 50, origin: { y: 0.6 } });
+      }
     }
-
-    if (typeof window !== 'undefined') {
-      confetti({ particleCount: 25, spread: 50, origin: { y: 0.6 } });
-    }
-
     setShowAppModal(false);
     loadData();
   };
 
   const handleDeleteApp = (id: string, title: string) => {
-    if (confirm(`Hapus aplikasi "${title}" dari portal?`)) {
+    if (confirm(`Hapus modul aplikasi "${title}"?`)) {
       deleteAppItem(id, currentAdminName);
       loadData();
     }
   };
 
-  // ================= INFO HANDLERS =================
-  const handleSaveFoundationInfo = (e: React.FormEvent) => {
+  // ================= INFO HANDLER =================
+  const handleSaveInfo = (e: React.FormEvent) => {
     e.preventDefault();
     updateFoundationInfo(infoForm, currentAdminName);
     setInfoSavedSuccess(true);
     setTimeout(() => setInfoSavedSuccess(false), 3000);
-    if (typeof window !== 'undefined') {
-      confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
-    }
     loadData();
   };
 
   // ================= REQUESTS HANDLERS =================
-  const handleResolveRequest = (req: AccessRequest, status: 'APPROVED' | 'REJECTED') => {
-    const role: UserRole = req.department.includes('Keuangan')
-      ? 'FINANCE_WAREHOUSE'
-      : req.department.includes('Manajemen') || req.department.includes('Pengurus')
-      ? 'EXECUTIVE'
-      : 'OPERATIONAL';
-
-    resolveAccessRequest(req.id, status, currentAdminName, role);
+  const handleApproveRequest = (r: AccessRequest) => {
+    resolveAccessRequest(
+      r.id,
+      'APPROVED',
+      currentAdminName,
+      'OPERATIONAL',
+      'Disetujui oleh Administrator Portal'
+    );
     loadData();
+    if (typeof window !== 'undefined') {
+      confetti({ particleCount: 30, spread: 60, origin: { y: 0.6 } });
+    }
+  };
+
+  const handleRejectRequest = (r: AccessRequest) => {
+    if (confirm(`Tolak permohonan akses dari ${r.name}?`)) {
+      resolveAccessRequest(
+        r.id,
+        'REJECTED',
+        currentAdminName,
+        undefined,
+        'Ditolak: Hubungi IT Helpdesk'
+      );
+      loadData();
+    }
   };
 
   const handleCopyWaMessage = (r: AccessRequest) => {
@@ -455,620 +592,1198 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedReqId(null), 2000);
   };
 
+  // Filtered Whitelist
+  const filteredWhitelist = whitelist.filter((u) => {
+    const matchSearch =
+      u.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+      u.department.toLowerCase().includes(staffSearchQuery.toLowerCase());
+    const matchDept = staffDeptFilter === 'ALL' || u.department === staffDeptFilter;
+    return matchSearch && matchDept;
+  });
+
+  const departmentList = Array.from(new Set(whitelist.map((u) => u.department)));
+
   return (
     <div className="relative min-h-screen flex flex-col justify-between bg-[#07130f] papuan-pattern-overlay text-slate-100 selection:bg-amber-500 selection:text-black">
-      {/* Navbar */}
+      {/* Top Navbar */}
       <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} />
 
-      {/* Main Admin View with safe mobile bottom spacing */}
+      {/* Main Admin Command Center View */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1 pb-36 md:pb-12">
-        {/* Admin Header Banner */}
-        <div className="relative rounded-3xl overflow-hidden border-2 border-amber-500/30 shadow-2xl bg-gradient-to-r from-[#0d281e] via-[#11382b] to-[#091f16] p-5 sm:p-8 mb-6 sm:mb-8">
-          <PapuanBorderCorner />
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold mb-2 shadow-sm">
+        {/* ========================================================================= */}
+        {/* 1. COMMAND CENTER TELEMETRY & BANNER (DISTINCTIVE HIGH-TECH ETHNIC LOOK)  */}
+        {/* ========================================================================= */}
+        <div className="relative rounded-3xl overflow-hidden border-2 border-amber-500/40 shadow-2xl bg-gradient-to-r from-[#06140e] via-[#0d281e] to-[#11382b] p-5 sm:p-7 mb-6">
+          <PapuanBorderCorner position="top-right" />
+          <PapuanBorderCorner position="bottom-left" />
+
+          {/* Telemetry Status Strip */}
+          <div className="relative z-10 flex items-center justify-between gap-2 flex-wrap pb-4 border-b border-amber-500/20 mb-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
+              <span className="text-[11px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                PORTAL CONTROL NODE • SORONG (WIT / UTC+9)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+              <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-700 text-amber-300">
+                SSL 256-Bit
+              </span>
+              <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-700 text-emerald-400">
+                System: 99.8% Online
+              </span>
+            </div>
+          </div>
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold shadow-sm">
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span>Panel Kontrol Administrator Yayasan</span>
+                <span>Panel Kontrol Administrator & Otorisasi Karyawan</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-serif font-black text-white tracking-tight">
-                Kelola Portal Rumah Etnik Papua
+                Pusat Kendali Portal REP
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
-                Administrator Aktif: <strong className="text-amber-400">{currentAdminName}</strong>
+              <p className="text-xs sm:text-sm text-slate-300">
+                Administrator: <strong className="text-amber-400">{currentAdminName}</strong> • Hak Akses Nyata: <span className="font-mono text-emerald-300 font-bold">[{actualRole}]</span>
               </p>
             </div>
 
-            <Link
-              href="/"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#091e16] hover:bg-[#0d2b1f] border border-amber-500/30 text-amber-200 hover:text-white text-xs font-bold transition-all shadow-md active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Kembali ke Beranda Portal</span>
-            </Link>
+            {/* Role Simulation Switcher for Testing Access Controls */}
+            <div className="p-3 rounded-2xl bg-[#06140e]/90 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center gap-2.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <Fingerprint className="w-4 h-4 text-amber-400 shrink-0" />
+                <div className="text-left">
+                  <p className="text-[10px] font-bold text-amber-400 uppercase">Simulasi Role Karyawan</p>
+                  <p className="text-xs text-slate-300 font-semibold">{ROLE_PERMISSIONS[simulatedRole].label}</p>
+                </div>
+              </div>
+
+              <select
+                value={simulatedRole}
+                onChange={(e) => setSimulatedRole(e.target.value as UserRole)}
+                className="px-3 py-1.5 rounded-xl bg-[#0a2319] border border-amber-500/30 text-xs text-white font-bold focus:outline-none focus:border-amber-400 cursor-pointer"
+                title="Pilih role untuk menguji tampilan dashboard sesuai hak akses karyawan"
+              >
+                <option value="IT_ADMIN">👨‍💻 IT Superadmin (Semua Akses)</option>
+                <option value="EXECUTIVE">👑 Pimpinan / Eksekutif</option>
+                <option value="OPERATIONAL">🏡 Staf Operasional & Homestay</option>
+                <option value="FINANCE_WAREHOUSE">💰 Staf Keuangan & Gudang OMG</option>
+                <option value="UNAUTHORIZED">🔒 Belum Terdaftar (Tamu)</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* 4 CORE ADMIN TABS: NOTIFIKASI, LINK APLIKASI, INFORMASI, PERMOHONAN AKSES */}
+        {/* 2. COMMAND CENTER TABS WITH PERMISSION BADGES                             */}
         {/* ========================================================================= */}
         <div className="flex items-center gap-2 border-b border-amber-500/20 pb-3 mb-8 overflow-x-auto scrollbar-none">
-          {/* TAB 1: KELOLA NOTIFIKASI */}
+          {/* TAB 1: NOTIFIKASI */}
           <button
             onClick={() => setActiveTab('NOTICES')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'NOTICES'
                 ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-950/60 border border-amber-400/40'
                 : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
             }`}
           >
             <Bell className="w-4 h-4 text-amber-400" />
-            <span>1. Kelola Notifikasi ({notices.length})</span>
+            <span suppressHydrationWarning>1. Notifikasi ({notices.length})</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-emerald-300">Semua Role</span>
           </button>
 
-          {/* TAB 2: KELOLA LINK APLIKASI */}
+          {/* TAB 2: AGENDA BUDAYA */}
           <button
-            onClick={() => setActiveTab('APPS')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'APPS'
+            onClick={() => setActiveTab('EVENTS')}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'EVENTS'
                 ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-950/60 border border-amber-400/40'
                 : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
             }`}
           >
-            <Link2 className="w-4 h-4 text-emerald-400" />
-            <span>2. Kelola Link Aplikasi ({apps.length})</span>
+            <CalendarDays className="w-4 h-4 text-amber-400" />
+            <span suppressHydrationWarning>2. Agenda Budaya ({events.length})</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-amber-300">Ops/Pimpinan</span>
           </button>
 
-          {/* TAB 3: KELOLA INFORMASI */}
+          {/* TAB 3: DOKUMEN & SOP */}
           <button
-            onClick={() => setActiveTab('INFO')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'INFO'
-                ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-950/60 border border-amber-400/40'
+            onClick={() => setActiveTab('DOCUMENTS')}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'DOCUMENTS'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-950/60 border border-emerald-400/40'
                 : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
             }`}
           >
-            <Info className="w-4 h-4 text-cyan-400" />
-            <span>3. Kelola Informasi Yayasan</span>
+            <FileText className="w-4 h-4 text-emerald-400" />
+            <span suppressHydrationWarning>3. Dokumen & SOP ({documents.length})</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-teal-300">G-Drive</span>
           </button>
 
-          {/* TAB 4: PERMOHONAN AKSES */}
+          {/* TAB 4: WHITELIST KARYAWAN */}
+          <button
+            onClick={() => setActiveTab('WHITELIST')}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'WHITELIST'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-700 text-white shadow-lg shadow-purple-950/60 border border-purple-400/40'
+                : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
+            }`}
+          >
+            <Users className="w-4 h-4 text-purple-400" />
+            <span suppressHydrationWarning>4. Whitelist Karyawan ({whitelist.length})</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-500/40">Khusus IT</span>
+          </button>
+
+          {/* TAB 5: PERMOHONAN AKSES */}
           <button
             onClick={() => setActiveTab('REQUESTS')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'REQUESTS'
                 ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-950/60 border border-amber-400/40'
                 : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
             }`}
           >
             <KeyRound className="w-4 h-4 text-amber-400" />
-            <span>4. Permohonan Akses ({requests.filter((r) => r.status === 'PENDING').length})</span>
+            <span suppressHydrationWarning>5. Permohonan Akses ({requests.filter((r) => r.status === 'PENDING').length})</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-amber-300">Pimpinan/IT</span>
+          </button>
+
+          {/* TAB 6: LINK APLIKASI */}
+          <button
+            onClick={() => setActiveTab('APPS')}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'APPS'
+                ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-950/60 border border-amber-400/40'
+                : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
+            }`}
+          >
+            <Link2 className="w-4 h-4 text-emerald-400" />
+            <span suppressHydrationWarning>6. Link Aplikasi ({apps.length})</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-slate-400">Khusus IT</span>
+          </button>
+
+          {/* TAB 7: INFORMASI YAYASAN */}
+          <button
+            onClick={() => setActiveTab('INFO')}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'INFO'
+                ? 'bg-gradient-to-r from-cyan-600 to-teal-700 text-white shadow-lg shadow-cyan-950/60 border border-cyan-400/40'
+                : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
+            }`}
+          >
+            <Info className="w-4 h-4 text-cyan-400" />
+            <span>7. Info Yayasan</span>
+          </button>
+
+          {/* TAB 8: AUDIT LOGS */}
+          <button
+            onClick={() => setActiveTab('LOGS')}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'LOGS'
+                ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-lg border border-slate-500/40'
+                : 'bg-[#0a1f17] text-slate-300 hover:text-white hover:bg-emerald-950/60 border border-amber-500/15'
+            }`}
+          >
+            <History className="w-4 h-4 text-slate-400" />
+            <span suppressHydrationWarning>8. Audit Logs ({auditLogs.length})</span>
           </button>
         </div>
 
         {/* ========================================================================= */}
-        {/* TAB 1: KELOLA NOTIFIKASI & PENGUMUMAN                                     */}
+        {/* ACCESS GUARD: TAMPILKAN RESTRIKSI JIKA ROLE TIDAK DIIZINKAN              */}
         {/* ========================================================================= */}
-        {activeTab === 'NOTICES' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-black text-white flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-amber-400" />
-                  <span>Kelola Notifikasi & Pengumuman Internal Staf</span>
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Buat, perbarui, sematkan (pin), atau hapus pengumuman resmi dari Pengurus Yayasan REP.
-                </p>
-              </div>
+        {!isTabAllowed ? (
+          <div className="p-8 sm:p-10 rounded-3xl bg-[#091f17] border-2 border-rose-500/40 text-center space-y-4 shadow-2xl relative overflow-hidden">
+            <PapuanBorderCorner position="top-right" />
+            <PapuanBorderCorner position="bottom-left" />
 
-              <button
-                onClick={handleOpenNewNotice}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold shadow-lg shadow-amber-950/60 transition-all cursor-pointer self-start sm:self-auto"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Buat Pengumuman Baru</span>
-              </button>
+            <div className="w-16 h-16 rounded-3xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-8 h-8" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {notices.map((n) => (
-                <div
-                  key={n.id}
-                  className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col justify-between space-y-4"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-500/30">
-                          {n.category}
-                        </span>
-                        {n.isPinned && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                            <Pin className="w-3 h-3 text-emerald-400" />
-                            <span>Pinned</span>
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-slate-400">
-                        {new Date(n.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                    </div>
-
-                    <h3 className="text-base font-extrabold text-white leading-snug">{n.title}</h3>
-                    <p className="text-xs text-slate-300 mt-2 line-clamp-3 leading-relaxed">{n.content}</p>
-
-                    <div className="mt-3 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
-                      <span>Penulis: <strong className="text-slate-200">{n.authorName}</strong></span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-amber-500/15">
-                    <button
-                      onClick={() => {
-                        togglePinNotice(n.id);
-                        loadData();
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                        n.isPinned
-                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-white'
-                      }`}
-                    >
-                      <Pin className="w-3 h-3" />
-                      <span>{n.isPinned ? 'Lepas Pin' : 'Sematkan (Pin)'}</span>
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditNotice(n)}
-                        className="p-2 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                        title="Edit Notifikasi"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteNotice(n.id, n.title)}
-                        className="p-2 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                        title="Hapus Notifikasi"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Hapus</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 2: KELOLA LINK APLIKASI                                              */}
-        {/* ========================================================================= */}
-        {activeTab === 'APPS' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-black text-white flex items-center gap-2">
-                  <Link2 className="w-5 h-5 text-emerald-400" />
-                  <span>Kelola Link & Konfigurasi Modul Aplikasi</span>
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Ubah target tautan Vercel, nama modul, status operasional, dan keterangan sistem.
-                </p>
-              </div>
-
-              <button
-                onClick={handleOpenNewApp}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 transition-all cursor-pointer self-start sm:self-auto"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Tambah Aplikasi Baru</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {apps.map((app) => (
-                <div
-                  key={app.id}
-                  className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col justify-between space-y-4"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30">
-                          {app.shortCode}
-                        </span>
-                        <span className="text-[10px] uppercase font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
-                          {app.category}
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded ${app.status === 'ONLINE' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-red-950 text-red-300 border border-red-500/40'}`}>
-                        ● {app.status}
-                      </span>
-                    </div>
-
-                    <h3 className="text-base font-extrabold text-white leading-snug">{app.title}</h3>
-                    <p className="text-xs text-slate-300 mt-1 line-clamp-2">{app.description}</p>
-
-                    <div className="mt-3 p-2 rounded-xl bg-[#06140e] border border-slate-800 text-[11px] font-mono text-emerald-400 break-all flex items-center justify-between gap-2">
-                      <span className="truncate">{app.url}</span>
-                      <a
-                        href={app.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1 text-slate-400 hover:text-white shrink-0"
-                        title="Buka Link di Tab Baru"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-amber-500/15">
-                    <button
-                      onClick={() => handleOpenEditApp(app)}
-                      className="px-3 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span>Edit Link</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleDeleteApp(app.id, app.title)}
-                      className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Hapus</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 3: KELOLA INFORMASI YAYASAN & SOP                                     */}
-        {/* ========================================================================= */}
-        {activeTab === 'INFO' && (
-          <div className="max-w-3xl mx-auto">
-            <div className="rounded-3xl glass-panel bg-[#091b14] border-2 border-amber-500/30 p-6 sm:p-8 shadow-2xl">
-              <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-amber-500/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-cyan-950/60 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
-                    <Building className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-white">Profil & Pengaturan Portal Yayasan</h2>
-                    <p className="text-xs text-slate-400">Informasi operasional, helpdesk IT, dan panduan akses staf</p>
-                  </div>
-                </div>
-
-                {infoSavedSuccess && (
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950 px-3 py-1 rounded-full border border-emerald-500/40 animate-in fade-in">
-                    ✓ Tersimpan!
-                  </span>
-                )}
-              </div>
-
-              <form onSubmit={handleSaveFoundationInfo} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-300 mb-1">Nama Yayasan / Lembaga</label>
-                  <input
-                    type="text"
-                    value={infoForm.organizationName}
-                    onChange={(e) => setInfoForm({ ...infoForm, organizationName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-300 mb-1">Slogan / Tagline</label>
-                  <input
-                    type="text"
-                    value={infoForm.tagline}
-                    onChange={(e) => setInfoForm({ ...infoForm, tagline: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-300 mb-1">Alamat Kantor & Operasional</label>
-                  <textarea
-                    rows={2}
-                    value={infoForm.address}
-                    onChange={(e) => setInfoForm({ ...infoForm, address: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-300 mb-1">Nama IT Developer / Helpdesk</label>
-                    <input
-                      type="text"
-                      value={infoForm.itHelpdeskName}
-                      onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-300 mb-1">No. WhatsApp Helpdesk IT</label>
-                    <input
-                      type="text"
-                      value={infoForm.itHelpdeskPhone}
-                      onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskPhone: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-300 mb-1">Email Resmi Helpdesk</label>
-                    <input
-                      type="email"
-                      value={infoForm.itHelpdeskEmail}
-                      onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskEmail: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-300 mb-1">Jam Operasional Kantor</label>
-                    <input
-                      type="text"
-                      value={infoForm.operationalHours}
-                      onChange={(e) => setInfoForm({ ...infoForm, operationalHours: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/25 text-white font-medium focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-amber-500/20 flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white font-extrabold flex items-center gap-2 shadow-lg shadow-amber-950/60 transition-all cursor-pointer active:scale-95"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Simpan Perubahan Profil</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 4: PERMOHONAN AKSES STAF                                             */}
-        {/* ========================================================================= */}
-        {activeTab === 'REQUESTS' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <KeyRound className="w-5 h-5 text-amber-400" />
-                <span>Daftar Permohonan Akun & Akses Login Staf</span>
+            <div className="max-w-md mx-auto space-y-2">
+              <h2 className="text-xl sm:text-2xl font-black text-white font-serif">
+                Akses Terbatas / Restriksi Otorisasi
               </h2>
-              <p className="text-xs text-slate-400">
-                Verifikasi email dan kata sandi yang diajukan oleh staf untuk diberikan akses ke sistem yayasan.
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Role Anda saat ini (<strong className="text-amber-300">{ROLE_PERMISSIONS[simulatedRole].label}</strong>) tidak memiliki izin untuk mengelola tab ini.
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Fitur ini dikhususkan untuk Administrator IT atau Manajemen Eksekutif Yayasan Rumah Etnik Papua.
               </p>
             </div>
 
-            {requests.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-[#091b14] border border-amber-500/20 text-center text-slate-400 text-xs">
-                Belum ada permohonan akses baru yang masuk.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {requests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col justify-between space-y-4"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md ${
-                          req.status === 'APPROVED'
-                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
-                            : req.status === 'REJECTED'
-                            ? 'bg-red-950 text-red-300 border border-red-500/30'
-                            : 'bg-amber-950 text-amber-300 border border-amber-500/30 animate-pulse'
-                        }`}>
-                          {req.status}
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {new Date(req.requestedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                      </div>
+            <div className="pt-3 flex items-center justify-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setRequestAccessModalOpen(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-extrabold shadow-lg transition-all active:scale-95 cursor-pointer"
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>Ajukan Peningkatan Role / Akses</span>
+              </button>
 
-                      <h3 className="text-base font-extrabold text-white">{req.name}</h3>
-                      <p className="text-xs text-amber-300 font-mono mt-0.5">{req.email}</p>
-                      
-                      <div className="mt-3 p-3 rounded-xl bg-[#06140e] border border-slate-800 space-y-1.5 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Aplikasi Diminta:</span>
-                          <strong className="text-white">{req.appTitle || 'Seluruh Portal'}</strong>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Divisi / Unit:</span>
-                          <span className="text-slate-200">{req.department}</span>
-                        </div>
-                        {req.proposedPassword && (
-                          <div className="flex justify-between items-center pt-1 border-t border-slate-800">
-                            <span className="text-slate-400">Kata Sandi Diajukan:</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-amber-400 font-bold">
-                                {visiblePasswords[req.id] ? req.proposedPassword : '••••••••'}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setVisiblePasswords({
-                                    ...visiblePasswords,
-                                    [req.id]: !visiblePasswords[req.id],
-                                  })
-                                }
-                                className="text-slate-400 hover:text-white"
-                              >
-                                {visiblePasswords[req.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {req.phoneNumber && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">No. WhatsApp:</span>
-                            <span className="text-slate-200 font-mono">{req.phoneNumber}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-amber-500/15 flex flex-wrap items-center justify-between gap-2">
-                      <button
-                        onClick={() => handleCopyWaMessage(req)}
-                        className="px-3 py-1.5 rounded-lg bg-[#0c261e] hover:bg-[#12382c] border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                        title="Salin Pesan Konfirmasi WhatsApp"
-                      >
-                        {copiedReqId === req.id ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Pesan Disalin!</span>
-                          </>
-                        ) : (
-                          <>
-                            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Salin Pesan WA</span>
-                          </>
-                        )}
-                      </button>
-
-                      {req.status === 'PENDING' && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleResolveRequest(req, 'REJECTED')}
-                            className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-red-300 text-xs font-bold cursor-pointer"
-                          >
-                            Tolak
-                          </button>
-                          <button
-                            onClick={() => handleResolveRequest(req, 'APPROVED')}
-                            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md cursor-pointer"
-                          >
-                            Setujui Akun
-                          </button>
-                        </div>
-                      )}
-                    </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('NOTICES')}
+                className="px-4 py-2.5 rounded-xl bg-[#0c281e] hover:bg-[#12382c] border border-amber-500/30 text-amber-300 text-xs font-bold transition-all cursor-pointer"
+              >
+                Kembali ke Tab Terbuka
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* ========================================================================= */}
+            {/* TAB 1: KELOLA NOTIFIKASI & PENGUMUMAN                                     */}
+            {/* ========================================================================= */}
+            {activeTab === 'NOTICES' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <Bell className="w-5 h-5 text-amber-400" />
+                      <span>Kelola Notifikasi & Pengumuman Internal Staf</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Buat, perbarui, sematkan (pin), atau hapus pengumuman resmi dari Pengurus Yayasan REP.
+                    </p>
                   </div>
-                ))}
+
+                  <button
+                    onClick={handleOpenNewNotice}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold shadow-lg shadow-amber-950/60 transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Buat Pengumuman Baru</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {notices.map((n) => (
+                    <div
+                      key={n.id}
+                      className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col justify-between space-y-4"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-500/30">
+                              {n.category}
+                            </span>
+                            {n.isPinned && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                                <Pin className="w-3 h-3 text-emerald-400" />
+                                Tersemat
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
+                              n.priority === 'URGENT'
+                                ? 'bg-red-950 text-red-300 border border-red-500/40'
+                                : n.priority === 'HIGH'
+                                ? 'bg-amber-950 text-amber-300 border border-amber-500/40'
+                                : 'bg-slate-900 text-slate-300'
+                            }`}
+                          >
+                            {n.priority}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-extrabold text-white leading-snug">{n.title}</h3>
+                        <p className="text-xs text-slate-300 mt-2 line-clamp-3 leading-relaxed whitespace-pre-line">
+                          {n.content}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-[11px] text-slate-400">
+                        <span>Oleh: {n.authorName}</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleTogglePin(n.id)}
+                            className={`p-1.5 rounded-lg border transition-all ${
+                              n.isPinned
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                            }`}
+                            title={n.isPinned ? 'Lepas Sematan' : 'Sematkan Pengumuman'}
+                          >
+                            <Pin className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditNotice(n)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-amber-950/60 border border-slate-700 text-amber-300 transition-all"
+                            title="Edit Pengumuman"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNotice(n.id, n.title)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-950/60 border border-slate-700 text-red-400 transition-all"
+                            title="Hapus Pengumuman"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
+
+            {/* ========================================================================= */}
+            {/* TAB 2: KELOLA AGENDA BUDAYA & KALENDER                                   */}
+            {/* ========================================================================= */}
+            {activeTab === 'EVENTS' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <CalendarDays className="w-5 h-5 text-amber-400" />
+                      <span>Kelola Agenda, Pentas Budaya & Kunjungan Homestay</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Jadwalkan pentas seni tari, workshop noken, reservasi homestay, dan rapat pimpinan yayasan.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href="/agenda"
+                      className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#091e16] hover:bg-[#0e2c20] border border-amber-500/30 text-amber-300 text-xs font-bold transition-all"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>Lihat Kalender Publik</span>
+                    </Link>
+                    <button
+                      onClick={handleOpenNewEvent}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-bold shadow-lg shadow-amber-950/60 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Tambah Agenda Baru</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {events.map((ev) => {
+                    const catBadge = getCategoryBadge(ev.category);
+                    return (
+                      <div
+                        key={ev.id}
+                        className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col justify-between space-y-4"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${catBadge.bgColor}`}>
+                              {catBadge.label}
+                            </span>
+                            <span className="text-[10px] font-mono text-amber-300 font-bold bg-[#06140e] px-2 py-0.5 rounded border border-amber-500/30">
+                              {ev.date} • {ev.timeStart} WIT
+                            </span>
+                          </div>
+
+                          <h3 className="text-base font-extrabold text-white leading-snug">{ev.title}</h3>
+                          <p className="text-xs text-slate-300 mt-1 line-clamp-2 leading-relaxed">{ev.description}</p>
+                          <p className="text-[11px] text-amber-400 mt-2 font-medium">📍 {ev.location}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                          <span className="text-[10px] text-slate-400">Penyelenggara: {ev.organizer}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedEventForDetail(ev)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all"
+                            >
+                              Detail & WA
+                            </button>
+                            <button
+                              onClick={() => handleOpenEditEvent(ev)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-amber-950/60 border border-slate-700 text-amber-300 transition-all"
+                              title="Edit Agenda"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEvent(ev.id, ev.title)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-950/60 border border-slate-700 text-red-400 transition-all"
+                              title="Hapus Agenda"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* TAB 3: KELOLA DOKUMEN & SOP (GOOGLE DRIVE)                                */}
+            {/* ========================================================================= */}
+            {activeTab === 'DOCUMENTS' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-emerald-400" />
+                      <span>Kelola Dokumen, SOP & Arsip Google Drive</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Unggah SOP resmi, tautkan file Google Drive, perbarui versi dokumen, dan kelola arsip formulir yayasan.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href="/dokumen"
+                      className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#091e16] hover:bg-[#0e2c20] border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>Lihat Vault Publik</span>
+                    </Link>
+                    <button
+                      onClick={handleOpenNewDoc}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Tambah Dokumen Baru</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {documents.map((doc) => {
+                    const categoryInfo = getDocCategoryInfo(doc.category);
+                    const fileBadge = getDocFileBadge(doc.fileType);
+
+                    return (
+                      <div
+                        key={doc.id}
+                        className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-emerald-500/25 shadow-xl flex flex-col justify-between space-y-4"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                                {doc.code}
+                              </span>
+                              <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${categoryInfo.bgColor}`}>
+                                {categoryInfo.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${fileBadge.bg}`}>
+                                {fileBadge.label}
+                              </span>
+                              {doc.isConfidential && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/40">
+                                  RAHASIA
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <h3 className="text-base font-extrabold text-white leading-snug">{doc.title}</h3>
+                          <p className="text-xs text-slate-300 mt-1 line-clamp-2">{doc.description}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                          <span className="text-[10px] text-slate-400">Oleh: {doc.uploadedBy}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedDocForDetail(doc)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all"
+                            >
+                              Detail & G-Drive
+                            </button>
+                            <button
+                              onClick={() => handleOpenEditDoc(doc)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 text-emerald-300 transition-all"
+                              title="Edit Dokumen"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDoc(doc.id, doc.title)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-950/60 border border-slate-700 text-red-400 transition-all"
+                              title="Hapus Dokumen"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* TAB 4: WHITELIST KARYAWAN & HAK AKSES ROLE (KHUSUS IT ADMIN)             */}
+            {/* ========================================================================= */}
+            {activeTab === 'WHITELIST' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <Users className="w-5 h-5 text-purple-400" />
+                      <span>Manajemen Karyawan & Hak Akses Whitelist (RBAC)</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Kelola hak akses role staf yayasan, atur perizinan sub-aplikasi, dan tambahkan akun Google karyawan.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowAddStaffModal(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white text-xs font-bold shadow-lg shadow-purple-950/60 transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Tambah Karyawan Baru</span>
+                  </button>
+                </div>
+
+                {/* Filter & Search Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#091b14] p-3 rounded-2xl border border-purple-500/20">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={staffSearchQuery}
+                      onChange={(e) => setStaffSearchQuery(e.target.value)}
+                      placeholder="Cari nama, email, atau divisi..."
+                      className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="text-[11px] text-slate-400 font-bold whitespace-nowrap">Divisi:</span>
+                    <select
+                      value={staffDeptFilter}
+                      onChange={(e) => setStaffDeptFilter(e.target.value)}
+                      className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-purple-400 cursor-pointer"
+                    >
+                      <option value="ALL">Semua Divisi</option>
+                      {departmentList.map((dept) => (
+                        <option key={dept} value={dept}>
+                          {dept}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Staff Table */}
+                <div className="rounded-2xl border border-purple-500/25 overflow-hidden bg-[#091b14] shadow-xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-[#06140e] text-[10px] uppercase font-bold text-slate-400 border-b border-purple-500/20 tracking-wider">
+                        <tr>
+                          <th className="py-3 px-4">Nama & Email Karyawan</th>
+                          <th className="py-3 px-4">Divisi / Jabatan</th>
+                          <th className="py-3 px-4">Hak Akses Role</th>
+                          <th className="py-3 px-4">Status Akun</th>
+                          <th className="py-3 px-4 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/80 font-medium">
+                        {filteredWhitelist.map((staff) => {
+                          const roleInfo = ROLE_PERMISSIONS[staff.role] || ROLE_PERMISSIONS.OPERATIONAL;
+                          return (
+                            <tr key={staff.id} className="hover:bg-[#0c241b]/60 transition-colors">
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center justify-center font-bold font-serif text-xs">
+                                    {staff.name.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-white text-xs">{staff.name}</p>
+                                    <p className="text-[10px] text-slate-400 font-mono">{staff.email}</p>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <p className="font-semibold text-slate-200">{staff.department}</p>
+                                <p className="text-[10px] text-slate-400">{staff.roleTitle}</p>
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <select
+                                  value={staff.role}
+                                  onChange={(e) => handleUpdateStaffRole(staff.id, e.target.value as UserRole)}
+                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer ${roleInfo.badgeColor}`}
+                                >
+                                  <option value="IT_ADMIN">IT Superadmin</option>
+                                  <option value="EXECUTIVE">Manajemen Eksekutif</option>
+                                  <option value="OPERATIONAL">Staf Operasional</option>
+                                  <option value="FINANCE_WAREHOUSE">Staf Keuangan & Kasir</option>
+                                </select>
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleStaffActive(staff.id, staff.active)}
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 cursor-pointer transition-all ${
+                                    staff.active
+                                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                                      : 'bg-rose-950 text-rose-300 border-rose-500/40'
+                                  }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${staff.active ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                  <span>{staff.active ? 'Aktif' : 'Dinonaktifkan'}</span>
+                                </button>
+                              </td>
+
+                              <td className="py-3.5 px-4 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteStaff(staff.id, staff.name)}
+                                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/80 border border-slate-700 text-rose-400 transition-all cursor-pointer"
+                                  title="Hapus dari Whitelist"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* TAB 5: PERMOHONAN AKSES STAF BARU                                        */}
+            {/* ========================================================================= */}
+            {activeTab === 'REQUESTS' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-black text-white flex items-center gap-2">
+                    <KeyRound className="w-5 h-5 text-amber-400" />
+                    <span>Otorisasi & Permohonan Pendaftaran Akun Staf</span>
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Tinjau pengajuan akun karyawan baru, setujui akses, dan kirimkan kredensial otomatis ke WhatsApp staf.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {requests.map((r) => (
+                    <div
+                      key={r.id}
+                      className="p-4 rounded-2xl glass-panel bg-[#091b14] border border-amber-500/25 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">{r.name}</span>
+                          <span className="text-[10px] font-mono text-amber-300 bg-amber-950 px-2 py-0.5 rounded border border-amber-500/30">
+                            {r.email}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300">
+                          Mengajukan akses untuk: <strong className="text-emerald-400">{r.appTitle || 'PORTAL REP'}</strong> ({r.department})
+                        </p>
+                        {r.reason && <p className="text-[11px] text-slate-400 italic">"{r.reason}"</p>}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {r.status === 'PENDING' ? (
+                          <>
+                            <button
+                              onClick={() => handleApproveRequest(r)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Setujui & Whitelist</span>
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(r)}
+                              className="px-3 py-1.5 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer"
+                            >
+                              Tolak
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                                r.status === 'APPROVED'
+                                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                                  : 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                              }`}
+                            >
+                              {r.status === 'APPROVED' ? 'Telah Disetujui' : 'Ditolak'}
+                            </span>
+                            {r.status === 'APPROVED' && (
+                              <button
+                                onClick={() => handleCopyWaMessage(r)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer"
+                                title="Salin Pesan WhatsApp Akun"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>{copiedReqId === r.id ? 'Tersalin!' : 'Kirim WA'}</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {requests.length === 0 && (
+                    <div className="p-8 text-center rounded-2xl bg-[#091b14] border border-dashed border-amber-500/30 text-slate-400 text-xs">
+                      Belum ada permohonan akses baru dari staf.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* TAB 6: LINK APLIKASI VERCEL                                              */}
+            {/* ========================================================================= */}
+            {activeTab === 'APPS' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <Link2 className="w-5 h-5 text-emerald-400" />
+                      <span>Konfigurasi Link & Modul Sub-Aplikasi</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Atur tautan produksi Vercel, status operasional (Online/Maintenance), dan deskripsi modul.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleOpenNewApp}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Modul Baru</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {apps.map((app) => (
+                    <div
+                      key={app.id}
+                      className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-emerald-500/25 shadow-xl flex flex-col justify-between space-y-4"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                            {app.shortCode}
+                          </span>
+                          <span
+                            className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
+                              app.status === 'ONLINE'
+                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-amber-950 text-amber-300 border border-amber-500/40'
+                            }`}
+                          >
+                            {app.status}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-extrabold text-white leading-snug">{app.title}</h3>
+                        <p className="text-xs text-slate-300 mt-1 line-clamp-2">{app.description}</p>
+                        <p className="text-[11px] text-emerald-400 font-mono mt-2 truncate">{app.url}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-[11px] text-slate-400">
+                        <span>{app.badgeText}</span>
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={app.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 text-emerald-400 transition-all"
+                            title="Buka Aplikasi"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                          <button
+                            onClick={() => handleOpenEditApp(app)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 text-emerald-300 transition-all cursor-pointer"
+                            title="Edit Aplikasi"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteApp(app.id, app.title)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-950/60 border border-slate-700 text-red-400 transition-all cursor-pointer"
+                            title="Hapus Aplikasi"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* TAB 7: INFORMASI & PROFIL YAYASAN                                        */}
+            {/* ========================================================================= */}
+            {activeTab === 'INFO' && (
+              <div className="max-w-3xl space-y-6">
+                <div>
+                  <h2 className="text-lg font-black text-white flex items-center gap-2">
+                    <Info className="w-5 h-5 text-cyan-400" />
+                    <span>Profil & Informasi Resmi Yayasan REP</span>
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Data kontak helpdesk IT, alamat operasional, dan jam layanan yang tampil di portal.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSaveInfo} className="p-6 rounded-2xl bg-[#091b14] border border-cyan-500/25 space-y-4">
+                  {infoSavedSuccess && (
+                    <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500/40 text-xs text-emerald-300 flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Informasi yayasan berhasil disimpan dan diperbarui!</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Nama Organisasi</label>
+                      <input
+                        type="text"
+                        value={infoForm.organizationName}
+                        onChange={(e) => setInfoForm({ ...infoForm, organizationName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Tagline Budaya</label>
+                      <input
+                        type="text"
+                        value={infoForm.tagline}
+                        onChange={(e) => setInfoForm({ ...infoForm, tagline: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-300">Alamat Kompleks Yayasan</label>
+                    <input
+                      type="text"
+                      value={infoForm.address}
+                      onChange={(e) => setInfoForm({ ...infoForm, address: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Nama Kontak IT Helpdesk</label>
+                      <input
+                        type="text"
+                        value={infoForm.itHelpdeskName}
+                        onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Nomor WhatsApp IT Helpdesk</label>
+                      <input
+                        type="text"
+                        value={infoForm.itHelpdeskPhone}
+                        onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskPhone: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-700 hover:from-cyan-500 hover:to-teal-600 text-white text-xs font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Simpan Perubahan Informasi</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* TAB 8: AUDIT LOGS & JEJAK AKTIVITAS (KHUSUS IT ADMIN)                    */}
+            {/* ========================================================================= */}
+            {activeTab === 'LOGS' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-black text-white flex items-center gap-2">
+                    <History className="w-5 h-5 text-slate-400" />
+                    <span>Audit Trail & Jejak Aktivitas Keamanan</span>
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Catatan otomatis setiap perubahan data, penambahan SOP, otorisasi staf, dan pembaruan sistem.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800 overflow-hidden bg-[#091b14]">
+                  <div className="divide-y divide-slate-800">
+                    {auditLogs.map((log) => (
+                      <div key={log.id} className="p-3.5 flex items-start justify-between gap-3 text-xs hover:bg-[#0c241b]/50">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-amber-400 border border-slate-700">
+                              {log.category}
+                            </span>
+                            <span className="font-bold text-white">{log.action}</span>
+                          </div>
+                          <p className="text-slate-300">{log.details}</p>
+                          <p className="text-[10px] text-slate-500">
+                            Oleh: <strong className="text-slate-400">{log.userName}</strong> ({log.userEmail})
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">
+                          {new Date(log.timestamp).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })} WIT
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      {/* ================= MODAL TAMBAH / EDIT NOTIFIKASI ================= */}
+      {/* ========================================================================= */}
+      {/* MODALS SECTION                                                            */}
+      {/* ========================================================================= */}
+      {/* Modal Tambah Karyawan Whitelist */}
+      {showAddStaffModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div
+            className="relative w-full max-w-md rounded-3xl bg-[#091f17] border-2 border-purple-500/40 shadow-2xl p-6 text-slate-100 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PapuanBorderCorner position="top-right" />
+            <PapuanBorderCorner position="bottom-left" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-purple-500/20 mb-4">
+              <div className="flex items-center gap-2.5">
+                <UserPlus className="w-5 h-5 text-purple-400" />
+                <h3 className="text-base font-black text-white font-serif">Tambah Karyawan ke Whitelist</h3>
+              </div>
+              <button
+                onClick={() => setShowAddStaffModal(false)}
+                className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white border border-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStaff} className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300">Nama Lengkap Karyawan</label>
+                <input
+                  type="text"
+                  value={staffName}
+                  onChange={(e) => setStaffName(e.target.value)}
+                  placeholder="Contoh: Samuel Burdam"
+                  required
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300">Email Akun Google (Login)</label>
+                <input
+                  type="email"
+                  value={staffEmail}
+                  onChange={(e) => setStaffEmail(e.target.value)}
+                  placeholder="samuel@gmail.com"
+                  required
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-purple-300 font-mono focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300">Hak Akses Role</label>
+                  <select
+                    value={staffRole}
+                    onChange={(e) => setStaffRole(e.target.value as UserRole)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                  >
+                    <option value="OPERATIONAL">Staf Operasional</option>
+                    <option value="FINANCE_WAREHOUSE">Staf Keuangan & Gudang</option>
+                    <option value="EXECUTIVE">Manajemen Eksekutif</option>
+                    <option value="IT_ADMIN">IT Superadmin</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300">Jabatan / Posisi</label>
+                  <input
+                    type="text"
+                    value={staffRoleTitle}
+                    onChange={(e) => setStaffRoleTitle(e.target.value)}
+                    placeholder="Staf Homestay"
+                    className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300">Divisi / Unit Kerja</label>
+                <input
+                  type="text"
+                  value={staffDepartment}
+                  onChange={(e) => setStaffDepartment(e.target.value)}
+                  placeholder="Frontdesk & Homestay Etnik"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddStaffModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 text-xs font-bold border border-slate-700"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 text-white text-xs font-extrabold shadow-md active:scale-95"
+                >
+                  Simpan Karyawan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Kelola Notifikasi */}
       {showNoticeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-          <div className="relative w-full max-w-lg my-auto rounded-3xl glass-panel bg-[#091e16] border-2 border-amber-500/40 shadow-2xl p-6 overflow-hidden max-h-[90dvh] overflow-y-auto">
-            <PapuanBorderCorner />
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div
+            className="relative w-full max-w-lg rounded-3xl bg-[#091f17] border-2 border-amber-500/40 shadow-2xl p-6 text-slate-100 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PapuanBorderCorner position="top-right" />
+            <PapuanBorderCorner position="bottom-left" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-amber-500/20 mb-4">
+              <div className="flex items-center gap-2.5">
                 <Bell className="w-5 h-5 text-amber-400" />
-                <span>{editingNotice ? 'Edit Notifikasi Pengumuman' : 'Buat Notifikasi Pengumuman Baru'}</span>
-              </h3>
-              <button onClick={() => setShowNoticeModal(false)} className="p-1.5 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-700">
-                <X className="w-5 h-5" />
+                <h3 className="text-base font-black text-white font-serif">
+                  {editingNotice ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowNoticeModal(false)}
+                className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white border border-slate-700"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSaveNotice} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Judul Pengumuman</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-amber-400">Judul Pengumuman</label>
                 <input
                   type="text"
-                  required
                   value={noticeTitle}
                   onChange={(e) => setNoticeTitle(e.target.value)}
-                  placeholder="misal: Briefing Operasional Staf Yayasan"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
+                  placeholder="Contoh: Jadwal Pentas Seni Budaya & Rapat Pleno"
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Isi Lengkap Informasi / Instruksi</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300">Isi Pengumuman Lengkap</label>
                 <textarea
                   rows={4}
-                  required
                   value={noticeContent}
                   onChange={(e) => setNoticeContent(e.target.value)}
-                  placeholder="Tuliskan detail pengumuman atau instruksi resmi..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
+                  placeholder="Tuliskan instruksi, detail agenda, atau pengumuman resmi..."
+                  required
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400 leading-relaxed"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Kategori</label>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300">Kategori</label>
                   <select
                     value={noticeCategory}
                     onChange={(e) => setNoticeCategory(e.target.value as NoticeCategory)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
+                    className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
                   >
-                    <option value="INSTRUCTION">INSTRUCTION (Instruksi Resmi)</option>
-                    <option value="AGENDA">AGENDA (Jadwal & Kunjungan)</option>
-                    <option value="SOP">SOP (Standar Operasional)</option>
-                    <option value="UPDATE">UPDATE (Pembaruan Sistem)</option>
-                    <option value="SECURITY">SECURITY (Keamanan & Akses)</option>
+                    <option value="INSTRUCTION">Instruksi Pimpinan</option>
+                    <option value="EVENT">Agenda / Acara</option>
+                    <option value="MAINTENANCE">Pemeliharaan IT</option>
+                    <option value="ANNOUNCEMENT">Pengumuman Umum</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Prioritas</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300">Prioritas</label>
                   <select
                     value={noticePriority}
                     onChange={(e) => setNoticePriority(e.target.value as NoticePriority)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-amber-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
+                    className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-amber-500/30 text-xs text-white focus:outline-none focus:border-amber-400"
                   >
-                    <option value="HIGH">HIGH (Penting / Utama)</option>
-                    <option value="URGENT">URGENT (Mendesak / Segera)</option>
-                    <option value="NORMAL">NORMAL (Biasa)</option>
+                    <option value="CRITICAL">Kritis / Penting Sekali</option>
+                    <option value="HIGH">Tinggi</option>
+                    <option value="MEDIUM">Sedang</option>
+                    <option value="LOW">Rendah</option>
                   </select>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
+              <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  id="noticePinnedCheckbox"
                   checked={noticeIsPinned}
                   onChange={(e) => setNoticeIsPinned(e.target.checked)}
-                  className="w-4 h-4 rounded text-amber-500 bg-[#06140e] border-amber-500/40"
+                  className="w-4 h-4 accent-amber-500 rounded"
                 />
-                <label htmlFor="noticePinnedCheckbox" className="text-xs font-bold text-slate-200 cursor-pointer">
-                  Sematkan di Beranda Utama (Pinned Notice)
-                </label>
-              </div>
+                <span className="text-xs font-bold text-amber-300">Sematkan di Bilah Atas Beranda</span>
+              </label>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="pt-2 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowNoticeModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 text-xs font-bold border border-slate-700"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white text-xs font-bold shadow-md cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 text-white text-xs font-extrabold shadow-md active:scale-95"
                 >
-                  Simpan Pengumuman
+                  {editingNotice ? 'Simpan Perubahan' : 'Terbitkan Pengumuman'}
                 </button>
               </div>
             </form>
@@ -1076,119 +1791,171 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ================= MODAL TAMBAH / EDIT APLIKASI ================= */}
+      {/* Modal Kelola Aplikasi */}
       {showAppModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-          <div className="relative w-full max-w-lg my-auto rounded-3xl glass-panel bg-[#091e16] border-2 border-emerald-500/40 shadow-2xl p-6 overflow-hidden max-h-[90dvh] overflow-y-auto">
-            <PapuanBorderCorner />
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div
+            className="relative w-full max-w-lg rounded-3xl bg-[#091f17] border-2 border-emerald-500/40 shadow-2xl p-6 text-slate-100 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PapuanBorderCorner position="top-right" />
+            <PapuanBorderCorner position="bottom-left" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-emerald-500/20 mb-4">
+              <div className="flex items-center gap-2.5">
                 <Link2 className="w-5 h-5 text-emerald-400" />
-                <span>{editingApp ? 'Edit Konfigurasi Aplikasi' : 'Tambah Aplikasi Baru ke Portal'}</span>
-              </h3>
-              <button onClick={() => setShowAppModal(false)} className="p-1.5 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-700">
-                <X className="w-5 h-5" />
+                <h3 className="text-base font-black text-white font-serif">
+                  {editingApp ? 'Edit Konfigurasi Aplikasi' : 'Tambah Modul Aplikasi'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAppModal(false)}
+                className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white border border-slate-700"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSaveApp} className="space-y-3.5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Nama Aplikasi</label>
-                  <input
-                    type="text"
-                    required
-                    value={appTitle}
-                    onChange={(e) => setAppTitle(e.target.value)}
-                    placeholder="misal: Reservasi Homestay"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-emerald-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Kode Singkat</label>
-                  <input
-                    type="text"
-                    required
-                    value={appShortCode}
-                    onChange={(e) => setAppShortCode(e.target.value)}
-                    placeholder="HOMESTAY"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white font-mono uppercase focus:outline-none focus:border-emerald-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">URL Target Vercel (Produksi)</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-emerald-400">Nama Aplikasi</label>
                 <input
-                  type="url"
+                  type="text"
+                  value={appTitle}
+                  onChange={(e) => setAppTitle(e.target.value)}
+                  placeholder="Contoh: Sistem Informasi Keuangan"
                   required
-                  value={appUrl}
-                  onChange={(e) => setAppUrl(e.target.value)}
-                  placeholder="https://apk-reservasi-homestay-rep.vercel.app"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-400"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Deskripsi Singkat</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300">Tautan Produksi (URL Vercel / Domain)</label>
+                <input
+                  type="url"
+                  value={appUrl}
+                  onChange={(e) => setAppUrl(e.target.value)}
+                  placeholder="https://apk-reservasi-homestay-rep.vercel.app"
+                  required
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300">Kode Singkat</label>
+                  <input
+                    type="text"
+                    value={appShortCode}
+                    onChange={(e) => setAppShortCode(e.target.value)}
+                    placeholder="RESERVASI"
+                    className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white uppercase focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300">Status Modul</label>
+                  <select
+                    value={appStatus}
+                    onChange={(e) => setAppStatus(e.target.value as AppStatus)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none focus:border-emerald-400"
+                  >
+                    <option value="ONLINE">Online (Aktif)</option>
+                    <option value="MAINTENANCE">Dalam Pemeliharaan</option>
+                    <option value="UPDATED">Pembaruan Versi</option>
+                    <option value="OFFLINE">Nonaktif</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300">Deskripsi Singkat</label>
                 <textarea
                   rows={2}
                   value={appDescription}
                   onChange={(e) => setAppDescription(e.target.value)}
-                  placeholder="Penjelasan fungsi operasional sistem..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-white focus:outline-none focus:border-emerald-400"
+                  placeholder="Penjelasan fungsi aplikasi..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Kategori</label>
-                  <select
-                    value={appCategory}
-                    onChange={(e) => setAppCategory(e.target.value as AppCategory)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
-                  >
-                    <option value="OPERASIONAL">OPERASIONAL (Homestay & Tamu)</option>
-                    <option value="KEUANGAN">KEUANGAN (SIK-REP Pembukuan)</option>
-                    <option value="GUDANG_POS">GUDANG_POS (Kasir & Suvenir)</option>
-                    <option value="MEDIA_KREATIF">MEDIA_KREATIF (Zeestudio)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Status Sistem</label>
-                  <select
-                    value={appStatus}
-                    onChange={(e) => setAppStatus(e.target.value as AppStatus)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06140e] border border-emerald-500/30 text-base sm:text-xs text-slate-200 focus:outline-none cursor-pointer"
-                  >
-                    <option value="ONLINE">ONLINE (Aktif)</option>
-                    <option value="MAINTENANCE">MAINTENANCE (Pemeliharaan)</option>
-                    <option value="OFFLINE">OFFLINE (Nonaktif)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="pt-2 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowAppModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 text-xs font-bold border border-slate-700"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-bold shadow-md cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 text-white text-xs font-extrabold shadow-md active:scale-95"
                 >
-                  Simpan Aplikasi
+                  {editingApp ? 'Simpan Perubahan' : 'Tambah Aplikasi'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Modal Agenda CRUD */}
+      <CreateEventModal
+        isOpen={showEventModal}
+        onClose={() => {
+          setShowEventModal(false);
+          setEditingEvent(null);
+        }}
+        onSave={handleSaveEvent}
+        initialData={editingEvent}
+        currentUserDisplayName={currentAdminName}
+      />
+
+      <EventDetailModal
+        event={selectedEventForDetail}
+        onClose={() => setSelectedEventForDetail(null)}
+        onEdit={(ev) => {
+          setSelectedEventForDetail(null);
+          handleOpenEditEvent(ev);
+        }}
+        onDelete={(id) => {
+          deleteEvent(id, currentAdminName);
+          loadData();
+        }}
+        canManage={true}
+      />
+
+      {/* Modal Dokumen CRUD */}
+      <CreateDocumentModal
+        isOpen={showDocModal}
+        onClose={() => {
+          setShowDocModal(false);
+          setEditingDoc(null);
+        }}
+        onSave={handleSaveDoc}
+        initialData={editingDoc}
+        currentUserDisplayName={currentAdminName}
+      />
+
+      <DocumentDetailModal
+        doc={selectedDocForDetail}
+        onClose={() => setSelectedDocForDetail(null)}
+        onEdit={(doc) => {
+          setSelectedDocForDetail(null);
+          handleOpenEditDoc(doc);
+        }}
+        onDelete={(id) => {
+          deleteDocument(id, currentAdminName);
+          loadData();
+        }}
+        canManage={true}
+      />
+
+      {/* Modal Permohonan Akses / Upgrade Role */}
+      <RequestAccessModal
+        isOpen={requestAccessModalOpen}
+        onClose={() => setRequestAccessModalOpen(false)}
+      />
 
       {/* PWA Modal */}
       {pwaModalOpen && (

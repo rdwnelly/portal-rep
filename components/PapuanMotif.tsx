@@ -39,9 +39,24 @@ export function PapuanMotifDivider({ className = '' }: { className?: string }) {
   );
 }
 
-export function PapuanBorderCorner() {
+export function PapuanBorderCorner({
+  className = '',
+  position = 'top-right',
+}: {
+  className?: string;
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+}) {
+  const positionClasses = {
+    'top-right': 'top-0 right-0',
+    'top-left': 'top-0 left-0 -scale-x-100',
+    'bottom-right': 'bottom-0 right-0 -scale-y-100',
+    'bottom-left': 'bottom-0 left-0 -scale-x-100 -scale-y-100',
+  };
+
   return (
-    <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none opacity-20 overflow-hidden">
+    <div
+      className={`absolute ${positionClasses[position]} w-16 h-16 pointer-events-none opacity-20 overflow-hidden ${className}`}
+    >
       <svg
         viewBox="0 0 64 64"
         fill="none"

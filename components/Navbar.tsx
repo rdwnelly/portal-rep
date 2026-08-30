@@ -19,11 +19,15 @@ import {
   ChevronDown,
   Sun,
   Moon,
-  MoreHorizontal
+  MoreHorizontal,
+  CalendarDays,
+  FileText,
+  BarChart3
 } from 'lucide-react';
 import AdminLoginModal from '@/components/AdminLoginModal';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import { useTheme } from '@/lib/theme-context';
+import { UserRole } from '@/lib/types';
 
 interface NavbarProps {
   onOpenPwaModal?: () => void;
@@ -83,79 +87,115 @@ export default function Navbar({ onOpenPwaModal, hideHeaderOnHome = false }: Nav
     }
   };
 
-  const navLinks = [
+  // Role-Based Navigation Filtering
+  const currentRole: UserRole = user ? user.role : 'UNAUTHORIZED';
+
+  const allNavLinks = [
     {
-      label: 'Portal Aplikasi',
+      label: 'Beranda',
       href: '/',
+      icon: Home,
+      active: pathname === '/',
+      allowedRoles: ['IT_ADMIN', 'EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE', 'UNAUTHORIZED'] as UserRole[],
+    },
+    {
+      label: 'Aplikasi',
+      href: '/apps',
       icon: LayoutGrid,
-      active: pathname === '/' || pathname === '/dashboard',
+      active: pathname === '/apps' || pathname === '/dashboard',
+      allowedRoles: ['IT_ADMIN', 'EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE', 'UNAUTHORIZED'] as UserRole[],
+    },
+    {
+      label: 'Eksekutif',
+      href: '/eksekutif',
+      icon: BarChart3,
+      active: pathname === '/eksekutif',
+      allowedRoles: ['IT_ADMIN', 'EXECUTIVE'] as UserRole[], // Khusus Pimpinan & IT Superadmin
+    },
+    {
+      label: 'Agenda Budaya',
+      href: '/agenda',
+      icon: CalendarDays,
+      active: pathname === '/agenda',
+      allowedRoles: ['IT_ADMIN', 'EXECUTIVE', 'OPERATIONAL', 'UNAUTHORIZED'] as UserRole[], // Khusus Operasional & Pimpinan
+    },
+    {
+      label: 'Pusat Dokumen',
+      href: '/dokumen',
+      icon: FileText,
+      active: pathname === '/dokumen',
+      allowedRoles: ['IT_ADMIN', 'EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE', 'UNAUTHORIZED'] as UserRole[],
     },
     {
       label: 'Pengumuman',
       href: '/dashboard/notices',
       icon: Bell,
       active: pathname === '/dashboard/notices',
+      allowedRoles: ['IT_ADMIN', 'EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE', 'UNAUTHORIZED'] as UserRole[],
     },
     {
-      label: 'Kelola Sistem (Admin)',
+      label: 'Panel Admin',
       href: '/dashboard/admin',
       icon: ShieldCheck,
       active: pathname === '/dashboard/admin',
+      allowedRoles: ['IT_ADMIN', 'EXECUTIVE'] as UserRole[], // Khusus IT & Pimpinan
     },
   ];
 
+  // Only show navigation menus authorized for current user's role
+  const navLinks = allNavLinks.filter((link) => link.allowedRoles.includes(currentRole));
+
   return (
     <>
-      {(!hideHeaderOnHome || pathname !== '/') && (
-        <header className="sticky top-0 z-40 w-full border-b border-amber-500/20 bg-[#081812]/90 backdrop-blur-md transition-all">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-18">
-              {/* Brand Logo & Name */}
-              <Link href="/" className="flex items-center gap-3 group">
-                <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-amber-500/30 shadow-lg shadow-amber-950/40 group-hover:border-amber-400/60 transition-all flex items-center justify-center bg-[#0d281e]">
-                  <Image
-                    src="/images/rep-logo.jpg"
-                    alt="Logo Rumah Etnik Papua"
-                    width={44}
-                    height={44}
-                    className="object-cover"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-black tracking-tight text-white group-hover:text-amber-400 transition-colors">
-                      PORTAL REP
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                      LIVE
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-slate-300 font-medium hidden sm:inline">
-                    Yayasan Rumah Etnik Papua
+      <header className="sticky top-0 z-40 w-full border-b border-amber-500/20 bg-[#081812]/95 backdrop-blur-md transition-all shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-18">
+            {/* Brand Logo & Name */}
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+              <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-amber-500/30 shadow-lg shadow-amber-950/40 group-hover:border-amber-400/60 transition-all flex items-center justify-center bg-[#0d281e]">
+                <Image
+                  src="/images/rep-logo.jpg"
+                  alt="Logo Rumah Etnik Papua"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm sm:text-base font-black tracking-tight text-white group-hover:text-amber-400 transition-colors">
+                    PORTAL REP
+                  </span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                    LIVE
                   </span>
                 </div>
-              </Link>
+                <span className="text-[10px] text-slate-300 font-medium hidden lg:inline">
+                  Yayasan Rumah Etnik Papua
+                </span>
+              </div>
+            </Link>
 
-              {/* Desktop Nav Links */}
-              <nav className="hidden md:flex items-center gap-1 bg-[#0c241b] p-1.5 rounded-xl border border-amber-500/20">
-                {navLinks.map((link) => {
-                  const Icon = link.icon;
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        link.active
-                          ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-md shadow-amber-950/50'
-                          : 'text-slate-300 hover:text-white hover:bg-emerald-900/40'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{link.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
+            {/* Desktop Nav Links: ALL 7 MENUS */}
+            <nav className="hidden md:flex items-center gap-1 bg-[#0c241b] p-1.5 rounded-2xl border border-amber-500/20 overflow-x-auto scrollbar-none mx-2">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      link.active
+                        ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-md shadow-amber-950/50 border border-amber-400/30'
+                        : 'text-slate-300 hover:text-white hover:bg-emerald-900/50'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${link.active ? 'text-white' : 'text-amber-400'}`} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
 
               {/* Right Side Widgets: Clock, Theme, PWA & User Profile */}
               <div className="hidden lg:flex items-center gap-3">
@@ -262,6 +302,30 @@ export default function Navbar({ onOpenPwaModal, hideHeaderOnHome = false }: Nav
                           >
                             <LayoutGrid className="w-4 h-4 text-amber-400" />
                             <span>Katalog Aplikasi</span>
+                          </Link>
+                          <Link
+                            href="/eksekutif"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
+                          >
+                            <BarChart3 className="w-4 h-4 text-amber-400" />
+                            <span>Dashboard Eksekutif</span>
+                          </Link>
+                          <Link
+                            href="/agenda"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
+                          >
+                            <CalendarDays className="w-4 h-4 text-amber-400" />
+                            <span>Kalender & Agenda</span>
+                          </Link>
+                          <Link
+                            href="/dokumen"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-emerald-900/40 rounded-lg transition-all"
+                          >
+                            <FileText className="w-4 h-4 text-emerald-400" />
+                            <span>Pusat Dokumen & SOP</span>
                           </Link>
                           <Link
                             href="/dashboard/notices"
@@ -433,7 +497,6 @@ export default function Navbar({ onOpenPwaModal, hideHeaderOnHome = false }: Nav
             </div>
           )}
         </header>
-      )}
 
       {/* Admin Login Modal */}
       <AdminLoginModal
@@ -470,7 +533,65 @@ export default function Navbar({ onOpenPwaModal, hideHeaderOnHome = false }: Nav
             </div>
 
             <div className="space-y-2">
-              {/* 1. Pengumuman */}
+              {/* 1. Dashboard Eksekutif (Khusus Pimpinan & IT Admin) */}
+              {(currentRole === 'IT_ADMIN' || currentRole === 'EXECUTIVE') && (
+                <Link
+                  href="/eksekutif"
+                  onClick={() => setMoreMenuOpen(false)}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-[#0c261e] hover:bg-[#12382c] border border-amber-500/20 text-slate-200 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                      <BarChart3 className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-bold text-white group-hover:text-amber-300">Dashboard Eksekutif</p>
+                      <p className="text-[10px] text-slate-400">Pantauan denyut operasional 4 aplikasi</p>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 text-slate-400 group-hover:text-white" />
+                </Link>
+              )}
+
+              {/* 2. Agenda Budaya */}
+              {currentRole !== 'FINANCE_WAREHOUSE' && (
+                <Link
+                  href="/agenda"
+                  onClick={() => setMoreMenuOpen(false)}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-[#0c261e] hover:bg-[#12382c] border border-amber-500/20 text-slate-200 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                      <CalendarDays className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-bold text-white group-hover:text-amber-300">Kalender & Agenda Budaya</p>
+                      <p className="text-[10px] text-slate-400">Jadwal pentas tari, homestay & rapat</p>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 text-slate-400 group-hover:text-white" />
+                </Link>
+              )}
+
+              {/* 2. Pusat Dokumen & SOP */}
+              <Link
+                href="/dokumen"
+                onClick={() => setMoreMenuOpen(false)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-[#0c261e] hover:bg-[#12382c] border border-emerald-500/20 text-slate-200 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-white group-hover:text-emerald-300">Pusat Dokumen & SOP</p>
+                    <p className="text-[10px] text-slate-400">Arsip Google Drive, formulir & legalitas</p>
+                  </div>
+                </div>
+                <ChevronDown className="w-4 h-4 -rotate-90 text-slate-400 group-hover:text-white" />
+              </Link>
+
+              {/* 3. Pengumuman */}
               <Link
                 href="/dashboard/notices"
                 onClick={() => setMoreMenuOpen(false)}
@@ -584,45 +705,30 @@ export default function Navbar({ onOpenPwaModal, hideHeaderOnHome = false }: Nav
       )}
 
       {/* ========================================================================= */}
-      {/* SIMPLIFIED 3-MENU MOBILE BOTTOM DOCK (MATCHING MOCKUP DESIGN)             */}
+      {/* ALL 7 MENUS MOBILE BOTTOM DOCK                                            */}
       {/* ========================================================================= */}
       <div className="md:hidden mobile-fixed-bottom-bar">
-        <nav className="mobile-bottom-dock flex items-center justify-around py-1.5 px-3">
-          {/* 1. Beranda */}
-          <Link
-            href="/"
-            className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl transition-all duration-200 ${
-              pathname === '/'
-                ? 'text-[#11382b] dark:text-amber-400 font-extrabold'
-                : 'text-stone-400 hover:text-stone-600 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
-            }`}
-          >
-            <Home className="w-5 h-5 mb-0.5 shrink-0" />
-            <span className="text-[10px] tracking-tight">Beranda</span>
-          </Link>
-
-          {/* 2. Aplikasi */}
-          <Link
-            href="/apps"
-            className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl transition-all duration-200 ${
-              pathname === '/apps' || pathname === '/dashboard'
-                ? 'text-[#11382b] dark:text-amber-400 font-extrabold'
-                : 'text-stone-400 hover:text-stone-600 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
-            }`}
-          >
-            <LayoutGrid className="w-5 h-5 mb-0.5 shrink-0" />
-            <span className="text-[10px] tracking-tight">Aplikasi</span>
-          </Link>
-
-          {/* 3. Lainnya */}
-          <button
-            type="button"
-            onClick={() => setMoreMenuOpen(true)}
-            className="flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl text-stone-400 hover:text-stone-600 dark:text-slate-400 dark:hover:text-slate-200 transition-all duration-200 cursor-pointer font-medium"
-          >
-            <MoreHorizontal className="w-5 h-5 mb-0.5 shrink-0" />
-            <span className="text-[10px] tracking-tight">Lainnya</span>
-          </button>
+        <nav className="mobile-bottom-dock flex items-center justify-between py-1.5 px-2 overflow-x-auto scrollbar-none gap-1">
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = link.active;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex-1 min-w-[58px] flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? 'text-amber-500 dark:text-amber-400 font-black bg-amber-500/15 border border-amber-500/30'
+                    : 'text-stone-400 hover:text-stone-600 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
+                }`}
+              >
+                <Icon className={`w-4 h-4 mb-0.5 shrink-0 ${isActive ? 'text-amber-400' : ''}`} />
+                <span className="text-[9px] tracking-tight leading-tight text-center truncate max-w-[56px]">
+                  {link.label}
+                </span>
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </>

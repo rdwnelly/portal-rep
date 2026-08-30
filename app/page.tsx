@@ -18,27 +18,33 @@ import {
   X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { getAppsList, getNotices } from '@/lib/storage';
-import { INITIAL_APPS, INITIAL_NOTICES } from '@/lib/seed-data';
-import { AppItem, NoticeItem } from '@/lib/types';
+import { getAppsList, getNotices, getEvents } from '@/lib/storage';
+import { INITIAL_APPS, INITIAL_NOTICES, INITIAL_EVENTS } from '@/lib/seed-data';
+import { AppItem, NoticeItem, CalendarEvent } from '@/lib/types';
 import { useAuth } from '@/lib/auth-context';
 import Navbar from '@/components/Navbar';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import NoticeDetailModal from '@/components/NoticeDetailModal';
+import EventDetailModal from '@/components/EventDetailModal';
 import RequestAccessModal from '@/components/RequestAccessModal';
+import WeatherWidget from '@/components/WeatherWidget';
+import ExecutiveOverviewWidget from '@/components/ExecutiveOverviewWidget';
 
 let cachedApps: AppItem[] = INITIAL_APPS;
 let cachedNotices: NoticeItem[] = INITIAL_NOTICES;
+let cachedEvents: CalendarEvent[] = INITIAL_EVENTS;
 
 function subscribeStorage(callback: () => void) {
   if (typeof window === 'undefined') return () => {};
   cachedApps = getAppsList();
   cachedNotices = getNotices();
+  cachedEvents = getEvents();
   
   const handler = () => {
     cachedApps = getAppsList();
     cachedNotices = getNotices();
+    cachedEvents = getEvents();
     callback();
   };
 
@@ -66,8 +72,15 @@ export default function OpenPortalHomePage() {
     () => INITIAL_NOTICES
   );
 
+  const events = useSyncExternalStore(
+    subscribeStorage,
+    () => (typeof window !== 'undefined' ? cachedEvents : INITIAL_EVENTS),
+    () => INITIAL_EVENTS
+  );
+
   // Modals state
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
   const [requestAccessModalOpen, setRequestAccessModalOpen] = useState(false);
   const [selectedAppForRequest, setSelectedAppForRequest] = useState<AppItem | null>(null);
@@ -153,6 +166,8 @@ export default function OpenPortalHomePage() {
 
   const currentApps = apps.length > 0 ? apps : getAppsList();
   const currentNotices = notices.length > 0 ? notices : getNotices();
+  const currentEvents = events.length > 0 ? events : getEvents();
+  const upcomingEvent = currentEvents.find((e) => e.isHighlight) || currentEvents[0];
 
   const handleLaunchClick = (url: string) => {
     if (typeof window !== 'undefined') {
@@ -241,8 +256,8 @@ export default function OpenPortalHomePage() {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-[#f6f4ee] dark:bg-[#07130f] text-stone-900 dark:text-slate-100 selection:bg-amber-500 selection:text-black">
-      {/* Top Navbar Component with hidden sticky header on home so the botanical hero is dominant */}
-      <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} hideHeaderOnHome={true} />
+      {/* Top Navbar Component */}
+      <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} hideHeaderOnHome={false} />
 
       {/* ========================================================================= */}
       {/* 1. BOTANICAL DARK FOREST GREEN HEADER (MATCHING SCREENSHOT)               */}
@@ -270,17 +285,21 @@ export default function OpenPortalHomePage() {
               </div>
             </Link>
 
-            {/* Notification Bell Button */}
-            <Link
-              href="/dashboard/notices"
-              className="relative p-2.5 rounded-full bg-[#0a2319]/80 border border-emerald-500/30 hover:border-amber-400 text-amber-200 hover:text-white transition-all shadow-md active:scale-95 cursor-pointer"
-              title="Papan Pengumuman"
-            >
-              <Bell className="w-5 h-5" />
-              {currentNotices.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-[#113527] animate-pulse" />
-              )}
-            </Link>
+            {/* Weather Widget & Notification Bell Button */}
+            <div className="flex items-center gap-2">
+              <WeatherWidget isCompact={true} />
+
+              <Link
+                href="/dashboard/notices"
+                className="relative p-2.5 rounded-full bg-[#0a2319]/80 border border-emerald-500/30 hover:border-amber-400 text-amber-200 hover:text-white transition-all shadow-md active:scale-95 cursor-pointer"
+                title="Papan Pengumuman"
+              >
+                <Bell className="w-5 h-5" />
+                {currentNotices.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-[#113527] animate-pulse" />
+                )}
+              </Link>
+            </div>
           </div>
 
           {/* Date Tag & Greeting with Compact Calendar Widget */}
@@ -354,6 +373,13 @@ export default function OpenPortalHomePage() {
           {/* Right Chevron */}
           <ChevronRight className="w-5 h-5 text-stone-400 dark:text-stone-300 group-hover:text-[#11382b] dark:group-hover:text-amber-300 group-hover:translate-x-0.5 transition-all shrink-0" />
         </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 2.5. EXECUTIVE OVERVIEW METRICS (UNIFIED 4 APPS KPI)                      */}
+      {/* ========================================================================= */}
+      <section className="mt-5 mx-4 sm:mx-6 max-w-2xl sm:mx-auto w-[calc(100%-2rem)] sm:w-full">
+        <ExecutiveOverviewWidget />
       </section>
 
       {/* ========================================================================= */}
@@ -449,6 +475,45 @@ export default function OpenPortalHomePage() {
             Terakhir diperbarui {timeWIT} WIT
           </span>
         </div>
+
+        {/* Agenda Budaya & Master Event Quick Widget */}
+        {upcomingEvent && (
+          <div
+            onClick={() => setSelectedEvent(upcomingEvent)}
+            className="mt-4 p-4 rounded-3xl bg-gradient-to-r from-[#113527] to-[#0a2319] border-2 border-amber-500/30 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer group flex items-center justify-between gap-3 relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <CalendarDays className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                    AGENDA TERDEKAT
+                  </span>
+                  <span className="text-[11px] text-amber-400 font-mono font-bold">
+                    {upcomingEvent.timeStart} WIT
+                  </span>
+                </div>
+                <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition-colors truncate mt-0.5">
+                  {upcomingEvent.title}
+                </h4>
+                <p className="text-[11px] text-emerald-200/80 truncate">
+                  📍 {upcomingEvent.location}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/agenda"
+              onClick={(e) => e.stopPropagation()}
+              className="px-3 py-1.5 rounded-xl bg-amber-600/80 hover:bg-amber-600 text-white text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 border border-amber-400/30"
+            >
+              <span>Kalender</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
       </main>
 
       {/* ========================================================================= */}
@@ -537,6 +602,15 @@ export default function OpenPortalHomePage() {
         <NoticeDetailModal
           notice={selectedNotice}
           onClose={() => setSelectedNotice(null)}
+        />
+      )}
+
+      {/* Event Detail Modal */}
+      {selectedEvent && (
+        <EventDetailModal
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          canManage={user?.role === 'EXECUTIVE' || user?.role === 'IT_ADMIN'}
         />
       )}
 

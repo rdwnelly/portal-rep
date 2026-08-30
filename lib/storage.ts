@@ -1,7 +1,7 @@
 'use client';
 
-import { AppItem, NoticeItem, WhitelistedUser, AuditLog, AccessRequest, UserRole, FoundationInfo } from './types';
-import { INITIAL_WHITELIST, INITIAL_APPS, INITIAL_NOTICES, INITIAL_LOGS } from './seed-data';
+import { AppItem, NoticeItem, WhitelistedUser, AuditLog, AccessRequest, UserRole, FoundationInfo, CalendarEvent, FoundationDocument, ExecutiveMetrics, MetricsPeriod } from './types';
+import { INITIAL_WHITELIST, INITIAL_APPS, INITIAL_NOTICES, INITIAL_LOGS, INITIAL_EVENTS, INITIAL_DOCUMENTS, INITIAL_EXECUTIVE_METRICS } from './seed-data';
 
 const STORAGE_KEYS = {
   WHITELIST: 'portal_rep_whitelist_v1',
@@ -11,6 +11,9 @@ const STORAGE_KEYS = {
   REQUESTS: 'portal_rep_requests_v1',
   CUSTOM_USER: 'portal_rep_current_user_v1',
   INFO: 'portal_rep_foundation_info_v1',
+  EVENTS: 'portal_rep_events_v1',
+  DOCUMENTS: 'portal_rep_documents_v1',
+  METRICS: 'portal_rep_executive_metrics_v1',
 };
 
 // Safe LocalStorage helpers
@@ -379,6 +382,202 @@ export function resolveAccessRequest(
   }
 }
 
+// ==========================================
+// Calendar Events Operations (Master Agenda)
+// ==========================================
+export function getEvents(): CalendarEvent[] {
+  return getItem<CalendarEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS);
+}
+
+export function getEventById(id: string): CalendarEvent | undefined {
+  const list = getEvents();
+  return list.find((e) => e.id === id);
+}
+
+export function addEvent(
+  event: Omit<CalendarEvent, 'id' | 'createdAt'>,
+  authorName: string
+): CalendarEvent {
+  const current = getEvents();
+  const newEvent: CalendarEvent = {
+    ...event,
+    id: `event-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+  };
+
+  const updated = [newEvent, ...current].sort((a, b) => {
+    return new Date(`${a.date}T${a.timeStart || '00:00'}`).getTime() - new Date(`${b.date}T${b.timeStart || '00:00'}`).getTime();
+  });
+  setItem(STORAGE_KEYS.EVENTS, updated);
+
+  addAuditLog({
+    userEmail: 'internal@rumahetnikpapua.org',
+    userName: authorName,
+    action: 'CREATE_EVENT',
+    details: `Menambahkan agenda baru: "${event.title}" pada tanggal ${event.date} (${event.timeStart} WIT)`,
+    category: 'EVENT',
+  });
+
+  return newEvent;
+}
+
+export function updateEvent(
+  id: string,
+  updates: Partial<CalendarEvent>,
+  authorName: string
+): void {
+  const current = getEvents();
+  const index = current.findIndex((e) => e.id === id);
+  if (index !== -1) {
+    const old = current[index];
+    current[index] = { ...old, ...updates };
+    setItem(STORAGE_KEYS.EVENTS, current);
+
+    addAuditLog({
+      userEmail: 'internal@rumahetnikpapua.org',
+      userName: authorName,
+      action: 'UPDATE_EVENT',
+      details: `Memperbarui agenda: "${old.title}"`,
+      category: 'EVENT',
+    });
+  }
+}
+
+export function deleteEvent(id: string, authorName: string): void {
+  const current = getEvents();
+  const target = current.find((e) => e.id === id);
+  const updated = current.filter((e) => e.id !== id);
+  setItem(STORAGE_KEYS.EVENTS, updated);
+
+  if (target) {
+    addAuditLog({
+      userEmail: 'internal@rumahetnikpapua.org',
+      userName: authorName,
+      action: 'DELETE_EVENT',
+      details: `Menghapus agenda: "${target.title}" (tanggal ${target.date})`,
+      category: 'EVENT',
+    });
+  }
+}
+
+// ==========================================
+// Documents & SOP Operations (Google Drive)
+// ==========================================
+export function getDocuments(): FoundationDocument[] {
+  return getItem<FoundationDocument[]>(STORAGE_KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
+}
+
+export function getDocumentById(id: string): FoundationDocument | undefined {
+  const list = getDocuments();
+  return list.find((d) => d.id === id);
+}
+
+export function addDocument(
+  doc: Omit<FoundationDocument, 'id' | 'lastUpdated'>,
+  adminName: string
+): FoundationDocument {
+  const current = getDocuments();
+  const newDoc: FoundationDocument = {
+    ...doc,
+    id: `doc-${Date.now()}`,
+    lastUpdated: new Date().toISOString(),
+    downloadsCount: doc.downloadsCount || 0,
+  };
+
+  const updated = [newDoc, ...current];
+  setItem(STORAGE_KEYS.DOCUMENTS, updated);
+
+  addAuditLog({
+    userEmail: 'internal@rumahetnikpapua.org',
+    userName: adminName,
+    action: 'UPLOAD_DOCUMENT',
+    details: `Menambahkan dokumen baru: "${doc.title}" (${doc.code || 'SOP'})`,
+    category: 'DOCUMENT',
+  });
+
+  return newDoc;
+}
+
+export function updateDocument(
+  id: string,
+  updates: Partial<FoundationDocument>,
+  adminName: string
+): void {
+  const current = getDocuments();
+  const index = current.findIndex((d) => d.id === id);
+  if (index !== -1) {
+    const old = current[index];
+    current[index] = {
+      ...old,
+      ...updates,
+      lastUpdated: new Date().toISOString(),
+    };
+    setItem(STORAGE_KEYS.DOCUMENTS, current);
+
+    addAuditLog({
+      userEmail: 'internal@rumahetnikpapua.org',
+      userName: adminName,
+      action: 'UPDATE_DOCUMENT',
+      details: `Memperbarui dokumen: "${old.title}" (${old.code})`,
+      category: 'DOCUMENT',
+    });
+  }
+}
+
+export function deleteDocument(id: string, adminName: string): void {
+  const current = getDocuments();
+  const target = current.find((d) => d.id === id);
+  const updated = current.filter((d) => d.id !== id);
+  setItem(STORAGE_KEYS.DOCUMENTS, updated);
+
+  if (target) {
+    addAuditLog({
+      userEmail: 'internal@rumahetnikpapua.org',
+      userName: adminName,
+      action: 'DELETE_DOCUMENT',
+      details: `Menghapus dokumen: "${target.title}" (${target.code})`,
+      category: 'DOCUMENT',
+    });
+  }
+}
+
+export function incrementDocDownload(id: string): void {
+  const current = getDocuments();
+  const index = current.findIndex((d) => d.id === id);
+  if (index !== -1) {
+    current[index].downloadsCount = (current[index].downloadsCount || 0) + 1;
+    setItem(STORAGE_KEYS.DOCUMENTS, current);
+  }
+}
+
+// ==========================================
+// Executive Metrics Operations
+// ==========================================
+export function getAllExecutiveMetrics(): Record<MetricsPeriod, ExecutiveMetrics> {
+  return getItem<Record<MetricsPeriod, ExecutiveMetrics>>(
+    STORAGE_KEYS.METRICS,
+    INITIAL_EXECUTIVE_METRICS
+  );
+}
+
+export function getExecutiveMetrics(period: MetricsPeriod = 'TODAY'): ExecutiveMetrics {
+  const all = getAllExecutiveMetrics();
+  return all[period] || INITIAL_EXECUTIVE_METRICS[period];
+}
+
+export function updateExecutiveMetrics(
+  period: MetricsPeriod,
+  updates: Partial<ExecutiveMetrics>
+): void {
+  const all = getAllExecutiveMetrics();
+  all[period] = {
+    ...all[period],
+    ...updates,
+    lastUpdated: new Date().toISOString(),
+  };
+  setItem(STORAGE_KEYS.METRICS, all);
+}
+
 // Reset data to defaults
 export function resetToDefaults(): void {
   if (typeof window === 'undefined') return;
@@ -387,5 +586,9 @@ export function resetToDefaults(): void {
   localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(INITIAL_NOTICES));
   localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(INITIAL_LOGS));
   localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(INITIAL_EVENTS));
+  localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(INITIAL_DOCUMENTS));
+  localStorage.setItem(STORAGE_KEYS.METRICS, JSON.stringify(INITIAL_EXECUTIVE_METRICS));
   window.dispatchEvent(new CustomEvent('portal_rep_storage_update', { detail: { key: 'ALL' } }));
 }
+
