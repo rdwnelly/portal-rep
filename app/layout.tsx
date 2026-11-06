@@ -4,6 +4,8 @@ import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider } from '@/lib/theme-context';
 import PWARegister from '@/components/PWARegister';
+import StorageStatusToast from '@/components/StorageStatusToast';
+import PushOptIn from '@/components/PushOptIn';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -57,6 +59,8 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <PWARegister />
+            <StorageStatusToast />
+            <PushOptIn />
             {children}
           </AuthProvider>
         </ThemeProvider>

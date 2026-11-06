@@ -1,20 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FoundationDocument, DocumentCategory, DocumentFileType } from '@/lib/types';
 import {
   X,
-  FileText,
   HardDrive,
   Save,
   Plus,
   Edit,
   AlertCircle,
-  Building,
   Tag,
   ShieldAlert,
-  Sparkles,
-  Link2
+  Sparkles
 } from 'lucide-react';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
 
@@ -26,8 +23,13 @@ interface CreateDocumentModalProps {
   currentUserDisplayName?: string;
 }
 
-export default function CreateDocumentModal({
-  isOpen,
+export default function CreateDocumentModal(props: CreateDocumentModalProps) {
+  if (!props.isOpen) return null;
+  // Formulir dipasang ulang setiap kali dibuka / ganti dokumen → state selalu bersih tanpa effect.
+  return <CreateDocumentForm key={props.initialData?.id ?? 'new'} {...props} />;
+}
+
+function CreateDocumentForm({
   onClose,
   onSave,
   initialData,
@@ -35,52 +37,19 @@ export default function CreateDocumentModal({
 }: CreateDocumentModalProps) {
   const isEditing = !!initialData;
 
-  const [title, setTitle] = useState('');
-  const [code, setCode] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<DocumentCategory>('SOP_OPERASIONAL');
-  const [department, setDepartment] = useState('Operasional & Frontdesk');
-  const [fileType, setFileType] = useState<DocumentFileType>('PDF');
-  const [fileSize, setFileSize] = useState('1.5 MB');
-  const [version, setVersion] = useState('v1.0 (2026)');
-  const [gdriveUrl, setGdriveUrl] = useState('');
-  const [isConfidential, setIsConfidential] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [tagsInput, setTagsInput] = useState('');
+  const [title, setTitle] = useState(initialData?.title ?? '');
+  const [code, setCode] = useState(initialData?.code ?? 'SOP-REP-');
+  const [description, setDescription] = useState(initialData?.description ?? '');
+  const [category, setCategory] = useState<DocumentCategory>(initialData?.category ?? 'SOP_OPERASIONAL');
+  const [department, setDepartment] = useState(initialData?.department ?? 'Operasional & Frontdesk');
+  const [fileType, setFileType] = useState<DocumentFileType>(initialData?.fileType ?? 'PDF');
+  const [fileSize, setFileSize] = useState(initialData ? initialData.fileSize || '' : '1.2 MB');
+  const [version, setVersion] = useState(initialData?.version ?? 'v1.0 (2026)');
+  const [gdriveUrl, setGdriveUrl] = useState(initialData?.gdriveUrl ?? '');
+  const [isConfidential, setIsConfidential] = useState(!!initialData?.isConfidential);
+  const [isFavorite, setIsFavorite] = useState(!!initialData?.isFavorite);
+  const [tagsInput, setTagsInput] = useState(initialData ? initialData.tags.join(', ') : 'SOP, Yayasan, Operasional');
   const [errorMsg, setErrorMsg] = useState('');
-
-  useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title);
-      setCode(initialData.code);
-      setDescription(initialData.description);
-      setCategory(initialData.category);
-      setDepartment(initialData.department);
-      setFileType(initialData.fileType);
-      setFileSize(initialData.fileSize || '');
-      setVersion(initialData.version);
-      setGdriveUrl(initialData.gdriveUrl);
-      setIsConfidential(!!initialData.isConfidential);
-      setIsFavorite(!!initialData.isFavorite);
-      setTagsInput(initialData.tags.join(', '));
-    } else {
-      setTitle('');
-      setCode('SOP-REP-');
-      setDescription('');
-      setCategory('SOP_OPERASIONAL');
-      setDepartment('Operasional & Frontdesk');
-      setFileType('PDF');
-      setFileSize('1.2 MB');
-      setVersion('v1.0 (2026)');
-      setGdriveUrl('');
-      setIsConfidential(false);
-      setIsFavorite(false);
-      setTagsInput('SOP, Yayasan, Operasional');
-    }
-    setErrorMsg('');
-  }, [initialData, isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -4,9 +4,7 @@ import React, { useState } from 'react';
 import { FoundationDocument, DocumentCategory, DocumentFileType } from '@/lib/types';
 import {
   X,
-  FileText,
   ExternalLink,
-  Download,
   Share2,
   Copy,
   Check,
@@ -18,11 +16,9 @@ import {
   Tag,
   Eye,
   EyeOff,
-  Sparkles,
   HardDrive
 } from 'lucide-react';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
-import confetti from 'canvas-confetti';
 import { incrementDocDownload } from '@/lib/storage';
 
 interface DocumentDetailModalProps {
@@ -133,12 +129,6 @@ export default function DocumentDetailModal({
   const handleOpenGoogleDrive = () => {
     incrementDocDownload(doc.id);
     if (typeof window !== 'undefined') {
-      confetti({
-        particleCount: 25,
-        spread: 50,
-        origin: { y: 0.7 },
-        colors: ['#34a853', '#4285f4', '#fbbc05', '#ea4335'],
-      });
       window.open(doc.gdriveUrl, '_blank', 'noopener,noreferrer');
     }
   };

@@ -10,7 +10,6 @@ import {
   User,
   Users,
   Share2,
-  ExternalLink,
   Copy,
   Check,
   Edit,
@@ -20,7 +19,6 @@ import {
   CalendarPlus
 } from 'lucide-react';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
-import confetti from 'canvas-confetti';
 
 interface EventDetailModalProps {
   event: CalendarEvent | null;
@@ -134,14 +132,6 @@ export default function EventDetailModal({
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopied(true);
-      if (typeof window !== 'undefined') {
-        confetti({
-          particleCount: 20,
-          spread: 40,
-          origin: { y: 0.6 },
-          colors: ['#e5a93c', '#10b981'],
-        });
-      }
       setTimeout(() => setCopied(false), 2000);
     }
   };

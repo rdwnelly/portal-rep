@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { NoticeItem, NoticeCategory, NoticePriority, UserProfile } from '@/lib/types';
 import { addNotice } from '@/lib/storage';
+import { pushIfUrgent } from '@/lib/push';
 import { X, Send, Pin, AlertCircle } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface CreateNoticeModalProps {
   user: UserProfile | null;
@@ -41,15 +41,7 @@ export default function CreateNoticeModal({ user, onClose, onNoticeCreated }: Cr
         authorAvatar: user?.photoURL,
       });
 
-      if (typeof window !== 'undefined') {
-        confetti({
-          particleCount: 40,
-          spread: 60,
-          origin: { y: 0.7 },
-          colors: ['#e5a93c', '#10b981', '#3b82f6'],
-        });
-      }
-
+      pushIfUrgent(newNotice);
       onNoticeCreated(newNotice);
       onClose();
     } catch (err: unknown) {

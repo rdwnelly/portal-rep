@@ -1,0 +1,211 @@
+rules_version = '2';
+
+// =============================================================================
+// PORTAL REP — Firestore Security Rules
+//
+// Model akses:
+//  • Publik (tanpa login)   : modul aplikasi, pengumuman, agenda, info yayasan,
+//                             dokumen NON-rahasia; boleh mengirim permohonan akses.
+//  • Staf (whitelist aktif) : + dokumen rahasia, konfirmasi baca pengumuman.
+//  • EXECUTIVE / IT_ADMIN   : kelola pengumuman, agenda, dokumen, info yayasan,
+//                             lihat daftar staf & status baca,
+//                             permohonan akses; baca metrik eksekutif.
+//  • IT_ADMIN               : + whitelist karyawan, modul aplikasi, metrik, audit log.
+//
+// Role dibaca dari whitelist/{email} — dokumen yang hanya bisa diubah IT_ADMIN.
+// Email wajib terverifikasi agar akun Email/Password palsu dengan email pimpinan
+// tidak bisa memperoleh role tersebut.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Identitas & role ----------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function authEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function verified() {
+      return signedIn()
+        && request.auth.token.email is string
+        && request.auth.token.email_verified == true;
+    }
+
+    function staffPath() {
+      return /databases/$(database)/documents/whitelist/$(authEmail());
+    }
+
+    function isStaff() {
+      return verified() && exists(staffPath()) && get(staffPath()).data.active == true;
+    }
+
+    function hasRole(roles) {
+      return isStaff() && get(staffPath()).data.role in roles;
+    }
+
+    function isAdmin() {
+      return hasRole(['IT_ADMIN']);
+    }
+
+    function isManager() {
+      return hasRole(['IT_ADMIN', 'EXECUTIVE']);
+    }
+
+    // ---------- Validasi ----------
+    function str(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    function optStr(data, key, max) {
+      return !(key in data) || str(data[key], max);
+    }
+
+    function changedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // ---------- Whitelist karyawan (sumber role) ----------
+    function validWhitelist(id) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['email', 'name', 'role', 'roleTitle', 'department', 'active', 'addedAt', 'addedBy', 'avatarUrl'])
+        && d.email == id
+        && id == id.lower()
+        && d.role in ['IT_ADMIN', 'EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE']
+        && d.active is bool
+        && str(d.name, 120)
+        && str(d.roleTitle, 120)
+        && str(d.department, 160);
+    }
+
+    match /whitelist/{userEmail} {
+      // Setiap pengguna terverifikasi boleh membaca status dirinya sendiri.
+      allow get: if verified() && userEmail == authEmail();
+      // Pimpinan membutuhkan daftar staf untuk memantau konfirmasi baca instruksi.
+      allow get, list: if isManager();
+
+      // Pimpinan boleh menyetujui staf baru, tetapi tidak boleh memberi role EXECUTIVE/IT_ADMIN.
+      allow create: if validWhitelist(userEmail)
+        && (isAdmin() || (isManager() && request.resource.data.role in ['OPERATIONAL', 'FINANCE_WAREHOUSE']));
+
+      // Admin tidak bisa menurunkan role / menonaktifkan / menghapus akunnya sendiri (cegah terkunci).
+      allow update: if isAdmin()
+        && validWhitelist(userEmail)
+        && (userEmail != authEmail()
+            || (request.resource.data.role == resource.data.role
+                && request.resource.data.active == resource.data.active));
+      allow delete: if isAdmin() && userEmail != authEmail();
+    }
+
+    // ---------- Konten publik ----------
+    match /apps/{appId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow write: if isManager();
+
+      // Konfirmasi baca: staf hanya menulis atas namanya sendiri dengan role aslinya.
+      match /reads/{readerEmail} {
+        allow get: if verified() && readerEmail == authEmail();
+        allow read: if isManager();
+        allow create, update: if isStaff()
+          && readerEmail == authEmail()
+          && request.resource.data.keys().hasOnly(['email', 'name', 'role', 'readAt'])
+          && request.resource.data.email == readerEmail
+          && request.resource.data.role == get(staffPath()).data.role
+          && str(request.resource.data.name, 120)
+          && str(request.resource.data.readAt, 40);
+        allow delete: if false;
+      }
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isManager();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isManager();
+    }
+
+    // ---------- Dokumen & SOP ----------
+    function isDownloadIncrement() {
+      return changedOnly(['downloadsCount'])
+        && request.resource.data.downloadsCount == resource.data.get('downloadsCount', 0) + 1
+        && (resource.data.isConfidential == false || isStaff());
+    }
+
+    match /documents/{docId} {
+      allow read: if resource.data.isConfidential == false || isStaff();
+      allow create: if isManager() && request.resource.data.isConfidential is bool;
+      allow update: if (isManager() && request.resource.data.isConfidential is bool)
+        || isDownloadIncrement();
+      allow delete: if isManager();
+    }
+
+    // ---------- Metrik eksekutif ----------
+    match /metrics/{period} {
+      allow read: if isManager();
+      allow write: if isAdmin();
+    }
+
+    // ---------- Permohonan akses ----------
+    function validNewRequest() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'email', 'appId', 'appTitle', 'department', 'phoneNumber', 'reason', 'requestedAt', 'status'])
+        && d.keys().hasAll(['name', 'email', 'department', 'reason', 'requestedAt', 'status'])
+        && d.status == 'PENDING'
+        && str(d.name, 120) && d.name.size() > 0
+        && str(d.email, 254) && d.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && str(d.department, 160)
+        && str(d.reason, 1000) && d.reason.size() > 0
+        && str(d.requestedAt, 40)
+        && optStr(d, 'appId', 120)
+        && optStr(d, 'appTitle', 160)
+        && optStr(d, 'phoneNumber', 30);
+    }
+
+    match /accessRequests/{requestId} {
+      allow create: if validNewRequest();
+      allow read: if isManager();
+      allow update: if isManager()
+        && changedOnly(['status', 'approvedAt', 'approvedBy', 'adminNotes'])
+        && request.resource.data.status in ['APPROVED', 'REJECTED'];
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Token notifikasi push (per perangkat) ----------
+    // Hanya server (Admin SDK) yang membaca token untuk mengirim notifikasi.
+    match /pushTokens/{token} {
+      allow create, update: if isStaff()
+        && request.resource.data.keys().hasOnly(['email', 'role', 'userAgent', 'updatedAt'])
+        && request.resource.data.email == authEmail()
+        && request.resource.data.role == get(staffPath()).data.role
+        && str(request.resource.data.userAgent, 300)
+        && str(request.resource.data.updatedAt, 40)
+        && (resource == null || resource.data.email == authEmail());
+      allow delete: if verified() && resource.data.email == authEmail();
+      allow read: if false;
+    }
+
+    // ---------- Audit log (append-only) ----------
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['userEmail', 'userName', 'action', 'details', 'category', 'timestamp', 'actorEmail'])
+        && request.resource.data.actorEmail == authEmail()
+        && request.resource.data.category in ['AUTH', 'NOTICE', 'WHITELIST', 'APP_CONFIG', 'EVENT', 'DOCUMENT']
+        && str(request.resource.data.action, 80)
+        && str(request.resource.data.details, 2000)
+        && (isStaff() || request.resource.data.category == 'AUTH');
+      allow update, delete: if false;
+    }
+  }
+}

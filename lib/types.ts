@@ -69,13 +69,14 @@ export interface NoticeItem {
   isPinned: boolean;
   targetRoles?: UserRole[];
   attachments?: { name: string; url: string; size?: string }[];
+  /** Waktu notifikasi push terakhir dikirim (diisi server). */
+  lastPushAt?: string;
 }
 
 export interface AccessRequest {
   id: string;
   name: string;
   email: string;
-  proposedPassword?: string;
   appId?: string;
   appTitle?: string;
   department: string;
@@ -93,6 +94,8 @@ export interface AuditLog {
   timestamp: string;
   userEmail: string;
   userName: string;
+  /** Email akun yang benar-benar melakukan aksi (diisi otomatis & diverifikasi Security Rules). */
+  actorEmail?: string;
   action: string;
   details: string;
   category: 'AUTH' | 'NOTICE' | 'WHITELIST' | 'APP_CONFIG' | 'EVENT' | 'DOCUMENT';
@@ -238,3 +241,11 @@ export interface ExecutiveMetrics {
 
 
 
+
+/** Konfirmasi baca pengumuman oleh staf (notices/{noticeId}/reads/{email}). */
+export interface NoticeRead {
+  email: string;
+  name: string;
+  role: UserRole;
+  readAt: string;
+}
