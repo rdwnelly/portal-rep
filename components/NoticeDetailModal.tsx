@@ -13,6 +13,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import Image from 'next/image';
+import NoticeReadPanel from './NoticeReadPanel';
 
 interface NoticeDetailModalProps {
   notice: NoticeItem | null;
@@ -129,6 +130,8 @@ export default function NoticeDetailModal({ notice, onClose }: NoticeDetailModal
             </div>
           )}
         </div>
+
+        <NoticeReadPanel key={notice.id} notice={notice} />
 
         {/* Footer */}
         <div className="pt-4 mt-2 flex justify-end">

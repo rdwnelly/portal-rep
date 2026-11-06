@@ -1,46 +1,21 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { getAllExecutiveMetrics } from '@/lib/storage';
-import { INITIAL_EXECUTIVE_METRICS } from '@/lib/seed-data';
-import { ExecutiveMetrics, MetricsPeriod } from '@/lib/types';
+import { MetricsPeriod } from '@/lib/types';
+import { useLiveMetrics } from '@/lib/live-metrics';
+import { SourceOverlay } from '@/components/SourceStatus';
+import { SOURCE_LABELS } from '@/lib/integration-contract';
 import {
-  TrendingUp,
   BedDouble,
   Wallet,
   Store,
   Film,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
   AlertTriangle,
   ChevronRight,
   BarChart3
 } from 'lucide-react';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
-
-let cachedAllMetrics: Record<MetricsPeriod, ExecutiveMetrics> = INITIAL_EXECUTIVE_METRICS;
-
-function subscribeStorage(callback: () => void) {
-  if (typeof window === 'undefined') return () => {};
-  cachedAllMetrics = getAllExecutiveMetrics();
-
-  const handler = () => {
-    cachedAllMetrics = getAllExecutiveMetrics();
-    callback();
-  };
-
-  window.addEventListener('portal_rep_storage_update', handler);
-  window.addEventListener('storage', handler);
-  return () => {
-    window.removeEventListener('portal_rep_storage_update', handler);
-    window.removeEventListener('storage', handler);
-  };
-}
-
-const getMetricsSnapshot = () => (typeof window !== 'undefined' ? cachedAllMetrics : INITIAL_EXECUTIVE_METRICS);
-const getServerSnapshot = () => INITIAL_EXECUTIVE_METRICS;
 
 export function formatRupiah(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -53,13 +28,7 @@ export function formatRupiah(amount: number): string {
 export default function ExecutiveOverviewWidget() {
   const [period, setPeriod] = useState<MetricsPeriod>('TODAY');
 
-  const allMetrics = useSyncExternalStore(
-    subscribeStorage,
-    getMetricsSnapshot,
-    getServerSnapshot
-  );
-
-  const currentMetrics = (allMetrics && allMetrics[period]) ? allMetrics[period] : INITIAL_EXECUTIVE_METRICS[period];
+  const { metrics: currentMetrics, sources } = useLiveMetrics(period);
 
   return (
     <div className="rounded-3xl bg-gradient-to-b from-[#091f17] via-[#0b241b] to-[#071711] border-2 border-amber-500/30 text-white p-5 sm:p-6 shadow-2xl relative overflow-hidden">
@@ -125,7 +94,8 @@ export default function ExecutiveOverviewWidget() {
       {/* 4 Pillars Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-4 relative z-10">
         {/* Pillar 1: Reservasi Homestay */}
-        <div className="p-3.5 rounded-2xl bg-[#081a13] border border-amber-500/20 flex flex-col justify-between space-y-2.5">
+        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-amber-500/20 flex flex-col justify-between space-y-2.5">
+          <SourceOverlay compact state={sources.reservasi} appName={SOURCE_LABELS.reservasi} />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
@@ -162,7 +132,8 @@ export default function ExecutiveOverviewWidget() {
         </div>
 
         {/* Pillar 2: SIK-REP Keuangan */}
-        <div className="p-3.5 rounded-2xl bg-[#081a13] border border-emerald-500/20 flex flex-col justify-between space-y-2.5">
+        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-emerald-500/20 flex flex-col justify-between space-y-2.5">
+          <SourceOverlay compact state={sources.keuangan} appName={SOURCE_LABELS.keuangan} />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
@@ -193,7 +164,8 @@ export default function ExecutiveOverviewWidget() {
         </div>
 
         {/* Pillar 3: POS Kasir Yaswar & Gudang */}
-        <div className="p-3.5 rounded-2xl bg-[#081a13] border border-teal-500/20 flex flex-col justify-between space-y-2.5">
+        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-teal-500/20 flex flex-col justify-between space-y-2.5">
+          <SourceOverlay compact state={sources.posGudang} appName={SOURCE_LABELS.posGudang} />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center">
@@ -227,7 +199,8 @@ export default function ExecutiveOverviewWidget() {
         </div>
 
         {/* Pillar 4: Zeey Studio Media */}
-        <div className="p-3.5 rounded-2xl bg-[#081a13] border border-indigo-500/20 flex flex-col justify-between space-y-2.5">
+        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-indigo-500/20 flex flex-col justify-between space-y-2.5">
+          <SourceOverlay compact state={sources.zeeyStudio} appName={SOURCE_LABELS.zeeyStudio} />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
@@ -255,7 +228,7 @@ export default function ExecutiveOverviewWidget() {
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full"
                 style={{
-                  width: `${(currentMetrics.zeeyStudio.cloudStorageUsedGb / currentMetrics.zeeyStudio.totalCloudStorageGb) * 100}%`,
+                  width: `${(currentMetrics.zeeyStudio.totalCloudStorageGb ? (currentMetrics.zeeyStudio.cloudStorageUsedGb / currentMetrics.zeeyStudio.totalCloudStorageGb) * 100 : 0)}%`,
                 }}
               />
             </div>

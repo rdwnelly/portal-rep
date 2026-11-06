@@ -6,8 +6,6 @@ import {
   UserPlus,
   Mail,
   Lock,
-  Eye,
-  EyeOff,
   Building,
   Phone,
   FileText,
@@ -17,7 +15,6 @@ import {
   Send,
   Layers
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { submitAccessRequest } from '@/lib/storage';
 import { AppItem } from '@/lib/types';
 import { PapuanBorderCorner } from './PapuanMotif';
@@ -50,8 +47,6 @@ export default function RequestAccessModal({
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [reason, setReason] = useState('');
@@ -69,7 +64,7 @@ export default function RequestAccessModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim() || !reason.trim()) {
+    if (!name.trim() || !email.trim() || !reason.trim()) {
       alert('Mohon lengkapi seluruh formulir pendaftaran!');
       return;
     }
@@ -80,22 +75,12 @@ export default function RequestAccessModal({
       const newReq = submitAccessRequest({
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        proposedPassword: password,
         appId: selectedAppId,
         appTitle: getTargetAppTitle(),
         department,
         phoneNumber: phoneNumber.trim() || undefined,
         reason: reason.trim(),
       });
-
-      if (typeof window !== 'undefined') {
-        confetti({
-          particleCount: 50,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#e5a93c', '#0f382a', '#10b981', '#3b82f6'],
-        });
-      }
 
       setSubmittedReqId(newReq.id);
       setIsSubmitted(true);
@@ -112,7 +97,6 @@ export default function RequestAccessModal({
     setCustomAppId(null);
     setName('');
     setEmail('');
-    setPassword('');
     setPhoneNumber('');
     setReason('');
     onClose();
@@ -262,32 +246,13 @@ export default function RequestAccessModal({
                 </div>
               </div>
 
-              {/* Proposed Password */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-amber-400" />
-                    <span>Kata Sandi (Password) yang Diajukan <span className="text-red-400">*</span></span>
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-normal">Akan didaftarkan oleh admin</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Buat kata sandi minimal 6 karakter..."
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#06160f] border border-amber-500/25 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-300 p-1 cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+              {/* Catatan keamanan: kata sandi tidak pernah dikirim lewat formulir ini */}
+              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/25 text-[11px] text-emerald-200 flex items-start gap-2">
+                <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400" />
+                <span>
+                  Kata sandi <strong>tidak</strong> diminta di sini. Setelah disetujui, Admin IT akan memberi tahu cara
+                  membuat kata sandi Anda sendiri — tidak ada pihak lain yang mengetahuinya.
+                </span>
               </div>
 
               {/* Row: Department & WhatsApp */}

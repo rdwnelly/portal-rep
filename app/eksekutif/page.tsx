@@ -1,88 +1,52 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
-import { getAllExecutiveMetrics, getAppsList } from '@/lib/storage';
-import { INITIAL_EXECUTIVE_METRICS, INITIAL_APPS } from '@/lib/seed-data';
-import { ExecutiveMetrics, MetricsPeriod, AppItem } from '@/lib/types';
+import React, { useState } from 'react';
+import { getAppsList } from '@/lib/storage';
+import { useLiveMetrics, hasData } from '@/lib/live-metrics';
+import { SourceBadge, SourceOverlay } from '@/components/SourceStatus';
+import { SOURCE_LABELS } from '@/lib/integration-contract';
+import { INITIAL_APPS } from '@/lib/seed-data';
+import { MetricsPeriod } from '@/lib/types';
 import Navbar from '@/components/Navbar';
-import PWAInstallModal from '@/components/PWAInstallModal';
-import PWAInstallBanner from '@/components/PWAInstallBanner';
+import RoleGuard from '@/components/RoleGuard';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
 import { formatRupiah } from '@/components/ExecutiveOverviewWidget';
-import confetti from 'canvas-confetti';
 import {
-  TrendingUp,
   BedDouble,
   Wallet,
   Store,
   Film,
   ExternalLink,
   ShieldCheck,
-  Sparkles,
   AlertTriangle,
-  ChevronRight,
-  BarChart3,
-  Calendar,
-  Building,
-  Users,
-  Clock,
   Printer,
   Share2,
   RefreshCw,
-  ArrowUpRight,
   CheckCircle2,
-  Lock,
-  Layers,
   HardDrive
 } from 'lucide-react';
 
-let cachedAllMetrics: Record<MetricsPeriod, ExecutiveMetrics> = INITIAL_EXECUTIVE_METRICS;
-
-function subscribeStorage(callback: () => void) {
-  if (typeof window === 'undefined') return () => {};
-  cachedAllMetrics = getAllExecutiveMetrics();
-
-  const handler = () => {
-    cachedAllMetrics = getAllExecutiveMetrics();
-    callback();
-  };
-
-  window.addEventListener('portal_rep_storage_update', handler);
-  window.addEventListener('storage', handler);
-  return () => {
-    window.removeEventListener('portal_rep_storage_update', handler);
-    window.removeEventListener('storage', handler);
-  };
+export default function ExecutiveDashboardPage() {
+  return (
+    <RoleGuard allow={['IT_ADMIN', 'EXECUTIVE']} pageName="Dasbor Eksekutif" returnTo="/eksekutif">
+      <ExecutiveDashboardContent />
+    </RoleGuard>
+  );
 }
 
-const getMetricsSnapshot = () => (typeof window !== 'undefined' ? cachedAllMetrics : INITIAL_EXECUTIVE_METRICS);
-const getServerSnapshot = () => INITIAL_EXECUTIVE_METRICS;
-
-export default function ExecutiveDashboardPage() {
-  const { user } = useAuth();
+function ExecutiveDashboardContent() {
   const [period, setPeriod] = useState<MetricsPeriod>('TODAY');
-  const [pwaModalOpen, setPwaModalOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   const apps = typeof window !== 'undefined' ? getAppsList() : INITIAL_APPS;
 
-  const allMetrics = useSyncExternalStore(
-    subscribeStorage,
-    getMetricsSnapshot,
-    getServerSnapshot
-  );
-
-  const currentMetrics = (allMetrics && allMetrics[period]) ? allMetrics[period] : INITIAL_EXECUTIVE_METRICS[period];
+  // Data asli dari sub-aplikasi via /api/metrics (atau data contoh berlabel di mode demo).
+  const live = useLiveMetrics(period);
+  const currentMetrics = live.metrics;
+  const sources = live.sources;
+  const refreshing = live.loading;
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('portal_rep_storage_update', { detail: { key: 'METRICS' } }));
-      confetti({ particleCount: 20, spread: 40, origin: { y: 0.6 } });
-    }
-    setTimeout(() => setRefreshing(false), 500);
+    live.refresh();
   };
 
   const handlePrint = () => {
@@ -95,7 +59,28 @@ export default function ExecutiveDashboardPage() {
     const periodText =
       period === 'TODAY' ? 'HARI INI' : period === 'THIS_WEEK' ? 'PEKAN INI' : 'BULAN INI';
 
-    const text = `*📊 LAPORAN KINERJA EKSEKUTIF - YAYASAN RUMAH ETNIK PAPUA*\n_Periode: ${periodText}_\n\n🏡 *1. RESERVASI HOMESTAY & WISATA*\n• Okupansi: ${currentMetrics.reservasi.occupancyRate}% (${currentMetrics.reservasi.occupiedHomestay}/${currentMetrics.reservasi.totalHomestay} Kamar)\n• Tamu Menginap: ${currentMetrics.reservasi.activeGuestsToday} Orang\n• Tiket Wisata Terjual: ${currentMetrics.reservasi.totalTicketsSold} Tiket\n• Estimasi Pendapatan: ${formatRupiah(currentMetrics.reservasi.revenueEstimated)}\n\n💰 *2. KEUANGAN SIK-REP*\n• Saldo Kas Yayasan: ${formatRupiah(currentMetrics.keuangan.totalCashBalance)}\n• Pemasukan: ${formatRupiah(currentMetrics.keuangan.monthlyIncome)}\n• Pengeluaran: ${formatRupiah(currentMetrics.keuangan.monthlyExpense)}\n• Arus Kas Bersih: ${formatRupiah(currentMetrics.keuangan.netCashFlow)}\n\n🛍️ *3. POS YASWAR CAFE & GUDANG OMG*\n• Omset Kasir: ${formatRupiah(currentMetrics.posGudang.dailySalesVolume)}\n• Total Transaksi: ${currentMetrics.posGudang.dailyTransactionsCount} Struk\n• Menu Terlaris: ${currentMetrics.posGudang.popularItemToday}\n• Alert Stok Menipis: ${currentMetrics.posGudang.lowStockAlerts.length} Item\n\n📸 *4. ZEEY STUDIO (MEDIA & ASET BUDAYA)*\n• Total Aset Media: ${currentMetrics.zeeyStudio.totalMediaAssets} File (${currentMetrics.zeeyStudio.culturalVideosCount} Video / ${currentMetrics.zeeyStudio.highResPhotosCount} Foto)\n• Cloud Storage: ${currentMetrics.zeeyStudio.cloudStorageUsedGb} GB / ${currentMetrics.zeeyStudio.totalCloudStorageGb} GB\n\n_Disinkronkan dari PORTAL REP (Sorong, Papua Barat Daya)_`;
+    const m = currentMetrics;
+    const off = (key: keyof typeof sources) => `• _${SOURCE_LABELS[key]} belum terhubung ke portal_\n`;
+    const text =
+      `*📊 LAPORAN KINERJA EKSEKUTIF - YAYASAN RUMAH ETNIK PAPUA*\n_Periode: ${periodText}_\n\n` +
+      `🏡 *1. RESERVASI HOMESTAY & WISATA*\n` +
+      (hasData(sources.reservasi)
+        ? `• Okupansi: ${m.reservasi.occupancyRate}% (${m.reservasi.occupiedHomestay}/${m.reservasi.totalHomestay} Kamar)\n• Tamu Menginap: ${m.reservasi.activeGuestsToday} Orang\n• Tiket Wisata Terjual: ${m.reservasi.totalTicketsSold} Tiket\n• Estimasi Pendapatan: ${formatRupiah(m.reservasi.revenueEstimated)}\n`
+        : off('reservasi')) +
+      `\n💰 *2. KEUANGAN SIK-REP*\n` +
+      (hasData(sources.keuangan)
+        ? `• Saldo Kas Yayasan: ${formatRupiah(m.keuangan.totalCashBalance)}\n• Pemasukan: ${formatRupiah(m.keuangan.monthlyIncome)}\n• Pengeluaran: ${formatRupiah(m.keuangan.monthlyExpense)}\n• Arus Kas Bersih: ${formatRupiah(m.keuangan.netCashFlow)}\n`
+        : off('keuangan')) +
+      `\n🛍️ *3. POS YASWAR CAFE & GUDANG OMG*\n` +
+      (hasData(sources.posGudang)
+        ? `• Omset Kasir: ${formatRupiah(m.posGudang.dailySalesVolume)}\n• Total Transaksi: ${m.posGudang.dailyTransactionsCount} Struk\n• Menu Terlaris: ${m.posGudang.popularItemToday}\n• Alert Stok Menipis: ${m.posGudang.lowStockAlerts.length} Item\n`
+        : off('posGudang')) +
+      `\n📸 *4. ZEEY STUDIO (MEDIA & ASET BUDAYA)*\n` +
+      (hasData(sources.zeeyStudio)
+        ? `• Total Aset Media: ${m.zeeyStudio.totalMediaAssets} File (${m.zeeyStudio.culturalVideosCount} Video / ${m.zeeyStudio.highResPhotosCount} Foto)\n• Cloud Storage: ${m.zeeyStudio.cloudStorageUsedGb} GB / ${m.zeeyStudio.totalCloudStorageGb} GB\n`
+        : off('zeeyStudio')) +
+      (Object.values(sources).some((x) => x.status === 'DEMO') ? `\n⚠️ _Catatan: angka di atas adalah DATA CONTOH (mode demo)._\n` : '') +
+      `\n_Disinkronkan dari PORTAL REP (Sorong, Papua Barat Daya)_`;
 
     return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
   };
@@ -122,13 +107,15 @@ export default function ExecutiveDashboardPage() {
       url: 'https://zeeystudio.vercel.app',
     };
 
+  const revenueSources = (['reservasi', 'posGudang'] as const).filter((k) => hasData(sources[k]));
   const totalEstimatedRevenue =
-    currentMetrics.reservasi.revenueEstimated + currentMetrics.posGudang.dailySalesVolume;
+    (hasData(sources.reservasi) ? currentMetrics.reservasi.revenueEstimated : 0) +
+    (hasData(sources.posGudang) ? currentMetrics.posGudang.dailySalesVolume : 0);
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#f6f4ee] dark:bg-[#07130f] text-stone-900 dark:text-slate-100 selection:bg-amber-500 selection:text-black">
+    <div className="dock-safe relative min-h-screen flex flex-col bg-[#f6f4ee] dark:bg-[#07130f] text-stone-900 dark:text-slate-100 selection:bg-amber-500 selection:text-black">
       {/* Top Navbar */}
-      <Navbar onOpenPwaModal={() => setPwaModalOpen(true)} hideHeaderOnHome={false} />
+      <Navbar />
 
       {/* Botanical Dark Forest Green Header with Gold Accents */}
       <div className="relative w-full bg-gradient-to-b from-[#113527] via-[#103325] to-[#0d2a1f] text-white pt-8 pb-12 px-4 sm:px-6 lg:px-8 border-b border-amber-500/20 shadow-xl overflow-hidden print:bg-white print:text-black">
@@ -228,19 +215,19 @@ export default function ExecutiveDashboardPage() {
         <div className="max-w-7xl mx-auto mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-10">
           <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-emerald-500/20 backdrop-blur-sm">
             <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">🌿 Kesehatan Sistem</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{currentMetrics.operasional.systemHealthScore}% <span className="text-xs font-normal text-emerald-300">Optimal</span></p>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{live.operasionalReady ? `${currentMetrics.operasional.systemHealthScore}%` : '—'} <span className="text-xs font-normal text-emerald-300">aplikasi terhubung</span></p>
           </div>
           <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-amber-500/20 backdrop-blur-sm">
-            <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">👥 Staf Bertugas</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{currentMetrics.operasional.activeStaffOnDuty} <span className="text-xs font-normal text-slate-300">Personil</span></p>
+            <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">👥 Staf Aktif Terdaftar</p>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{live.operasionalReady ? currentMetrics.operasional.activeStaffOnDuty : '—'} <span className="text-xs font-normal text-slate-300">Personil</span></p>
           </div>
           <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-teal-500/20 backdrop-blur-sm">
             <p className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">🏷️ Tiket & Pengunjung</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{currentMetrics.reservasi.totalTicketsSold} <span className="text-xs font-normal text-slate-300">Wisatawan</span></p>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{hasData(sources.reservasi) ? currentMetrics.reservasi.totalTicketsSold : '—'} <span className="text-xs font-normal text-slate-300">Wisatawan</span></p>
           </div>
           <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-indigo-500/20 backdrop-blur-sm">
             <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">💳 Estimasi Bruto Terpadu</p>
-            <p className="text-lg sm:text-xl font-black text-white mt-0.5 font-mono">{formatRupiah(totalEstimatedRevenue)}</p>
+            <p className="text-lg sm:text-xl font-black text-white mt-0.5 font-mono">{revenueSources.length ? formatRupiah(totalEstimatedRevenue) : '—'}</p>
           </div>
         </div>
       </div>
@@ -250,8 +237,12 @@ export default function ExecutiveDashboardPage() {
         {/* ROW 1: RESERVASI HOMESTAY & SIK-REP KEUANGAN */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* CARD 1: SISTEM RESERVASI HOMESTAY & WISATA */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-amber-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
+          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-amber-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
             <PapuanBorderCorner position="top-right" />
+            <SourceOverlay state={sources.reservasi} appName={SOURCE_LABELS.reservasi} />
+            <div className="absolute top-3 left-6 z-10">
+              <SourceBadge state={sources.reservasi} />
+            </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -335,8 +326,12 @@ export default function ExecutiveDashboardPage() {
           </div>
 
           {/* CARD 2: SIK-REP KEUANGAN & ARUS KAS */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-emerald-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
+          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-emerald-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
             <PapuanBorderCorner position="top-right" />
+            <SourceOverlay state={sources.keuangan} appName={SOURCE_LABELS.keuangan} />
+            <div className="absolute top-3 left-6 z-10">
+              <SourceBadge state={sources.keuangan} />
+            </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -425,8 +420,12 @@ export default function ExecutiveDashboardPage() {
         {/* ROW 2: POS YASWAR CAFE & GUDANG OMG + ZEEY STUDIO MEDIA */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* CARD 3: POS YASWAR CAFE & GUDANG SUVENIR OMG */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-teal-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
+          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-teal-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
             <PapuanBorderCorner position="top-right" />
+            <SourceOverlay state={sources.posGudang} appName={SOURCE_LABELS.posGudang} />
+            <div className="absolute top-3 left-6 z-10">
+              <SourceBadge state={sources.posGudang} />
+            </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -524,8 +523,12 @@ export default function ExecutiveDashboardPage() {
           </div>
 
           {/* CARD 4: ZEEY STUDIO MEDIA & DOKUMENTASI BUDAYA */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-indigo-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
+          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-indigo-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
             <PapuanBorderCorner position="top-right" />
+            <SourceOverlay state={sources.zeeyStudio} appName={SOURCE_LABELS.zeeyStudio} />
+            <div className="absolute top-3 left-6 z-10">
+              <SourceBadge state={sources.zeeyStudio} />
+            </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -563,7 +566,7 @@ export default function ExecutiveDashboardPage() {
                   <div
                     className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full transition-all duration-500"
                     style={{
-                      width: `${(currentMetrics.zeeyStudio.cloudStorageUsedGb / currentMetrics.zeeyStudio.totalCloudStorageGb) * 100}%`,
+                      width: `${(currentMetrics.zeeyStudio.totalCloudStorageGb ? (currentMetrics.zeeyStudio.cloudStorageUsedGb / currentMetrics.zeeyStudio.totalCloudStorageGb) * 100 : 0)}%`,
                     }}
                   />
                 </div>
@@ -607,8 +610,6 @@ export default function ExecutiveDashboardPage() {
       </main>
 
       {/* PWA Modal & Banner */}
-      <PWAInstallModal isOpen={pwaModalOpen} onClose={() => setPwaModalOpen(false)} />
-      <PWAInstallBanner onOpenModal={() => setPwaModalOpen(true)} />
     </div>
   );
 }

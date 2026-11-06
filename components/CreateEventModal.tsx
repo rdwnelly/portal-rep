@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CalendarEvent, EventCategory, EventStatus } from '@/lib/types';
 import {
   X,
@@ -25,8 +25,18 @@ interface CreateEventModalProps {
   currentUserDisplayName?: string;
 }
 
-export default function CreateEventModal({
-  isOpen,
+export default function CreateEventModal(props: CreateEventModalProps) {
+  if (!props.isOpen) return null;
+  // Formulir dipasang ulang setiap kali dibuka / ganti agenda → state selalu bersih tanpa effect.
+  return <CreateEventForm key={props.initialData?.id ?? 'new'} {...props} />;
+}
+
+const todayLocal = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
+
+function CreateEventForm({
   onClose,
   onSave,
   initialData,
@@ -34,58 +44,21 @@ export default function CreateEventModal({
 }: CreateEventModalProps) {
   const isEditing = !!initialData;
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState('');
-  const [timeStart, setTimeStart] = useState('09:00');
-  const [timeEnd, setTimeEnd] = useState('11:00');
-  const [location, setLocation] = useState('Rumah Etnik Papua Km. 21 Aimas');
-  const [category, setCategory] = useState<EventCategory>('CULTURE_EVENT');
-  const [status, setStatus] = useState<EventStatus>('UPCOMING');
-  const [organizer, setOrganizer] = useState(currentUserDisplayName);
-  const [targetAudience, setTargetAudience] = useState('Semua Staf & Pengunjung');
-  const [isHighlight, setIsHighlight] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [title, setTitle] = useState(initialData?.title ?? '');
+  const [description, setDescription] = useState(initialData?.description ?? '');
+  const [date, setDate] = useState(initialData?.date ?? todayLocal);
+  const [timeStart, setTimeStart] = useState(initialData?.timeStart ?? '09:00');
+  const [timeEnd, setTimeEnd] = useState(initialData ? initialData.timeEnd || '' : '11:30');
+  const [location, setLocation] = useState(initialData?.location ?? 'Rumah Etnik Papua Km. 21 Aimas');
+  const [category, setCategory] = useState<EventCategory>(initialData?.category ?? 'CULTURE_EVENT');
+  const [status, setStatus] = useState<EventStatus>(initialData?.status ?? 'UPCOMING');
+  const [organizer, setOrganizer] = useState(initialData?.organizer ?? currentUserDisplayName);
+  const [targetAudience, setTargetAudience] = useState(
+    initialData ? initialData.targetAudience || '' : 'Semua Staf & Pengunjung'
+  );
+  const [isHighlight, setIsHighlight] = useState(!!initialData?.isHighlight);
+  const [notes, setNotes] = useState(initialData?.notes ?? '');
   const [errorMsg, setErrorMsg] = useState('');
-
-  // Pre-fill if editing
-  useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title);
-      setDescription(initialData.description);
-      setDate(initialData.date);
-      setTimeStart(initialData.timeStart);
-      setTimeEnd(initialData.timeEnd || '');
-      setLocation(initialData.location);
-      setCategory(initialData.category);
-      setStatus(initialData.status);
-      setOrganizer(initialData.organizer);
-      setTargetAudience(initialData.targetAudience || '');
-      setIsHighlight(!!initialData.isHighlight);
-      setNotes(initialData.notes || '');
-    } else {
-      // Default to today's date
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const dd = String(now.getDate()).padStart(2, '0');
-      setDate(`${yyyy}-${mm}-${dd}`);
-      setTitle('');
-      setDescription('');
-      setTimeStart('09:00');
-      setTimeEnd('11:30');
-      setLocation('Rumah Etnik Papua Km. 21 Aimas');
-      setCategory('CULTURE_EVENT');
-      setStatus('UPCOMING');
-      setOrganizer(currentUserDisplayName);
-      setTargetAudience('Semua Staf & Pengunjung');
-      setIsHighlight(false);
-      setNotes('');
-    }
-    setErrorMsg('');
-  }, [initialData, isOpen, currentUserDisplayName]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
