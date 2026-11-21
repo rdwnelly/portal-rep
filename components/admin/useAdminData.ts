@@ -5,18 +5,14 @@ import {
   getAccessRequests,
   getAppsList,
   getAuditLogs,
-  getDocuments,
   getEvents,
   getFoundationInfo,
-  getNotices,
   getWhitelist,
   isFoundationInfoLoaded,
   INITIAL_FOUNDATION_INFO,
   SSR_APPS,
-  SSR_DOCUMENTS,
   SSR_EVENTS,
   SSR_LOGS,
-  SSR_NOTICES,
   SSR_WHITELIST,
   STORAGE_UPDATE_EVENT,
 } from '@/lib/storage';
@@ -25,16 +21,12 @@ import type {
   AppItem,
   AuditLog,
   CalendarEvent,
-  FoundationDocument,
   FoundationInfo,
-  NoticeItem,
   WhitelistedUser,
 } from '@/lib/types';
 
 export interface AdminData {
-  notices: NoticeItem[];
   events: CalendarEvent[];
-  documents: FoundationDocument[];
   whitelist: WhitelistedUser[];
   apps: AppItem[];
   requests: AccessRequest[];
@@ -44,9 +36,7 @@ export interface AdminData {
 }
 
 const read = (): AdminData => ({
-  notices: getNotices(),
   events: getEvents(),
-  documents: getDocuments(),
   whitelist: getWhitelist(),
   apps: getAppsList(),
   requests: getAccessRequests(),
@@ -75,9 +65,7 @@ function subscribe(callback: () => void) {
 const getSnapshot = () => cache ?? (cache = read());
 
 const SERVER_SNAPSHOT: AdminData = {
-  notices: SSR_NOTICES,
   events: SSR_EVENTS,
-  documents: SSR_DOCUMENTS,
   whitelist: SSR_WHITELIST,
   apps: SSR_APPS,
   requests: [],

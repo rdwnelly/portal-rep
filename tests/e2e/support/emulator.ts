@@ -73,6 +73,32 @@ export async function seedStandardUsers() {
   await whitelist('staf@rep.test', 'OPERATIONAL');
 }
 
+/** Akun Firebase Authentication untuk email ini, atau null bila belum ada. */
+export async function getAuthUser(email: string): Promise<{ emailVerified: boolean; disabled: boolean } | null> {
+  const res = await fetch(`${AUTH}/identitytoolkit.googleapis.com/v1/projects/${PROJECT}/accounts:lookup`, {
+    method: 'POST',
+    headers: OWNER,
+    body: JSON.stringify({ email: [email] }),
+  });
+  const body = (await res.json()) as { users?: { emailVerified?: boolean; disabled?: boolean }[] };
+  const user = body.users?.[0];
+  return user ? { emailVerified: Boolean(user.emailVerified), disabled: Boolean(user.disabled) } : null;
+}
+
+/** Selesaikan tautan "buat kata sandi" terakhir yang dikirim ke email ini. */
+export async function completePasswordSetup(email: string, newPassword: string) {
+  const res = await fetch(`${AUTH}/emulator/v1/projects/${PROJECT}/oobCodes`);
+  const { oobCodes } = (await res.json()) as { oobCodes: { email: string; oobCode: string; requestType: string }[] };
+  const code = oobCodes.filter((c) => c.email === email && c.requestType === 'PASSWORD_RESET').at(-1);
+  if (!code) throw new Error(`Tidak ada email pembuatan kata sandi untuk ${email}`);
+  const done = await fetch(`${AUTH}/identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=demo-api-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ oobCode: code.oobCode, newPassword }),
+  });
+  if (!done.ok) throw new Error(`resetPassword gagal: ${await done.text()}`);
+}
+
 export async function idToken(email: string) {
   const res = await fetch(`${AUTH}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-api-key`, {
     method: 'POST',
@@ -83,13 +109,16 @@ export async function idToken(email: string) {
 }
 
 export async function login(page: Page, email: string, opts: { password?: string; next?: string } = {}) {
-  await page.goto(`/dashboard/admin/login${opts.next ? `?next=${encodeURIComponent(opts.next)}` : ''}`);
+  await page.goto(`/masuk${opts.next ? `?next=${encodeURIComponent(opts.next)}` : ''}`);
   await page.fill('input[type=email]', email);
   await page.fill('input[type=password]', opts.password ?? PASSWORD);
   await page.click('button:has-text("Masuk Sekarang")');
 }
 
-export async function loginAndWait(page: Page, email: string, path = '**/dashboard/admin') {
+/** Tujuan default staf non-pimpinan setelah login: beranda. */
+export const HOME_URL = /\/(?:[?#].*)?$/;
+
+export async function loginAndWait(page: Page, email: string, path: string | RegExp = '**/dashboard/admin') {
   await login(page, email);
   await page.waitForURL(path);
   await expect(page.getByText('Memeriksa akun')).toHaveCount(0);

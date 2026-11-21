@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
-import { loginAndWait, resetEmulators, seedContent, seedStandardUsers } from './support/emulator';
+import { HOME_URL, loginAndWait, resetEmulators, seedContent, seedStandardUsers } from './support/emulator';
 
 /**
  * Tampilan di layar HP staf: tidak ada geser horizontal, menu bawah tidak menutupi konten,
@@ -14,7 +14,7 @@ const PHONES = [
   { name: 'iphone', width: 390, height: 844 },
 ];
 
-const PUBLIC_PAGES = ['/', '/apps', '/dashboard/notices', '/dokumen', '/agenda', '/dashboard/admin/login'];
+const PUBLIC_PAGES = ['/', '/apps', '/agenda', '/masuk'];
 
 test.beforeAll(async () => {
   await resetEmulators();
@@ -79,9 +79,9 @@ for (const phone of PHONES) {
       });
     }
 
-    test('staf login: beranda, pengumuman & menu Lainnya', async ({ page }) => {
-      await loginAndWait(page, 'staf@rep.test', '**/dashboard/admin');
-      for (const path of ['/', '/dashboard/notices']) {
+    test('staf login: beranda & menu Lainnya', async ({ page }) => {
+      await loginAndWait(page, 'staf@rep.test', HOME_URL);
+      for (const path of ['/']) {
         await page.goto(path);
         await settle(page);
         await capture(page, `${phone.name}-staf${path.replace(/\//g, '_')}`);

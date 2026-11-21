@@ -6,8 +6,10 @@ import { apiFetch, ApiError } from './api-client';
 import { isRemoteStore, STORAGE_ERROR_EVENT } from './storage';
 import { SOURCE_APP_IDS, SourceKey } from './integration-contract';
 
-const sourceKeyForApp = (appId: string): SourceKey | undefined =>
-  (Object.entries(SOURCE_APP_IDS) as [SourceKey, string][]).find(([, id]) => id === appId)?.[0];
+const sourceKeyForApp = (appId: string): SourceKey | undefined => {
+  if (appId === 'app-pos' || appId === 'app-omg' || appId === 'app-pos-omg') return 'posGudang';
+  return (Object.entries(SOURCE_APP_IDS) as [SourceKey, string][]).find(([, id]) => id === appId)?.[0];
+};
 
 const notify = (message: string) =>
   window.dispatchEvent(new CustomEvent(STORAGE_ERROR_EVENT, { detail: { message } }));

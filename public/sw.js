@@ -113,7 +113,7 @@ self.addEventListener('push', (event) => {
   }
   const n = payload.notification || {};
   const data = payload.data || {};
-  const url = data.url || (payload.fcmOptions && payload.fcmOptions.link) || '/dashboard/notices';
+  const url = data.url || (payload.fcmOptions && payload.fcmOptions.link) || '/';
 
   event.waitUntil(
     self.registration.showNotification(n.title || 'Pengumuman PORTAL REP', {
@@ -129,7 +129,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = new URL((event.notification.data && event.notification.data.url) || '/dashboard/notices', self.location.origin);
+  const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
   // Hanya buka halaman milik portal sendiri.
   if (target.origin !== self.location.origin) return;
 

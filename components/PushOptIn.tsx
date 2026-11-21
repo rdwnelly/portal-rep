@@ -55,23 +55,23 @@ export default function PushOptIn() {
   };
 
   return (
-    <div className="fixed bottom-[calc(var(--dock-space)+0.5rem)] right-4 z-[55] w-[calc(100%-2rem)] max-w-sm p-4 rounded-2xl bg-[#0b241b] border border-amber-500/40 shadow-2xl text-slate-100">
+    <div className="fixed bottom-[calc(var(--dock-space)+0.5rem)] right-4 z-[55] w-[calc(100%-2rem)] max-w-sm p-4 rounded-2xl bg-white dark:bg-[#0c241b] border border-stone-200 dark:border-amber-500/40 shadow-2xl text-slate-100">
       <button
         type="button"
         onClick={dismiss}
-        className="absolute top-2 right-2 p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+        className="absolute top-2 right-2 p-1 rounded-lg text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white cursor-pointer"
         aria-label="Tutup"
       >
         <X className="w-4 h-4" />
       </button>
       <div className="flex items-start gap-3 pr-5">
-        <BellRing className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <BellRing className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
         <div className="space-y-2">
           <p className="text-xs font-bold">Terima instruksi mendesak di perangkat ini?</p>
-          <p className="text-[11px] text-slate-300 leading-relaxed">
+          <p className="text-[11px] text-stone-600 dark:text-slate-300 leading-relaxed">
             Notifikasi muncul walau portal sedang tidak dibuka. Bisa dimatikan kapan saja dari pengaturan browser.
           </p>
-          {error && <p className="text-[11px] text-rose-300">{error}</p>}
+          {error && <p className="text-[11px] text-rose-700 dark:text-rose-300">{error}</p>}
           <button
             type="button"
             onClick={handleEnable}

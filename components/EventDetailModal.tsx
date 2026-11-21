@@ -139,14 +139,14 @@ export default function EventDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-xl rounded-3xl bg-[#091f17] border-2 border-amber-500/40 shadow-2xl text-slate-100 overflow-hidden max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#0c241b] border-2 border-stone-200 dark:border-amber-500/40 shadow-2xl text-slate-100 overflow-hidden max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <PapuanBorderCorner position="top-right" />
         <PapuanBorderCorner position="bottom-left" />
 
         {/* Modal Header */}
-        <div className="flex items-start justify-between p-6 pb-4 border-b border-amber-500/20 bg-gradient-to-r from-[#0d2a1f] to-[#091f17]">
+        <div className="flex items-start justify-between p-6 pb-4 border-b border-stone-200 dark:border-amber-500/20 bg-gradient-to-r from-[#0d2a1f] to-[#091f17]">
           <div className="space-y-2 pr-4">
             <div className="flex items-center gap-2 flex-wrap">
               <span
@@ -156,19 +156,19 @@ export default function EventDetailModal({
                 {categoryInfo.label}
               </span>
               {event.isHighlight && (
-                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-400" />
+                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/40 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                   AGENDA UNGGULAN
                 </span>
               )}
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white leading-tight font-serif">
+            <h2 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white leading-tight font-serif">
               {event.title}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700 cursor-pointer shrink-0"
+            className="p-2 rounded-xl bg-stone-100 dark:bg-slate-900/80 hover:bg-stone-200 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white transition-all border border-stone-200 dark:border-slate-700 cursor-pointer shrink-0"
             title="Tutup Modal"
           >
             <X className="w-5 h-5" />
@@ -180,37 +180,37 @@ export default function EventDetailModal({
           {/* Date, Time & Location Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Waktu */}
-            <div className="p-3.5 rounded-2xl bg-[#0c281e] border border-amber-500/25 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+            <div className="p-3.5 rounded-2xl bg-stone-100 dark:bg-white/10 border border-stone-200 dark:border-amber-500/25 flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                   Hari & Tanggal
                 </p>
-                <p className="text-sm font-extrabold text-white">
+                <p className="text-sm font-extrabold text-stone-900 dark:text-white">
                   {formatIndonesianDate(event.date)}
                 </p>
-                <p className="text-xs text-slate-300 font-mono mt-0.5 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <p className="text-xs text-stone-600 dark:text-slate-300 font-mono mt-0.5 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   {event.timeStart} {event.timeEnd ? `- ${event.timeEnd}` : ''} WIT
                 </p>
               </div>
             </div>
 
             {/* Lokasi */}
-            <div className="p-3.5 rounded-2xl bg-[#0c281e] border border-amber-500/25 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="p-3.5 rounded-2xl bg-stone-100 dark:bg-white/10 border border-stone-200 dark:border-amber-500/25 flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <MapPin className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
                   Lokasi Acara
                 </p>
-                <p className="text-xs sm:text-sm font-extrabold text-white leading-snug">
+                <p className="text-xs sm:text-sm font-extrabold text-stone-900 dark:text-white leading-snug">
                   {event.location}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
+                <p className="text-[10px] text-stone-500 dark:text-slate-400 mt-0.5">
                   Rumah Etnik Papua Km. 21 Aimas
                 </p>
               </div>
@@ -218,16 +218,16 @@ export default function EventDetailModal({
           </div>
 
           {/* Organizer & Target Audience */}
-          <div className="flex items-center gap-4 flex-wrap p-3.5 rounded-2xl bg-[#081a13] border border-emerald-500/20 text-xs">
-            <div className="flex items-center gap-2 text-slate-300">
-              <User className="w-4 h-4 text-amber-400" />
+          <div className="flex items-center gap-4 flex-wrap p-3.5 rounded-2xl bg-stone-50 dark:bg-white/5 border border-emerald-500/20 text-xs">
+            <div className="flex items-center gap-2 text-stone-600 dark:text-slate-300">
+              <User className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>
-                Penyelenggara: <strong className="text-white">{event.organizer}</strong>
+                Penyelenggara: <strong className="text-stone-900 dark:text-white">{event.organizer}</strong>
               </span>
             </div>
             {event.targetAudience && (
-              <div className="flex items-center gap-2 text-slate-300">
-                <Users className="w-4 h-4 text-teal-400" />
+              <div className="flex items-center gap-2 text-stone-600 dark:text-slate-300">
+                <Users className="w-4 h-4 text-teal-700 dark:text-teal-400" />
                 <span>
                   Peserta: <strong className="text-teal-200">{event.targetAudience}</strong>
                 </span>
@@ -237,20 +237,20 @@ export default function EventDetailModal({
 
           {/* Deskripsi Lengkap */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
               Deskripsi & Rincian Agenda
             </h4>
-            <div className="p-4 rounded-2xl bg-[#081a13] border border-amber-500/15 text-sm text-slate-200 leading-relaxed whitespace-pre-line">
+            <div className="p-4 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/15 text-sm text-slate-200 leading-relaxed whitespace-pre-line">
               {event.description}
             </div>
           </div>
 
           {/* Catatan Khusus jika ada */}
           {event.notes && (
-            <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-200">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-stone-200 dark:border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-200">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-amber-300">Catatan Khusus: </strong>
+                <strong className="text-amber-700 dark:text-amber-300">Catatan Khusus: </strong>
                 <span>{event.notes}</span>
               </div>
             </div>
@@ -258,7 +258,7 @@ export default function EventDetailModal({
         </div>
 
         {/* Modal Footer / Actions */}
-        <div className="p-4 sm:p-5 border-t border-amber-500/20 bg-[#081a13] flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-t border-stone-200 dark:border-amber-500/20 bg-stone-50 dark:bg-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* External Action: Google Calendar & WhatsApp */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <a
@@ -267,7 +267,7 @@ export default function EventDetailModal({
               rel="noopener noreferrer"
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white text-xs font-bold transition-all shadow-md active:scale-95"
             >
-              <CalendarPlus className="w-4 h-4 text-white" />
+              <CalendarPlus className="w-4 h-4 text-stone-900 dark:text-white" />
               <span>Simpan ke Google Calendar</span>
             </a>
 
@@ -285,10 +285,10 @@ export default function EventDetailModal({
             <button
               type="button"
               onClick={handleCopySummary}
-              className="p-2.5 rounded-xl bg-[#0e271e] hover:bg-[#153a2d] border border-amber-500/30 text-amber-300 text-xs font-semibold transition-all cursor-pointer"
+              className="p-2.5 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-[#153a2d] border border-stone-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold transition-all cursor-pointer"
               title="Salin Rincian Agenda"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
 
@@ -299,7 +299,7 @@ export default function EventDetailModal({
                 <button
                   type="button"
                   onClick={() => onEdit(event)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 border border-stone-200 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 text-xs font-bold transition-all cursor-pointer"
                 >
                   <Edit className="w-3.5 h-3.5" />
                   <span>Edit</span>
@@ -314,7 +314,7 @@ export default function EventDetailModal({
                       onClose();
                     }
                   }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-200/80 dark:hover:bg-rose-900/80 border border-rose-500/40 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Hapus</span>

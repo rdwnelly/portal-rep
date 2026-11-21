@@ -43,6 +43,18 @@ export default defineConfig({
       env: {
         NEXT_DIST_DIR: '.next-e2e',
         NEXT_PUBLIC_FIREBASE_EMULATOR: 'true',
+        // Identitas proyek dipaku ke proyek emulator. Tanpa ini, `.env.local` milik pengembang
+        // (berisi proyek Firebase sungguhan) ikut terbaca oleh `next build`, sehingga portal
+        // membaca proyek produksi sementara uji menyemai data ke `demo-portal-rep` —
+        // akibatnya whitelist tidak ditemukan dan semua uji login gagal.
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'demo-portal-rep',
+        NEXT_PUBLIC_FIREBASE_API_KEY: 'demo-api-key',
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'localhost',
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'demo-portal-rep.appspot.com',
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '0',
+        NEXT_PUBLIC_FIREBASE_APP_ID: '1:0:web:demo',
+        NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: '',
+        NEXT_PUBLIC_FIREBASE_VAPID_KEY: '',
         INTEGRATION_POS_URL: `http://localhost:${MOCK_PORT}`,
         INTEGRATION_POS_SECRET: MOCK_SECRET,
       },

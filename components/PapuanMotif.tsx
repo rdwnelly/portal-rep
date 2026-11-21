@@ -10,7 +10,7 @@ export function PapuanMotifDivider({ className = '' }: { className?: string }) {
         viewBox="0 0 48 16"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="text-amber-400"
+        className="text-amber-600 dark:text-amber-400"
       >
         <path
           d="M24 0L28 8L24 16L20 8L24 0Z"
@@ -61,7 +61,7 @@ export function PapuanBorderCorner({
         viewBox="0 0 64 64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full text-amber-400"
+        className="w-full h-full text-amber-600 dark:text-amber-400"
       >
         <path
           d="M64 0H40L64 24V0Z"

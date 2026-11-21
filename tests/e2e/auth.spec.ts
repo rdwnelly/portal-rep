@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createUser, login, loginAndWait, resetEmulators, seedStandardUsers, whitelist } from './support/emulator';
+import { createUser, HOME_URL, login, loginAndWait, resetEmulators, seedStandardUsers, whitelist } from './support/emulator';
 
 test.beforeAll(async () => {
   await resetEmulators();
@@ -19,7 +19,8 @@ test.describe('penjaga halaman', () => {
   }
 
   test('staf operasional ditolak dari panel admin berdasarkan role', async ({ page }) => {
-    await loginAndWait(page, 'staf@rep.test');
+    await loginAndWait(page, 'staf@rep.test', HOME_URL);
+    await page.goto('/dashboard/admin');
     await expect(page.getByText('tidak memiliki izin')).toBeVisible();
   });
 });
@@ -57,8 +58,25 @@ test.describe('login', () => {
     await page.waitForURL('**/dashboard/admin');
   });
 
+  test('staf non-pimpinan mendarat di beranda, bukan layar akses terbatas', async ({ page }) => {
+    await loginAndWait(page, 'staf@rep.test', HOME_URL);
+    await expect(page.getByRole('heading', { name: 'Akses Terbatas' })).toHaveCount(0);
+  });
+
+  test('alamat login lama /dashboard/admin/login diarahkan ke /masuk', async ({ page }) => {
+    await page.goto('/dashboard/admin/login?next=%2Feksekutif');
+    await page.waitForURL(/\/masuk\?next=%2Feksekutif/);
+    await expect(page.getByRole('heading', { name: 'Masuk Staf' })).toBeVisible();
+  });
+
+  test('pengguna yang sudah login tidak melihat formulir login lagi', async ({ page }) => {
+    await loginAndWait(page, 'admin@rep.test');
+    await page.goto('/masuk');
+    await page.waitForURL('**/dashboard/admin');
+  });
+
   test('lupa kata sandi tidak membocorkan apakah email terdaftar', async ({ page }) => {
-    await page.goto('/dashboard/admin/login');
+    await page.goto('/masuk');
     await page.fill('input[type=email]', 'tidak.ada@rep.test');
     await page.click('button:has-text("Lupa kata sandi")');
     await expect(page.getByText('Jika tidak.ada@rep.test terdaftar')).toBeVisible();

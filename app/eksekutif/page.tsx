@@ -11,6 +11,7 @@ import Navbar from '@/components/Navbar';
 import RoleGuard from '@/components/RoleGuard';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
 import { formatRupiah } from '@/components/ExecutiveOverviewWidget';
+import { Bento, BentoCard, CardTitle, Stat } from '@/components/ui/Bento';
 import {
   BedDouble,
   Wallet,
@@ -97,10 +98,15 @@ function ExecutiveDashboardContent() {
       url: 'https://sistem-informasi-keuangan-rep.vercel.app',
     };
   const posApp =
+    apps.find((a) => a.id === 'app-pos') ||
     apps.find((a) => a.id === 'app-pos-omg') ||
     apps[2] || {
       url: 'https://rep-pos-app.vercel.app',
     };
+  const omgApp =
+    apps.find((a) => a.id === 'app-omg') ||
+    apps.find((a) => a.id === 'app-pos-omg') ||
+    posApp;
   const zeeyApp =
     apps.find((a) => a.id === 'app-zeestudio') ||
     apps[3] || {
@@ -113,503 +119,474 @@ function ExecutiveDashboardContent() {
     (hasData(sources.posGudang) ? currentMetrics.posGudang.dailySalesVolume : 0);
 
   return (
-    <div className="dock-safe relative min-h-screen flex flex-col bg-[#f6f4ee] dark:bg-[#07130f] text-stone-900 dark:text-slate-100 selection:bg-amber-500 selection:text-black">
-      {/* Top Navbar */}
+    <div className="dock-safe relative min-h-screen flex flex-col bg-[#f6f4ee] dark:bg-[#07130f] text-stone-900 dark:text-slate-100 selection:bg-amber-500 selection:text-black print:bg-white print:text-black">
       <Navbar />
 
-      {/* Botanical Dark Forest Green Header with Gold Accents */}
-      <div className="relative w-full bg-gradient-to-b from-[#113527] via-[#103325] to-[#0d2a1f] text-white pt-8 pb-12 px-4 sm:px-6 lg:px-8 border-b border-amber-500/20 shadow-xl overflow-hidden print:bg-white print:text-black">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#e5a93c_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-        <PapuanBorderCorner position="top-right" />
-        <PapuanBorderCorner position="bottom-left" />
-
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 text-xs font-bold tracking-wide">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-              <span>SINGLE PANE OF GLASS • EXECUTIVE METRICS DASHBOARD</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black font-serif text-white tracking-tight leading-tight">
-              Unified Metrics Dashboard
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Pusat pantauan terpadu kinerja operasional, arus kas keuangan, okupansi kamar homestay, penjualan kasir cafe/suvenir, dan aset media kebudayaan Yayasan Rumah Etnik Papua.
-            </p>
-          </div>
-
-          {/* Action Header: Period Selector, Print, WhatsApp & Refresh */}
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            {/* Period Switcher */}
-            <div className="flex items-center bg-[#06140e] p-1 rounded-2xl border border-amber-500/30 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setPeriod('TODAY')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  period === 'TODAY'
-                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-md'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Hari Ini
-              </button>
-              <button
-                type="button"
-                onClick={() => setPeriod('THIS_WEEK')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  period === 'THIS_WEEK'
-                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-md'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Pekan Ini
-              </button>
-              <button
-                type="button"
-                onClick={() => setPeriod('THIS_MONTH')}
-                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  period === 'THIS_MONTH'
-                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-md'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Bulan Ini
-              </button>
-            </div>
-
-            {/* Refresh Button */}
-            <button
-              onClick={handleRefresh}
-              className={`p-2.5 rounded-2xl bg-[#091f17] hover:bg-[#0e2c20] border border-amber-500/30 text-amber-300 hover:text-white transition-all cursor-pointer ${
-                refreshing ? 'animate-spin text-amber-400' : ''
-              }`}
-              title="Perbarui Data Metrik"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-
-            {/* Broadcast WhatsApp Button */}
-            <a
-              href={createWhatsAppBroadcast()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-md transition-all active:scale-95"
-              title="Bagikan Ringkasan Laporan ke WhatsApp Pimpinan"
-            >
-              <Share2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Kirim ke WA</span>
-            </a>
-
-            {/* Print Button */}
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#091f17] hover:bg-[#0e2c20] border border-amber-500/30 text-amber-300 hover:text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-              title="Cetak Laporan PDF"
-            >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Cetak Laporan</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Executive Stats Strip */}
-        <div className="max-w-7xl mx-auto mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-10">
-          <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-emerald-500/20 backdrop-blur-sm">
-            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">🌿 Kesehatan Sistem</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{live.operasionalReady ? `${currentMetrics.operasional.systemHealthScore}%` : '—'} <span className="text-xs font-normal text-emerald-300">aplikasi terhubung</span></p>
-          </div>
-          <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-amber-500/20 backdrop-blur-sm">
-            <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">👥 Staf Aktif Terdaftar</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{live.operasionalReady ? currentMetrics.operasional.activeStaffOnDuty : '—'} <span className="text-xs font-normal text-slate-300">Personil</span></p>
-          </div>
-          <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-teal-500/20 backdrop-blur-sm">
-            <p className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">🏷️ Tiket & Pengunjung</p>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{hasData(sources.reservasi) ? currentMetrics.reservasi.totalTicketsSold : '—'} <span className="text-xs font-normal text-slate-300">Wisatawan</span></p>
-          </div>
-          <div className="p-3 rounded-2xl bg-[#0a241b]/80 border border-indigo-500/20 backdrop-blur-sm">
-            <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">💳 Estimasi Bruto Terpadu</p>
-            <p className="text-lg sm:text-xl font-black text-white mt-0.5 font-mono">{revenueSources.length ? formatRupiah(totalEstimatedRevenue) : '—'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content: 4 Deep Dive Cards Grid */}
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex-1 mb-safe-bottom space-y-6">
-        {/* ROW 1: RESERVASI HOMESTAY & SIK-REP KEUANGAN */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* CARD 1: SISTEM RESERVASI HOMESTAY & WISATA */}
-          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-amber-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-5 pb-6 flex-1 space-y-4 sm:space-y-5">
+        {/* Kepala dasbor + angka ringkas sebagai bento */}
+        <Bento>
+          <BentoCard as="section" span="full" tone="forest" className="relative overflow-hidden print:!bg-white print:!text-black">
+            <div
+              aria-hidden
+              className="absolute inset-0 opacity-10 bg-[radial-gradient(#e5a93c_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none print:hidden"
+            />
             <PapuanBorderCorner position="top-right" />
-            <SourceOverlay state={sources.reservasi} appName={SOURCE_LABELS.reservasi} />
-            <div className="absolute top-3 left-6 z-10">
-              <SourceBadge state={sources.reservasi} />
-            </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center">
-                    <BedDouble className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-stone-900 dark:text-white font-serif">
-                      Sistem Reservasi & Homestay Etnik
-                    </h2>
-                    <p className="text-xs text-stone-500 dark:text-slate-400">
-                      Manajemen Kamar, Tamu Menginap & Tiket Wisata Budaya
-                    </p>
-                  </div>
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+              <div className="min-w-0 space-y-1.5">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 text-[10px] font-extrabold uppercase tracking-wider">
+                  <ShieldCheck className="w-3 h-3" />
+                  Satu layar untuk semua sub-aplikasi
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black font-serif tracking-tight">Dasbor Eksekutif</h1>
+                <p className="text-xs sm:text-sm text-emerald-100/80 max-w-2xl leading-relaxed">
+                  Pantauan terpadu okupansi homestay, arus kas SIK-REP, penjualan kasir &amp; gudang, serta aset media
+                  budaya Yayasan Rumah Etnik Papua.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap shrink-0 print:hidden">
+                <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-black/30 border border-white/15 text-xs font-bold">
+                  {(
+                    [
+                      ['TODAY', 'Hari Ini'],
+                      ['THIS_WEEK', 'Pekan Ini'],
+                      ['THIS_MONTH', 'Bulan Ini'],
+                    ] as [MetricsPeriod, string][]
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setPeriod(value)}
+                      aria-pressed={period === value}
+                      className={`px-2.5 h-9 rounded-lg transition-colors cursor-pointer ${
+                        period === value ? 'bg-amber-500 text-slate-950 font-extrabold' : 'text-emerald-100/80 hover:text-white'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
 
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">
-                  {currentMetrics.reservasi.trendGuests}
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  aria-label="Perbarui data metrik"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-black/30 border border-white/15 text-amber-200 hover:text-white cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+
+                <a
+                  href={createWhatsAppBroadcast()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-10 px-3.5 flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
+                  title="Bagikan ringkasan laporan ke WhatsApp pimpinan"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Kirim ke WA</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="h-10 px-3.5 flex items-center gap-1.5 rounded-xl bg-black/30 border border-white/15 text-amber-200 hover:text-white text-xs font-bold cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span className="hidden sm:inline">Cetak</span>
+                </button>
+              </div>
+            </div>
+          </BentoCard>
+
+          <BentoCard span="third">
+            <Stat
+              label="Kesehatan sistem"
+              value={live.operasionalReady ? `${currentMetrics.operasional.systemHealthScore}%` : '—'}
+              hint="Aplikasi terhubung ke portal"
+            />
+          </BentoCard>
+          <BentoCard span="third">
+            <Stat
+              label="Staf aktif terdaftar"
+              value={live.operasionalReady ? currentMetrics.operasional.activeStaffOnDuty : '—'}
+              unit="personil"
+            />
+          </BentoCard>
+          <BentoCard span="third">
+            <Stat
+              label="Tiket & pengunjung"
+              value={hasData(sources.reservasi) ? currentMetrics.reservasi.totalTicketsSold : '—'}
+              unit="wisatawan"
+            />
+          </BentoCard>
+          <BentoCard span="thirdWide" tone="amber">
+            <Stat
+              label="Estimasi bruto terpadu"
+              value={
+                <span className="font-mono text-lg sm:text-xl">
+                  {revenueSources.length ? formatRupiah(totalEstimatedRevenue) : '—'}
+                </span>
+              }
+              hint="Reservasi + kasir, hanya sumber yang terhubung"
+            />
+          </BentoCard>
+        </Bento>
+
+        {/* Empat kartu rinci per sub-aplikasi */}
+        <Bento>
+          {/* 1. RESERVASI HOMESTAY & WISATA */}
+          <BentoCard as="section" span="half" className="relative overflow-hidden flex flex-col gap-4">
+            <SourceOverlay state={sources.reservasi} appName={SOURCE_LABELS.reservasi} />
+            <div className="flex items-start justify-between gap-2">
+              <SourceBadge state={sources.reservasi} />
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40">
+                {currentMetrics.reservasi.trendGuests}
+              </span>
+            </div>
+
+            <CardTitle
+              icon={BedDouble}
+              iconTone="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+              eyebrow="Reservasi"
+              title="Sistem Reservasi & Homestay Etnik"
+            />
+            <p className="-mt-2 text-xs text-stone-500 dark:text-slate-400">
+              Manajemen kamar, tamu menginap &amp; tiket wisata budaya.
+            </p>
+
+            <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold uppercase text-amber-700 dark:text-amber-400">Tingkat okupansi kamar</span>
+                <span className="font-black font-mono text-sm tabular-nums">
+                  {currentMetrics.reservasi.occupancyRate}%
                 </span>
               </div>
-
-              {/* Occupancy Progress Bar */}
-              <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#06140e] border border-amber-500/20 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-amber-600 dark:text-amber-400 uppercase">
-                    Tingkat Okupansi Kamar
-                  </span>
-                  <span className="font-black text-stone-900 dark:text-white font-mono text-sm">
-                    {currentMetrics.reservasi.occupancyRate}%
-                  </span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-stone-200 dark:bg-slate-800 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-500 via-emerald-400 to-teal-400 rounded-full transition-all duration-500"
-                    style={{ width: `${currentMetrics.reservasi.occupancyRate}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-stone-600 dark:text-slate-400 pt-1">
-                  <span>Terisi: <strong>{currentMetrics.reservasi.occupiedHomestay} unit</strong></span>
-                  <span>Tersedia: <strong>{currentMetrics.reservasi.totalHomestay - currentMetrics.reservasi.occupiedHomestay} unit</strong></span>
-                  <span>Total Kapasitas: <strong>{currentMetrics.reservasi.totalHomestay} Kamar Etnik</strong></span>
-                </div>
+              <div
+                className="w-full h-3 rounded-full bg-stone-200 dark:bg-white/10 overflow-hidden"
+                role="progressbar"
+                aria-valuenow={currentMetrics.reservasi.occupancyRate}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 via-emerald-400 to-teal-400 rounded-full transition-all duration-500"
+                  style={{ width: `${currentMetrics.reservasi.occupancyRate}%` }}
+                />
               </div>
-
-              {/* Stats Grid 3 cols */}
-              <div className="grid grid-cols-3 gap-2.5">
-                <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-emerald-500/20 text-center">
-                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">Tamu Menginap</p>
-                  <p className="text-lg font-black text-stone-900 dark:text-white mt-0.5">{currentMetrics.reservasi.activeGuestsToday}</p>
-                  <p className="text-[9px] text-stone-500 dark:text-slate-400">Orang Aktif</p>
-                </div>
-                <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-amber-500/20 text-center">
-                  <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Booking Berikutnya</p>
-                  <p className="text-lg font-black text-stone-900 dark:text-white mt-0.5">{currentMetrics.reservasi.upcomingBookings}</p>
-                  <p className="text-[9px] text-stone-500 dark:text-slate-400">Rombongan Terjadwal</p>
-                </div>
-                <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-teal-500/20 text-center">
-                  <p className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">Tiket Terjual</p>
-                  <p className="text-lg font-black text-stone-900 dark:text-white mt-0.5">{currentMetrics.reservasi.totalTicketsSold}</p>
-                  <p className="text-[9px] text-stone-500 dark:text-slate-400">Pentas & Tur Budaya</p>
-                </div>
+              <div className="flex items-center justify-between gap-2 text-[11px] text-stone-600 dark:text-slate-400 pt-0.5">
+                <span>
+                  Terisi <strong>{currentMetrics.reservasi.occupiedHomestay}</strong>
+                </span>
+                <span>
+                  Tersedia{' '}
+                  <strong>{currentMetrics.reservasi.totalHomestay - currentMetrics.reservasi.occupiedHomestay}</strong>
+                </span>
+                <span>
+                  Kapasitas <strong>{currentMetrics.reservasi.totalHomestay}</strong>
+                </span>
               </div>
             </div>
 
-            {/* Launch App Button */}
-            <div className="pt-3 border-t border-stone-200 dark:border-amber-500/20 flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-600 dark:text-slate-300">
-                Estimasi Nilai: <strong className="text-amber-600 dark:text-amber-400 font-mono">{formatRupiah(currentMetrics.reservasi.revenueEstimated)}</strong>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                ['Tamu menginap', currentMetrics.reservasi.activeGuestsToday, 'orang aktif'],
+                ['Booking berikutnya', currentMetrics.reservasi.upcomingBookings, 'rombongan'],
+                ['Tiket terjual', currentMetrics.reservasi.totalTicketsSold, 'pentas & tur'],
+              ].map(([label, value, hint]) => (
+                <div
+                  key={label as string}
+                  className="p-3 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 text-center"
+                >
+                  <p className="text-[10px] font-bold uppercase text-stone-500 dark:text-slate-400">{label}</p>
+                  <p className="mt-0.5 text-lg font-black tabular-nums">{value}</p>
+                  <p className="text-[9px] text-stone-500 dark:text-slate-400">{hint}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto pt-3 border-t border-stone-200 dark:border-white/10 flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs text-stone-600 dark:text-slate-300">
+                Estimasi nilai:{' '}
+                <strong className="font-mono text-amber-700 dark:text-amber-400">
+                  {formatRupiah(currentMetrics.reservasi.revenueEstimated)}
+                </strong>
               </span>
               <a
                 href={homestayApp?.url || 'https://apk-reservasi-homestay-rep.vercel.app'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-bold transition-all shadow-md active:scale-95"
+                className="h-10 px-3.5 flex items-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold print:hidden"
               >
-                <span>Buka Reservasi Homestay</span>
+                <span>Buka Reservasi</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
-          </div>
+          </BentoCard>
 
-          {/* CARD 2: SIK-REP KEUANGAN & ARUS KAS */}
-          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-emerald-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
-            <PapuanBorderCorner position="top-right" />
+          {/* 2. SIK-REP KEUANGAN */}
+          <BentoCard as="section" span="half" className="relative overflow-hidden flex flex-col gap-4">
             <SourceOverlay state={sources.keuangan} appName={SOURCE_LABELS.keuangan} />
-            <div className="absolute top-3 left-6 z-10">
+            <div className="flex items-start justify-between gap-2">
               <SourceBadge state={sources.keuangan} />
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40">
+                {currentMetrics.keuangan.trendRevenue}
+              </span>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center">
-                    <Wallet className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-stone-900 dark:text-white font-serif">
-                      SIK-REP (Sistem Informasi Keuangan)
-                    </h2>
-                    <p className="text-xs text-stone-500 dark:text-slate-400">
-                      Saldo Kas Yayasan, Arus Kas & Otorisasi Pengeluaran
-                    </p>
-                  </div>
-                </div>
+            <CardTitle
+              icon={Wallet}
+              iconTone="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+              eyebrow="Keuangan"
+              title="SIK-REP (Sistem Informasi Keuangan)"
+            />
+            <p className="-mt-2 text-xs text-stone-500 dark:text-slate-400">
+              Saldo kas yayasan, arus kas &amp; otorisasi pengeluaran.
+            </p>
 
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">
-                  {currentMetrics.keuangan.trendRevenue}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#123a2b] to-[#06140e] border border-emerald-500/30 text-white space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                Total saldo kas berjalan
+              </p>
+              <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight tabular-nums">
+                {formatRupiah(currentMetrics.keuangan.totalCashBalance)}
+              </p>
+              <div className="mt-2 pt-2 border-t border-emerald-500/20 flex items-center justify-between gap-2 flex-wrap text-[11px] text-slate-300">
+                <span className="flex items-center gap-1 text-emerald-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  Jurnal ter-rekonsiliasi
+                </span>
+                <span className="text-amber-300">
+                  Kasbon pending: {currentMetrics.keuangan.pendingReimbursementsCount} (
+                  {formatRupiah(currentMetrics.keuangan.pendingReimbursementTotal)})
                 </span>
               </div>
-
-              {/* Total Cash Balance Box */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0d2a1f] to-[#06140e] border border-emerald-500/30 text-white space-y-1">
-                <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
-                  Total Saldo Kas Berjalan Yayasan REP
-                </p>
-                <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white">
-                  {formatRupiah(currentMetrics.keuangan.totalCashBalance)}
-                </p>
-                <div className="flex items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-emerald-500/20 mt-2">
-                  <span className="flex items-center gap-1 text-emerald-300">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Status Jurnal: Ter-Rekonsiliasi
-                  </span>
-                  <span className="text-amber-300">
-                    Kasbon Pending: {currentMetrics.keuangan.pendingReimbursementsCount} pengajuan ({formatRupiah(currentMetrics.keuangan.pendingReimbursementTotal)})
-                  </span>
-                </div>
-              </div>
-
-              {/* Cash Flow Comparison */}
-              <div className="grid grid-cols-3 gap-2.5">
-                <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-emerald-500/20">
-                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">Penerimaan Kas</p>
-                  <p className="text-sm sm:text-base font-black text-emerald-700 dark:text-emerald-300 font-mono mt-0.5">
-                    {formatRupiah(currentMetrics.keuangan.monthlyIncome)}
-                  </p>
-                  <p className="text-[9px] text-stone-500 dark:text-slate-400">Termasuk homestay & donasi</p>
-                </div>
-                <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-rose-500/20">
-                  <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase">Pengeluaran Kas</p>
-                  <p className="text-sm sm:text-base font-black text-rose-700 dark:text-rose-300 font-mono mt-0.5">
-                    {formatRupiah(currentMetrics.keuangan.monthlyExpense)}
-                  </p>
-                  <p className="text-[9px] text-stone-500 dark:text-slate-400">Operasional & belanja</p>
-                </div>
-                <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-teal-500/20">
-                  <p className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">Arus Kas Bersih</p>
-                  <p className="text-sm sm:text-base font-black text-teal-700 dark:text-teal-300 font-mono mt-0.5">
-                    {formatRupiah(currentMetrics.keuangan.netCashFlow)}
-                  </p>
-                  <p className="text-[9px] text-stone-500 dark:text-slate-400">Surplus Berjalan</p>
-                </div>
-              </div>
             </div>
 
-            {/* Launch App Button */}
-            <div className="pt-3 border-t border-stone-200 dark:border-emerald-500/20 flex items-center justify-between">
-              <span className="text-xs text-stone-600 dark:text-slate-300">
-                Otorisasi Bendahara & Pimpinan Aktif
-              </span>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                ['Penerimaan', currentMetrics.keuangan.monthlyIncome, 'text-emerald-700 dark:text-emerald-300', 'homestay & donasi'],
+                ['Pengeluaran', currentMetrics.keuangan.monthlyExpense, 'text-rose-700 dark:text-rose-300', 'operasional'],
+                ['Arus kas bersih', currentMetrics.keuangan.netCashFlow, 'text-teal-700 dark:text-teal-300', 'surplus berjalan'],
+              ].map(([label, value, tone, hint]) => (
+                <div
+                  key={label as string}
+                  className="p-3 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10"
+                >
+                  <p className="text-[10px] font-bold uppercase text-stone-500 dark:text-slate-400">{label}</p>
+                  <p className={`mt-0.5 text-sm font-black font-mono tabular-nums ${tone}`}>
+                    {formatRupiah(value as number)}
+                  </p>
+                  <p className="text-[9px] text-stone-500 dark:text-slate-400">{hint}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto pt-3 border-t border-stone-200 dark:border-white/10 flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs text-stone-600 dark:text-slate-300">Otorisasi bendahara &amp; pimpinan aktif</span>
               <a
                 href={sikApp?.url || 'https://sistem-informasi-keuangan-rep.vercel.app'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold transition-all shadow-md active:scale-95"
+                className="h-10 px-3.5 flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold print:hidden"
               >
-                <span>Buka Modul SIK-REP</span>
+                <span>Buka SIK-REP</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
-          </div>
-        </div>
+          </BentoCard>
 
-        {/* ROW 2: POS YASWAR CAFE & GUDANG OMG + ZEEY STUDIO MEDIA */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* CARD 3: POS YASWAR CAFE & GUDANG SUVENIR OMG */}
-          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-teal-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
-            <PapuanBorderCorner position="top-right" />
+          {/* 3. POS KASIR YASWAR & GUDANG OMG */}
+          <BentoCard as="section" span="half" className="relative overflow-hidden flex flex-col gap-4">
             <SourceOverlay state={sources.posGudang} appName={SOURCE_LABELS.posGudang} />
-            <div className="absolute top-3 left-6 z-10">
+            <div className="flex items-start justify-between gap-2">
               <SourceBadge state={sources.posGudang} />
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-500/40">
+                {currentMetrics.posGudang.trendSales}
+              </span>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-400 border border-teal-500/40 flex items-center justify-center">
-                    <Store className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-stone-900 dark:text-white font-serif">
-                      POS Kasir Yaswar & Gudang (OMG)
-                    </h2>
-                    <p className="text-xs text-stone-500 dark:text-slate-400">
-                      Penjualan Kuliner Etnik, Suvenir Ukiran & Manajemen Stok
-                    </p>
-                  </div>
-                </div>
+            <CardTitle
+              icon={Store}
+              iconTone="bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300"
+              eyebrow="Kasir & gudang"
+              title="POS Kasir Yaswar & Gudang (OMG)"
+            />
+            <p className="-mt-2 text-xs text-stone-500 dark:text-slate-400">
+              Penjualan kuliner etnik, suvenir ukiran &amp; manajemen stok.
+            </p>
 
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-teal-950 text-teal-300 border border-teal-500/40">
-                  {currentMetrics.posGudang.trendSales}
+            <div className="p-4 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
+                  Volume penjualan kasir
+                </p>
+                <p className="mt-0.5 text-2xl font-black font-mono tabular-nums">
+                  {formatRupiah(currentMetrics.posGudang.dailySalesVolume)}
+                </p>
+                <p className="mt-0.5 text-[11px] text-stone-500 dark:text-slate-400">
+                  {currentMetrics.posGudang.dailyTransactionsCount} struk transaksi
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40">
+                  Shift 2 aktif
+                </span>
+                <p className="mt-2 text-[10px] text-stone-500 dark:text-slate-400">
+                  Item favorit:
+                  <br />
+                  <strong className="font-semibold text-stone-800 dark:text-amber-300">
+                    {currentMetrics.posGudang.popularItemToday}
+                  </strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 min-w-0">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Stok suvenir menipis (gudang OMG)</span>
+                </span>
+                <span className="text-[11px] text-stone-500 dark:text-slate-400 shrink-0">
+                  {currentMetrics.posGudang.lowStockAlerts.length} item
                 </span>
               </div>
-
-              {/* Sales Volume & Transactions */}
-              <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#06140e] border border-teal-500/20 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
-                    Volume Penjualan Kasir
-                  </p>
-                  <p className="text-2xl font-black font-mono text-stone-900 dark:text-white mt-0.5">
-                    {formatRupiah(currentMetrics.posGudang.dailySalesVolume)}
-                  </p>
-                  <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-0.5">
-                    Terdaftar {currentMetrics.posGudang.dailyTransactionsCount} Struk Transaksi Kasir
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-500/40">
-                    Shift 2 Aktif
-                  </span>
-                  <p className="text-[10px] text-stone-500 dark:text-slate-400 mt-2">
-                    Item Favorit: <br />
-                    <strong className="text-stone-800 dark:text-amber-300 font-semibold">{currentMetrics.posGudang.popularItemToday}</strong>
-                  </p>
-                </div>
-              </div>
-
-              {/* Low Stock Alert Table */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                    Peringatan Stok Suvenir Menipis (Gudang OMG)
-                  </span>
-                  <span className="text-[11px] text-stone-500 dark:text-slate-400">
-                    {currentMetrics.posGudang.lowStockAlerts.length} Item Perlu Restok
-                  </span>
-                </div>
-                <div className="rounded-2xl border border-stone-200 dark:border-amber-500/20 overflow-hidden bg-stone-50 dark:bg-[#081a13]">
+              {currentMetrics.posGudang.lowStockAlerts.length > 0 ? (
+                <ul className="rounded-2xl border border-stone-200 dark:border-white/10 overflow-hidden bg-stone-50 dark:bg-white/5">
                   {currentMetrics.posGudang.lowStockAlerts.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 flex items-center justify-between text-xs border-b border-stone-200 dark:border-slate-800/80 last:border-0"
+                    <li
+                      key={`${item.itemName}-${idx}`}
+                      className="p-2.5 flex items-center justify-between gap-2 text-xs border-b border-stone-200 dark:border-white/10 last:border-0"
                     >
-                      <div>
-                        <p className="font-bold text-stone-900 dark:text-white">{item.itemName}</p>
-                        <p className="text-[10px] text-stone-500 dark:text-slate-400">{item.category}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
+                      <span className="min-w-0">
+                        <span className="block font-bold truncate">{item.itemName}</span>
+                        <span className="block text-[10px] text-stone-500 dark:text-slate-400">{item.category}</span>
+                      </span>
+                      <span className="text-right shrink-0">
+                        <span className="block font-bold font-mono text-rose-600 dark:text-rose-400">
                           Sisa {item.currentStock} {item.unit}
                         </span>
-                        <p className="text-[9px] text-stone-400 dark:text-slate-500">Min: {item.minThreshold} {item.unit}</p>
-                      </div>
-                    </div>
+                        <span className="block text-[9px] text-stone-400 dark:text-slate-500">
+                          Min {item.minThreshold} {item.unit}
+                        </span>
+                      </span>
+                    </li>
                   ))}
-                </div>
+                </ul>
+              ) : (
+                <p className="p-3 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 text-[11px] text-stone-500 dark:text-slate-400">
+                  Tidak ada suvenir yang perlu restok.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-auto pt-3 border-t border-stone-200 dark:border-white/10 flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs text-stone-600 dark:text-slate-300">
+                {currentMetrics.posGudang.totalMonitoredItems} produk dipantau
+              </span>
+              <div className="flex items-center gap-2 print:hidden">
+                <a
+                  href={posApp?.url || 'https://rep-pos-app.vercel.app'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-10 px-3 flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold"
+                >
+                  <span>Kasir (POS)</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={omgApp?.url || 'https://rep-pos-app.vercel.app'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-10 px-3 flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold"
+                >
+                  <span>Gudang (OMG)</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
             </div>
+          </BentoCard>
 
-            {/* Launch App Button */}
-            <div className="pt-3 border-t border-stone-200 dark:border-teal-500/20 flex items-center justify-between">
-              <span className="text-xs text-stone-600 dark:text-slate-300">
-                Total Monitor: {currentMetrics.posGudang.totalMonitoredItems} Produk
-              </span>
-              <a
-                href={posApp?.url || 'https://rep-pos-app.vercel.app'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white text-xs font-bold transition-all shadow-md active:scale-95"
-              >
-                <span>Buka POS & Gudang</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
-
-          {/* CARD 4: ZEEY STUDIO MEDIA & DOKUMENTASI BUDAYA */}
-          <div className="p-6 pt-11 rounded-3xl bg-white dark:bg-[#091f17] border-2 border-indigo-500/30 shadow-xl flex flex-col justify-between space-y-5 relative overflow-hidden">
-            <PapuanBorderCorner position="top-right" />
+          {/* 4. ZEEY STUDIO MEDIA */}
+          <BentoCard as="section" span="half" className="relative overflow-hidden flex flex-col gap-4">
             <SourceOverlay state={sources.zeeyStudio} appName={SOURCE_LABELS.zeeyStudio} />
-            <div className="absolute top-3 left-6 z-10">
+            <div className="flex items-start justify-between gap-2">
               <SourceBadge state={sources.zeeyStudio} />
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/40">
+                +{currentMetrics.zeeyStudio.newAssetsThisWeek} pekan ini
+              </span>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 flex items-center justify-center">
-                    <Film className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-stone-900 dark:text-white font-serif">
-                      Zeey Studio (Media & Kreatif)
-                    </h2>
-                    <p className="text-xs text-stone-500 dark:text-slate-400">
-                      Dokumentasi Budaya Papua, Video Tari & Manajemen Cloud Media
-                    </p>
-                  </div>
-                </div>
+            <CardTitle
+              icon={Film}
+              iconTone="bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300"
+              eyebrow="Media & kreatif"
+              title="Zeey Studio (Media & Kreatif)"
+            />
+            <p className="-mt-2 text-xs text-stone-500 dark:text-slate-400">
+              Dokumentasi budaya Papua, video tari &amp; manajemen cloud media.
+            </p>
 
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40">
-                  +{currentMetrics.zeeyStudio.newAssetsThisWeek} Berkas Pekan Ini
+            <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 space-y-2">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-bold uppercase text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5 min-w-0">
+                  <HardDrive className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Kapasitas cloud media</span>
+                </span>
+                <span className="font-black font-mono text-sm tabular-nums shrink-0">
+                  {currentMetrics.zeeyStudio.cloudStorageUsedGb} / {currentMetrics.zeeyStudio.totalCloudStorageGb} GB
                 </span>
               </div>
-
-              {/* Cloud Storage Meter */}
-              <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#06140e] border border-indigo-500/20 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-1.5">
-                    <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
-                    Kapasitas Google Drive Cloud Media
-                  </span>
-                  <span className="font-black text-stone-900 dark:text-white font-mono text-sm">
-                    {currentMetrics.zeeyStudio.cloudStorageUsedGb} / {currentMetrics.zeeyStudio.totalCloudStorageGb} GB
-                  </span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-stone-200 dark:bg-slate-800 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${(currentMetrics.zeeyStudio.totalCloudStorageGb ? (currentMetrics.zeeyStudio.cloudStorageUsedGb / currentMetrics.zeeyStudio.totalCloudStorageGb) * 100 : 0)}%`,
-                    }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-stone-600 dark:text-slate-400 pt-1">
-                  <span>Foto Resolusi Tinggi: <strong>{currentMetrics.zeeyStudio.highResPhotosCount}</strong></span>
-                  <span>Video Dokumenter Budaya: <strong>{currentMetrics.zeeyStudio.culturalVideosCount}</strong></span>
-                </div>
+              <div className="w-full h-3 rounded-full bg-stone-200 dark:bg-white/10 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${
+                      currentMetrics.zeeyStudio.totalCloudStorageGb
+                        ? (currentMetrics.zeeyStudio.cloudStorageUsedGb / currentMetrics.zeeyStudio.totalCloudStorageGb) *
+                          100
+                        : 0
+                    }%`,
+                  }}
+                />
               </div>
-
-              {/* Latest Upload Box */}
-              <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-indigo-500/20">
-                <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                  Unggahan Terakhir:
-                </p>
-                <p className="text-xs font-bold text-stone-900 dark:text-white mt-1 leading-snug">
-                  {currentMetrics.zeeyStudio.latestUploadTitle}
-                </p>
-                <p className="text-[10px] text-stone-500 dark:text-slate-400 mt-1">
-                  Total {currentMetrics.zeeyStudio.totalMediaAssets} Aset Digital Terkatalog
-                </p>
+              <div className="flex items-center justify-between gap-2 text-[11px] text-stone-600 dark:text-slate-400">
+                <span>
+                  Foto resolusi tinggi <strong>{currentMetrics.zeeyStudio.highResPhotosCount}</strong>
+                </span>
+                <span>
+                  Video budaya <strong>{currentMetrics.zeeyStudio.culturalVideosCount}</strong>
+                </span>
               </div>
             </div>
 
-            {/* Launch App Button */}
-            <div className="pt-3 border-t border-stone-200 dark:border-indigo-500/20 flex items-center justify-between">
-              <span className="text-xs text-stone-600 dark:text-slate-300">
-                CDN Cloud Terhubung
-              </span>
+            <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+                Unggahan terakhir
+              </p>
+              <p className="mt-1 text-xs font-bold leading-snug">{currentMetrics.zeeyStudio.latestUploadTitle}</p>
+              <p className="mt-1 text-[10px] text-stone-500 dark:text-slate-400">
+                Total {currentMetrics.zeeyStudio.totalMediaAssets} aset digital terkatalog
+              </p>
+            </div>
+
+            <div className="mt-auto pt-3 border-t border-stone-200 dark:border-white/10 flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs text-stone-600 dark:text-slate-300">CDN cloud terhubung</span>
               <a
                 href={zeeyApp?.url || 'https://zeeystudio.vercel.app'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-500 hover:to-purple-600 text-white text-xs font-bold transition-all shadow-md active:scale-95"
+                className="h-10 px-3.5 flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold print:hidden"
               >
                 <span>Buka Zeey Studio</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
-          </div>
-        </div>
+          </BentoCard>
+        </Bento>
       </main>
-
-      {/* PWA Modal & Banner */}
     </div>
   );
 }

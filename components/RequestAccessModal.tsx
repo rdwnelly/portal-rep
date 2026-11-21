@@ -104,7 +104,7 @@ export default function RequestAccessModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-      <div className="relative w-full max-w-xl my-auto rounded-3xl glass-panel bg-[#091d15] border-2 border-amber-500/40 shadow-2xl overflow-hidden max-h-[90dvh] overflow-y-auto">
+      <div className="relative w-full max-w-xl my-auto rounded-3xl bg-white dark:bg-[#0c241b] border-2 border-stone-200 dark:border-amber-500/40 shadow-2xl overflow-hidden max-h-[90dvh] overflow-y-auto">
         <PapuanBorderCorner />
 
         {/* Ambient Glows */}
@@ -114,7 +114,7 @@ export default function RequestAccessModal({
         {/* Close Button */}
         <button
           onClick={handleResetAndClose}
-          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700 z-20 cursor-pointer"
+          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-xl bg-stone-100 dark:bg-slate-900/80 hover:bg-stone-200 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white transition-all border border-stone-200 dark:border-slate-700 z-20 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -122,43 +122,43 @@ export default function RequestAccessModal({
         {isSubmitted ? (
           /* ================= SUCCESS STATE ================= */
           <div className="p-8 text-center relative z-10 space-y-5">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-950 border-2 border-emerald-400 text-emerald-400 mx-auto flex items-center justify-center shadow-lg shadow-emerald-950/60 animate-bounce">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950 border-2 border-emerald-400 text-emerald-700 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-lg shadow-emerald-950/60 animate-bounce">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-500/30">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/80 px-3 py-1 rounded-full border border-stone-200 dark:border-amber-500/30">
                 Pendaftaran Berhasil Dikirim
               </span>
-              <h2 className="text-2xl font-black text-white mt-3">
+              <h2 className="text-2xl font-black text-stone-900 dark:text-white mt-3">
                 Permohonan Akses Telah Diterima!
               </h2>
-              <p className="text-xs text-slate-300 max-w-md mx-auto mt-2 leading-relaxed">
+              <p className="text-xs text-stone-600 dark:text-slate-300 max-w-md mx-auto mt-2 leading-relaxed">
                 Data pendaftaran login Anda untuk <strong>{getTargetAppTitle()}</strong> telah masuk ke antrean verifikasi Admin IT Yayasan Rumah Etnik Papua.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#06140e] border border-amber-500/20 text-left text-xs space-y-2 text-slate-300">
-              <div className="flex justify-between border-b border-slate-800 pb-1.5">
-                <span className="text-slate-400">ID Permohonan:</span>
-                <span className="font-mono font-bold text-amber-300">{submittedReqId}</span>
+            <div className="p-4 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/20 text-left text-xs space-y-2 text-stone-600 dark:text-slate-300">
+              <div className="flex justify-between border-b border-stone-200 dark:border-slate-800 pb-1.5">
+                <span className="text-stone-500 dark:text-slate-400">ID Permohonan:</span>
+                <span className="font-mono font-bold text-amber-700 dark:text-amber-300">{submittedReqId}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-800 pb-1.5">
-                <span className="text-slate-400">Nama Staf:</span>
-                <strong className="text-white">{name}</strong>
+              <div className="flex justify-between border-b border-stone-200 dark:border-slate-800 pb-1.5">
+                <span className="text-stone-500 dark:text-slate-400">Nama Staf:</span>
+                <strong className="text-stone-900 dark:text-white">{name}</strong>
               </div>
-              <div className="flex justify-between border-b border-slate-800 pb-1.5">
-                <span className="text-slate-400">Email Login:</span>
-                <span className="font-mono text-emerald-300">{email}</span>
+              <div className="flex justify-between border-b border-stone-200 dark:border-slate-800 pb-1.5">
+                <span className="text-stone-500 dark:text-slate-400">Email Login:</span>
+                <span className="font-mono text-emerald-700 dark:text-emerald-300">{email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Divisi:</span>
+                <span className="text-stone-500 dark:text-slate-400">Divisi:</span>
                 <span className="text-slate-200">{department}</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2 text-left">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
+            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-stone-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2 text-left">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <span>Admin IT (Ridwan Elly) akan segera memverifikasi dan mendaftarkan akun Anda ke sistem whitelist.</span>
             </div>
 
@@ -181,14 +181,14 @@ export default function RequestAccessModal({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30">
+                  <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-widest bg-amber-50 dark:bg-amber-950/80 px-2 py-0.5 rounded border border-stone-200 dark:border-amber-500/30">
                     Formulir Pendaftaran
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> Verifikasi Admin
                   </span>
                 </div>
-                <h2 className="text-xl font-black text-white mt-0.5">
+                <h2 className="text-xl font-black text-stone-900 dark:text-white mt-0.5">
                   Minta Akses / Pendaftaran Akun Staf
                 </h2>
               </div>
@@ -197,28 +197,39 @@ export default function RequestAccessModal({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Target Application Selector */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                <label className="block text-xs font-bold text-stone-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   <span>Aplikasi yang Dituju:</span>
                 </label>
                 <select
                   value={selectedAppId}
                   onChange={(e) => setCustomAppId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#06160f] border border-amber-500/30 text-xs text-amber-300 font-semibold focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 font-semibold focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
                 >
                   <option value="ALL">🌐 Semua Aplikasi (Akses Penuh Portal REP)</option>
-                  <option value="app-reservasi">🏨 Sistem Manajemen Reservasi (Homestay & Tiket)</option>
-                  <option value="app-sik-rep">💰 SIK-REP (Sistem Informasi Keuangan)</option>
-                  <option value="app-pos-omg">☕ POS Kasir Yaswar Cafe & OMG Gudang</option>
-                  <option value="app-zeestudio">🎬 Zeey Studio (Media Kreatif & Arsip)</option>
+                  {availableApps && availableApps.length > 0 ? (
+                    availableApps.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.title}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="app-reservasi">🏨 Sistem Manajemen Reservasi (Homestay & Tiket)</option>
+                      <option value="app-sik-rep">💰 SIK-REP (Sistem Informasi Keuangan)</option>
+                      <option value="app-pos">🛒 Aplikasi Kasir (POS)</option>
+                      <option value="app-omg">📦 Sistem Operasional Manajemen Gudang (OMG)</option>
+                      <option value="app-zeestudio">🎬 Zeey Studio (Media Kreatif & Arsip)</option>
+                    </>
+                  )}
                 </select>
               </div>
 
               {/* Row: Name & Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    Nama Lengkap Staf <span className="text-red-400">*</span>
+                  <label className="block text-xs font-bold text-stone-600 dark:text-slate-300 mb-1.5">
+                    Nama Lengkap Staf <span className="text-rose-600 dark:text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -226,14 +237,14 @@ export default function RequestAccessModal({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="misal: Johanes Kambu"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06160f] border border-amber-500/25 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/25 text-xs text-stone-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                    <Mail className="w-3 h-3 text-amber-400" />
-                    <span>Email untuk Login <span className="text-red-400">*</span></span>
+                  <label className="block text-xs font-bold text-stone-600 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span>Email untuk Login <span className="text-rose-600 dark:text-red-400">*</span></span>
                   </label>
                   <input
                     type="email"
@@ -241,14 +252,14 @@ export default function RequestAccessModal({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@rumahetnikpapua.org atau gmail"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06160f] border border-amber-500/25 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/25 text-xs text-stone-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                   />
                 </div>
               </div>
 
               {/* Catatan keamanan: kata sandi tidak pernah dikirim lewat formulir ini */}
-              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/25 text-[11px] text-emerald-200 flex items-start gap-2">
-                <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400" />
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/25 text-[11px] text-emerald-200 flex items-start gap-2">
+                <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-400" />
                 <span>
                   Kata sandi <strong>tidak</strong> diminta di sini. Setelah disetujui, Admin IT akan memberi tahu cara
                   membuat kata sandi Anda sendiri — tidak ada pihak lain yang mengetahuinya.
@@ -258,14 +269,14 @@ export default function RequestAccessModal({
               {/* Row: Department & WhatsApp */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                    <Building className="w-3 h-3 text-emerald-400" />
-                    <span>Divisi / Unit Kerja <span className="text-red-400">*</span></span>
+                  <label className="block text-xs font-bold text-stone-600 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                    <Building className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
+                    <span>Divisi / Unit Kerja <span className="text-rose-600 dark:text-red-400">*</span></span>
                   </label>
                   <select
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#06160f] border border-amber-500/25 text-xs text-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/25 text-xs text-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer"
                   >
                     {DEPARTMENTS.map((d) => (
                       <option key={d} value={d}>
@@ -276,8 +287,8 @@ export default function RequestAccessModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-emerald-400" />
+                  <label className="block text-xs font-bold text-stone-600 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                     <span>No. WhatsApp / HP (Opsional)</span>
                   </label>
                   <input
@@ -285,16 +296,16 @@ export default function RequestAccessModal({
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="0812-xxxx-xxxx"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#06160f] border border-amber-500/25 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/25 text-xs text-stone-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                   />
                 </div>
               </div>
 
               {/* Reason / Catatan Keperluan */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <FileText className="w-3 h-3 text-amber-400" />
-                  <span>Alasan / Keperluan Akses Kerja <span className="text-red-400">*</span></span>
+                <label className="block text-xs font-bold text-stone-600 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                  <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  <span>Alasan / Keperluan Akses Kerja <span className="text-rose-600 dark:text-red-400">*</span></span>
                 </label>
                 <textarea
                   required
@@ -302,16 +313,16 @@ export default function RequestAccessModal({
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Jelaskan kebutuhan tugas Anda (misal: Staf kasir baru Yaswar Cafe shift siang)..."
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#06160f] border border-amber-500/25 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/25 text-xs text-stone-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all resize-none"
                 />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-amber-500/15">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200 dark:border-amber-500/15">
                 <button
                   type="button"
                   onClick={handleResetAndClose}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-stone-200 dark:bg-slate-800 hover:bg-slate-700 text-stone-600 dark:text-slate-300 text-xs font-semibold cursor-pointer"
                 >
                   Batal
                 </button>

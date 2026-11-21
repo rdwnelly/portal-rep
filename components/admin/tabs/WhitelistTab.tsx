@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import { addWhitelistedUser, updateWhitelistedUser, removeWhitelistedUser } from '@/lib/storage';
 import { UserRole, WhitelistedUser } from '@/lib/types';
-import { Trash2, X, Users, UserPlus, Search } from 'lucide-react';
+import { Trash2, X, Users, UserPlus, Search, MailCheck, Loader2, AlertTriangle } from 'lucide-react';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
 import { ROLE_PERMISSIONS } from '@/components/admin/permissions';
+import { provisionStaffAccount, syncStaffAccountActive } from '@/lib/staff-accounts';
 
 /** Whitelist karyawan & hak akses role (khusus IT Admin). */
 export default function WhitelistTab({ whitelist, currentUserEmail, currentAdminName }: { whitelist: WhitelistedUser[]; currentUserEmail: string; currentAdminName: string }) {
@@ -21,27 +22,57 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
   const [staffRoleTitle, setStaffRoleTitle] = useState('Staf Operasional Homestay');
   const [staffDepartment, setStaffDepartment] = useState('Frontdesk & Homestay Etnik');
 
-  // ================= WHITELIST HANDLERS =================
-  const handleSaveStaff = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!staffEmail.trim() || !staffName.trim()) return;
+  // Umpan balik penyiapan akun login (dibuat, email terkirim, atau gagal).
+  const [accountNotice, setAccountNotice] = useState<{ ok: boolean; message: string } | null>(null);
+  const [busyEmail, setBusyEmail] = useState<string | null>(null);
 
-    addWhitelistedUser(
-      {
-        email: staffEmail.trim().toLowerCase(),
-        name: staffName.trim(),
-        role: staffRole,
-        roleTitle: staffRoleTitle.trim(),
-        department: staffDepartment.trim(),
-        active: true,
-        addedBy: currentAdminName,
-      },
-      currentAdminName
-    );
+  // ================= WHITELIST HANDLERS =================
+  const handleSaveStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = staffEmail.trim().toLowerCase();
+    const name = staffName.trim();
+    if (!email || !name) return;
+
+    setAccountNotice(null);
+    try {
+      addWhitelistedUser(
+        {
+          email,
+          name,
+          role: staffRole,
+          roleTitle: staffRoleTitle.trim(),
+          department: staffDepartment.trim(),
+          active: true,
+          addedBy: currentAdminName,
+        },
+        currentAdminName
+      );
+    } catch (err) {
+      setAccountNotice({ ok: false, message: (err as Error).message });
+      return;
+    }
 
     setShowAddStaffModal(false);
     setStaffEmail('');
     setStaffName('');
+
+    // Whitelist hanya memberi role; akun loginnya dibuat di sini agar karyawan benar-benar
+    // bisa masuk. Tanpa langkah ini "Lupa kata sandi" tidak mengirim apa pun.
+    setBusyEmail(email);
+    setAccountNotice(await provisionStaffAccount(email, name));
+    setBusyEmail(null);
+  };
+
+  /**
+   * Tombol ✉️: buat akun loginnya bila belum ada, lalu kirim tautan kata sandi.
+   * Sengaja bukan sekadar "kirim ulang email" — kalau penyiapan akun sempat gagal
+   * (mis. kredensial server belum diisi), mengirim email ke akun yang tidak ada
+   * tidak menghasilkan apa pun. Ini jalur perbaikannya.
+   */
+  const handleResendSetupEmail = async (email: string, name: string) => {
+    setBusyEmail(email);
+    setAccountNotice(await provisionStaffAccount(email, name));
+    setBusyEmail(null);
   };
 
   const isSelf = (email: string) => email.toLowerCase() === currentUserEmail;
@@ -56,14 +87,24 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
     updateWhitelistedUser(id, { role: newRole, roleTitle }, currentAdminName);
   };
 
-  const handleToggleStaffActive = (id: string, currentActive: boolean) => {
-    updateWhitelistedUser(id, { active: !currentActive }, currentAdminName);
+  const handleToggleStaffActive = async (id: string, email: string, currentActive: boolean) => {
+    const active = !currentActive;
+    updateWhitelistedUser(id, { active }, currentAdminName);
+    // Whitelist nonaktif menutup portal, tapi token yang sudah terbit masih berlaku sampai
+    // kedaluwarsa — akun loginnya ikut dinonaktifkan supaya tidak bisa dapat token baru.
+    setBusyEmail(email);
+    setAccountNotice(await syncStaffAccountActive(email, active));
+    setBusyEmail(null);
   };
 
-  const handleDeleteStaff = (id: string, name: string) => {
-    if (confirm(`Hapus karyawan "${name}" dari whitelist akses?`)) {
-      removeWhitelistedUser(id, currentAdminName);
-    }
+  const handleDeleteStaff = async (id: string, name: string, email: string) => {
+    if (!confirm(`Hapus karyawan "${name}" dari whitelist akses?`)) return;
+    removeWhitelistedUser(id, currentAdminName);
+    // Akun login dinonaktifkan, bukan dihapus: jejak audit & UID-nya tetap utuh bila
+    // suatu saat karyawan ini bergabung kembali.
+    setBusyEmail(email);
+    setAccountNotice(await syncStaffAccountActive(email, false));
+    setBusyEmail(null);
   };
 
   // Filtered Whitelist
@@ -83,11 +124,11 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-400" />
+              <h2 className="text-lg font-black text-stone-900 dark:text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-700 dark:text-purple-400" />
                 <span>Manajemen Karyawan & Hak Akses Whitelist (RBAC)</span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-500 dark:text-slate-400">
                 Kelola hak akses role staf yayasan, atur perizinan sub-aplikasi, dan tambahkan akun Google karyawan.
               </p>
             </div>
@@ -101,25 +142,51 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
             </button>
           </div>
 
+          {accountNotice && (
+            <div
+              role="status"
+              className={`flex items-start gap-2 p-3 rounded-2xl border text-xs leading-relaxed ${
+                accountNotice.ok
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-500/30 text-rose-800 dark:text-rose-200'
+              }`}
+            >
+              {accountNotice.ok ? (
+                <MailCheck className="w-4 h-4 shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              )}
+              <span className="flex-1">{accountNotice.message}</span>
+              <button
+                type="button"
+                onClick={() => setAccountNotice(null)}
+                aria-label="Tutup pemberitahuan"
+                className="shrink-0 w-5 h-5 flex items-center justify-center rounded cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Filter & Search Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#091b14] p-3 rounded-2xl border border-purple-500/20">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-stone-50 dark:bg-white/5 p-3 rounded-2xl border border-purple-500/20">
             <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-stone-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={staffSearchQuery}
                 onChange={(e) => setStaffSearchQuery(e.target.value)}
                 placeholder="Cari nama, email, atau divisi..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
+                className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-slate-700 text-xs text-stone-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
               />
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-[11px] text-slate-400 font-bold whitespace-nowrap">Divisi:</span>
+              <span className="text-[11px] text-stone-500 dark:text-slate-400 font-bold whitespace-nowrap">Divisi:</span>
               <select
                 value={staffDeptFilter}
                 onChange={(e) => setStaffDeptFilter(e.target.value)}
-                className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-purple-400 cursor-pointer"
+                className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-slate-700 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-purple-400 cursor-pointer"
               >
                 <option value="ALL">Semua Divisi</option>
                 {departmentList.map((dept) => (
@@ -132,10 +199,10 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
           </div>
 
           {/* Staff Table */}
-          <div className="rounded-2xl border border-purple-500/25 overflow-hidden bg-[#091b14] shadow-xl">
+          <div className="rounded-2xl border border-purple-500/25 overflow-hidden bg-stone-50 dark:bg-white/5 shadow-xl">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-[#06140e] text-[10px] uppercase font-bold text-slate-400 border-b border-purple-500/20 tracking-wider">
+              <table className="w-full text-left text-xs text-stone-600 dark:text-slate-300">
+                <thead className="bg-stone-50 dark:bg-white/5 text-[10px] uppercase font-bold text-stone-500 dark:text-slate-400 border-b border-purple-500/20 tracking-wider">
                   <tr>
                     <th className="py-3 px-4">Nama & Email Karyawan</th>
                     <th className="py-3 px-4">Divisi / Jabatan</th>
@@ -144,26 +211,26 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
                     <th className="py-3 px-4 text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/80 font-medium">
+                <tbody className="divide-y divide-stone-200 dark:divide-slate-800/80 font-medium">
                   {filteredWhitelist.map((staff) => {
                     const roleInfo = ROLE_PERMISSIONS[staff.role] || ROLE_PERMISSIONS.OPERATIONAL;
                     return (
                       <tr key={staff.id} className="hover:bg-[#0c241b]/60 transition-colors">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center justify-center font-bold font-serif text-xs">
+                            <div className="w-8 h-8 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/40 flex items-center justify-center font-bold font-serif text-xs">
                               {staff.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-bold text-white text-xs">{staff.name}</p>
-                              <p className="text-[10px] text-slate-400 font-mono">{staff.email}</p>
+                              <p className="font-bold text-stone-900 dark:text-white text-xs">{staff.name}</p>
+                              <p className="text-[10px] text-stone-500 dark:text-slate-400 font-mono">{staff.email}</p>
                             </div>
                           </div>
                         </td>
 
                         <td className="py-3.5 px-4">
                           <p className="font-semibold text-slate-200">{staff.department}</p>
-                          <p className="text-[10px] text-slate-400">{staff.roleTitle}</p>
+                          <p className="text-[10px] text-stone-500 dark:text-slate-400">{staff.roleTitle}</p>
                         </td>
 
                         <td className="py-3.5 px-4">
@@ -184,7 +251,7 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
                         <td className="py-3.5 px-4">
                           <button
                             type="button"
-                            onClick={() => handleToggleStaffActive(staff.id, staff.active)}
+                            onClick={() => void handleToggleStaffActive(staff.id, staff.email, staff.active)}
                             disabled={isSelf(staff.email)}
                             className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 cursor-pointer transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                               staff.active
@@ -200,9 +267,22 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
                         <td className="py-3.5 px-4 text-right">
                           <button
                             type="button"
-                            onClick={() => handleDeleteStaff(staff.id, staff.name)}
+                            onClick={() => void handleResendSetupEmail(staff.email, staff.name)}
+                            disabled={busyEmail === staff.email}
+                            className="p-1.5 mr-1 rounded-lg bg-stone-200 dark:bg-slate-800 hover:bg-emerald-200 dark:hover:bg-emerald-950/80 border border-stone-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 transition-all cursor-pointer disabled:cursor-wait disabled:opacity-40"
+                            title="Siapkan akun login & kirim tautan pembuatan kata sandi ke email staf"
+                          >
+                            {busyEmail === staff.email ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <MailCheck className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteStaff(staff.id, staff.name, staff.email)}
                             disabled={isSelf(staff.email)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/80 border border-slate-700 text-rose-400 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                            className="p-1.5 rounded-lg bg-stone-200 dark:bg-slate-800 hover:bg-rose-200/80 dark:hover:bg-rose-950/80 border border-stone-200 dark:border-slate-700 text-rose-600 dark:text-rose-400 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                             title={isSelf(staff.email) ? 'Anda tidak dapat menghapus akun sendiri' : 'Hapus dari Whitelist'}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -220,7 +300,7 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
         {showAddStaffModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
             <div
-              className="relative w-full max-w-md rounded-3xl bg-[#091f17] border-2 border-purple-500/40 shadow-2xl p-6 text-slate-100 overflow-hidden"
+              className="relative w-full max-w-md rounded-3xl bg-white dark:bg-[#0c241b] border-2 border-purple-500/40 shadow-2xl p-6 text-slate-100 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <PapuanBorderCorner position="top-right" />
@@ -228,49 +308,49 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
 
               <div className="flex items-center justify-between pb-3 border-b border-purple-500/20 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <UserPlus className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-base font-black text-white font-serif">Tambah Karyawan ke Whitelist</h3>
+                  <UserPlus className="w-5 h-5 text-purple-700 dark:text-purple-400" />
+                  <h3 className="text-base font-black text-stone-900 dark:text-white font-serif">Tambah Karyawan ke Whitelist</h3>
                 </div>
                 <button
                   onClick={() => setShowAddStaffModal(false)}
-                  className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white border border-slate-700"
+                  className="p-1.5 rounded-xl bg-stone-100 dark:bg-slate-900 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white border border-stone-200 dark:border-slate-700"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveStaff} className="space-y-3.5">
+              <form onSubmit={(e) => void handleSaveStaff(e)} className="space-y-3.5">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">Nama Lengkap Karyawan</label>
+                  <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Nama Lengkap Karyawan</label>
                   <input
                     type="text"
                     value={staffName}
                     onChange={(e) => setStaffName(e.target.value)}
                     placeholder="Contoh: Samuel Burdam"
                     required
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                    className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-purple-500/30 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-purple-400"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">Email Akun Google (Login)</label>
+                  <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Email Akun Google (Login)</label>
                   <input
                     type="email"
                     value={staffEmail}
                     onChange={(e) => setStaffEmail(e.target.value)}
                     placeholder="samuel@gmail.com"
                     required
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-purple-300 font-mono focus:outline-none focus:border-purple-400"
+                    className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-purple-500/30 text-xs text-purple-700 dark:text-purple-300 font-mono focus:outline-none focus:border-purple-400"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-300">Hak Akses Role</label>
+                    <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Hak Akses Role</label>
                     <select
                       value={staffRole}
                       onChange={(e) => setStaffRole(e.target.value as UserRole)}
-                      className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                      className="w-full px-2.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-purple-500/30 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-purple-400"
                     >
                       <option value="OPERATIONAL">Staf Operasional</option>
                       <option value="FINANCE_WAREHOUSE">Staf Keuangan & Gudang</option>
@@ -280,25 +360,25 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-300">Jabatan / Posisi</label>
+                    <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Jabatan / Posisi</label>
                     <input
                       type="text"
                       value={staffRoleTitle}
                       onChange={(e) => setStaffRoleTitle(e.target.value)}
                       placeholder="Staf Homestay"
-                      className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                      className="w-full px-2.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-purple-500/30 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-purple-400"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">Divisi / Unit Kerja</label>
+                  <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Divisi / Unit Kerja</label>
                   <input
                     type="text"
                     value={staffDepartment}
                     onChange={(e) => setStaffDepartment(e.target.value)}
                     placeholder="Frontdesk & Homestay Etnik"
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-purple-500/30 text-xs text-white focus:outline-none focus:border-purple-400"
+                    className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-purple-500/30 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-purple-400"
                   />
                 </div>
 
@@ -306,7 +386,7 @@ export default function WhitelistTab({ whitelist, currentUserEmail, currentAdmin
                   <button
                     type="button"
                     onClick={() => setShowAddStaffModal(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 text-xs font-bold border border-slate-700"
+                    className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-slate-900 text-stone-600 dark:text-slate-300 text-xs font-bold border border-stone-200 dark:border-slate-700"
                   >
                     Batal
                   </button>
