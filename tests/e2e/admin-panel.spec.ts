@@ -1,108 +1,86 @@
 import { expect, test } from '@playwright/test';
-import {
-  completePasswordSetup,
-  getAuthUser,
-  HOME_URL,
-  login,
-  loginAndWait,
-  resetEmulators,
-  seedContent,
-  seedStandardUsers,
-} from './support/emulator';
+import { INITIAL_APPS } from '../../lib/seed-data';
+import { countDocs, loginAndWait, readDoc, resetEmulators, seedContent, seedStandardUsers } from './support/emulator';
 
-test.beforeAll(async () => {
-  await resetEmulators();
-  await seedStandardUsers();
-  await seedContent();
+const POS = INITIAL_APPS.find((a) => a.id === 'app-pos')!;
+
+test.describe('panel admin — kelola link aplikasi', () => {
+  test.beforeAll(async () => {
+    await resetEmulators();
+    await seedStandardUsers();
+    await seedContent();
+  });
+
+  test.beforeEach(async ({ page }) => {
+    page.on('dialog', (d) => d.accept());
+    await loginAndWait(page, 'admin@rep.test');
+  });
+
+  test('halaman hanya berisi satu panel: Link Aplikasi', async ({ page }) => {
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Link Aplikasi');
+    await expect(page.getByRole('button', { name: 'Tambah Modul Aplikasi' })).toBeVisible();
+    // Setiap aplikasi yang sudah ada punya tombol Edit.
+    await expect(page.getByRole('button', { name: /^Edit / })).toHaveCount(5);
+    await expect(page.getByRole('tablist')).toHaveCount(0);
+    for (const removed of ['Whitelist', 'Audit', 'Permohonan', 'Info Yayasan', 'Denyut Operasional']) {
+      await expect(page.getByText(removed)).toHaveCount(0);
+    }
+  });
+
+  test('aplikasi baru langsung tampil di halaman Aplikasi publik', async ({ page, browser }) => {
+    await page.getByRole('button', { name: 'Tambah Modul Aplikasi' }).click();
+    await page.getByPlaceholder('Contoh: Sistem Informasi Keuangan').fill('Aplikasi Uji E2E');
+    await page.getByPlaceholder('https://apk-reservasi-homestay-rep.vercel.app').fill('https://uji-e2e.vercel.app');
+    await page.getByRole('button', { name: 'Tambah Modul Aplikasi' }).last().click();
+    await expect(page.getByRole('heading', { name: 'Aplikasi Uji E2E' })).toBeVisible();
+
+    // Pengunjung tanpa login melihatnya di halaman Aplikasi.
+    const visitor = await browser.newContext();
+    const appsPage = await visitor.newPage();
+    await appsPage.goto('/apps');
+    await expect(appsPage.getByText('Aplikasi Uji E2E')).toBeVisible();
+    await visitor.close();
+  });
+
+  test('mengubah link aplikasi tersimpan di database', async ({ page }) => {
+    await page.getByRole('button', { name: `Edit ${POS.title}` }).click();
+    await page.getByPlaceholder('https://apk-reservasi-homestay-rep.vercel.app').fill('https://pos-baru.vercel.app');
+    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+    await expect.poll(async () => (await readDoc(`apps/${POS.id}`))?.url).toBe('https://pos-baru.vercel.app');
+  });
+
+  test('link selain http/https ditolak sebelum disimpan', async ({ page }) => {
+    await page.getByRole('button', { name: `Edit ${POS.title}` }).click();
+    await page.getByPlaceholder('https://apk-reservasi-homestay-rep.vercel.app').fill('javascript:alert(1)');
+    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'http:// atau https://' })).toBeVisible();
+  });
+
+  test('menghapus aplikasi', async ({ page }) => {
+    const zeey = INITIAL_APPS.find((a) => a.id === 'app-zeestudio')!;
+    await page.getByRole('button', { name: `Hapus ${zeey.title}` }).click();
+    await expect.poll(() => readDoc(`apps/${zeey.id}`)).toBeNull();
+  });
 });
 
-test.beforeEach(async ({ page }) => {
-  page.on('dialog', (d) => d.accept());
-  await loginAndWait(page, 'admin@rep.test');
-});
+test.describe('panel admin — database masih kosong', () => {
+  test.beforeAll(async () => {
+    await resetEmulators();
+    await seedStandardUsers();
+    // Sengaja tanpa seedContent: kondisi produksi pertama kali.
+  });
 
-const TABS: [RegExp, string][] = [
-  [/^1\. Agenda Budaya/, 'Kelola Agenda, Pentas Budaya & Kunjungan Homestay'],
-  [/^2\. Whitelist Karyawan/, 'Manajemen Karyawan & Hak Akses Whitelist (RBAC)'],
-  [/^3\. Permohonan Akses/, 'Otorisasi & Permohonan Pendaftaran Akun Staf'],
-  [/^4\. Link Aplikasi/, 'Konfigurasi Link & Modul Sub-Aplikasi'],
-  [/^5\. Info Yayasan/, 'Profil & Informasi Resmi Yayasan REP'],
-  [/^6\. Audit Logs/, 'Audit Trail & Jejak Aktivitas Keamanan'],
-];
+  test('mengubah satu link bawaan menyimpan seluruh daftar bawaan, tidak ada yang hilang', async ({ page }) => {
+    await loginAndWait(page, 'admin@rep.test');
+    await expect(page.getByText('daftar bawaan')).toBeVisible();
+    expect(await countDocs('apps')).toBe(0);
 
-test('keenam tab panel admin dapat dibuka', async ({ page }) => {
-  for (const [tab, heading] of TABS) {
-    await page.getByRole('tab', { name: tab }).click();
-    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
-  }
-});
+    await page.getByRole('button', { name: `Edit ${POS.title}` }).click();
+    await page.getByPlaceholder('https://apk-reservasi-homestay-rep.vercel.app').fill('https://pos-baru.vercel.app');
+    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
 
-test('menambah karyawan ke whitelist & tidak bisa mengubah role akun sendiri', async ({ page }) => {
-  await page.getByRole('tab', { name: /^2\. Whitelist Karyawan/ }).click();
-  await page.getByRole('button', { name: 'Tambah Karyawan Baru' }).click();
-  await page.getByPlaceholder('Contoh: Samuel Burdam').fill('Samuel E2E');
-  await page.getByPlaceholder('samuel@gmail.com').fill('samuel.e2e@rep.test');
-  await page.getByRole('button', { name: 'Simpan Karyawan' }).click();
-  await expect(page.getByText('samuel.e2e@rep.test')).toBeVisible();
-
-  const ownRow = page.getByRole('row').filter({ hasText: 'admin@rep.test' });
-  await expect(ownRow.getByRole('combobox')).toBeDisabled();
-  await expect(ownRow.getByRole('button', { name: 'Hapus dari Whitelist' }).or(ownRow.getByTitle('Anda tidak dapat menghapus akun sendiri'))).toBeDisabled();
-});
-
-test('tab Info Yayasan menampilkan data tersimpan, bukan nilai default', async ({ page }) => {
-  await page.getByRole('tab', { name: /^5\. Info Yayasan/ }).click();
-  await expect(page.getByRole('heading', { name: 'Profil & Informasi Resmi Yayasan REP' })).toBeVisible();
-  await expect(page.locator('input').first()).toHaveValue('Yayasan Rumah Etnik Papua');
-});
-
-test('inisialisasi data awal hanya mengisi koleksi kosong', async ({ page }) => {
-  await page.getByRole('tab', { name: /^6\. Audit Logs/ }).click();
-  await page.getByRole('button', { name: 'Jalankan' }).click();
-  await expect(page.getByText('Modul aplikasi: dilewati (sudah berisi data)').first()).toBeVisible();
-  await expect(page.getByText('Informasi yayasan: ditambahkan').first()).toBeVisible();
-});
-
-test('karyawan baru langsung mendapat akun login dan bisa masuk sendiri', async ({ page, browser }) => {
-  const email = 'karyawan.baru@rep.test';
-  const password = 'KataSandiKaryawan#2026';
-
-  // Sebelum ditambahkan, belum ada akun login sama sekali.
-  expect(await getAuthUser(email)).toBeNull();
-
-  await page.getByRole('tab', { name: /^2\. Whitelist Karyawan/ }).click();
-  await page.getByRole('button', { name: 'Tambah Karyawan Baru' }).click();
-  await page.getByPlaceholder('Contoh: Samuel Burdam').fill('Karyawan Baru');
-  await page.getByPlaceholder('samuel@gmail.com').fill(email);
-  await page.getByRole('button', { name: 'Simpan Karyawan' }).click();
-
-  // Portal membuat akun loginnya dan mengirim tautan pembuatan kata sandi.
-  await expect(page.getByText(/Tautan pembuatan kata sandi sudah dikirim/)).toBeVisible();
-  await expect.poll(() => getAuthUser(email)).toMatchObject({ emailVerified: true, disabled: false });
-
-  // Karyawan membuka tautan dari emailnya, membuat kata sandi, lalu masuk sendiri.
-  // Konteks terpisah: sesi Firebase milik admin tidak boleh ikut terbawa.
-  await completePasswordSetup(email, password);
-  const staffContext = await browser.newContext();
-  const staffPage = await staffContext.newPage();
-  await login(staffPage, email, { password });
-  await staffPage.waitForURL(HOME_URL);
-  await expect(staffPage.getByRole('heading', { name: 'Akses Terbatas' })).toHaveCount(0);
-  await staffContext.close();
-});
-
-test('menonaktifkan karyawan ikut mengunci akun loginnya', async ({ page }) => {
-  const email = 'karyawan.nonaktif@rep.test';
-  await page.getByRole('tab', { name: /^2\. Whitelist Karyawan/ }).click();
-  await page.getByRole('button', { name: 'Tambah Karyawan Baru' }).click();
-  await page.getByPlaceholder('Contoh: Samuel Burdam').fill('Karyawan Nonaktif');
-  await page.getByPlaceholder('samuel@gmail.com').fill(email);
-  await page.getByRole('button', { name: 'Simpan Karyawan' }).click();
-  await expect.poll(() => getAuthUser(email)).toMatchObject({ disabled: false });
-
-  const row = page.getByRole('row').filter({ hasText: email });
-  await row.getByRole('button', { name: 'Aktif' }).click();
-
-  await expect(page.getByText(/dinonaktifkan/)).toBeVisible();
-  await expect.poll(() => getAuthUser(email)).toMatchObject({ disabled: true });
+    await expect.poll(() => countDocs('apps')).toBe(INITIAL_APPS.length);
+    await expect.poll(async () => (await readDoc(`apps/${POS.id}`))?.url).toBe('https://pos-baru.vercel.app');
+    await expect(page.getByText('daftar bawaan')).toHaveCount(0);
+  });
 });

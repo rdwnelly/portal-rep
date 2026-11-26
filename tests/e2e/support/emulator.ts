@@ -1,6 +1,6 @@
 /** Helper Firebase Emulator untuk uji e2e (akses "owner" melewati Security Rules). */
 import { expect, type Page } from '@playwright/test';
-import { INITIAL_APPS, INITIAL_DOCUMENTS, INITIAL_EVENTS, INITIAL_NOTICES } from '../../../lib/seed-data';
+import { INITIAL_APPS } from '../../../lib/seed-data';
 import type { UserRole } from '../../../lib/types';
 
 const PROJECT = 'demo-portal-rep';
@@ -24,6 +24,21 @@ const fields = (obj: object) =>
 export async function putDoc(path: string, data: object) {
   const res = await fetch(`${FS}/${path}`, { method: 'PATCH', headers: OWNER, body: JSON.stringify({ fields: fields(data) }) });
   if (!res.ok) throw new Error(`putDoc ${path}: ${await res.text()}`);
+}
+
+/** Baca satu dokumen Firestore (akses owner) — untuk memastikan perubahan benar-benar tersimpan. */
+export async function readDoc(path: string): Promise<Record<string, unknown> | null> {
+  const res = await fetch(`${FS}/${path}`, { headers: OWNER });
+  if (res.status === 404) return null;
+  const body = (await res.json()) as { fields?: Record<string, { stringValue?: string }> };
+  return Object.fromEntries(Object.entries(body.fields ?? {}).map(([k, v]) => [k, v.stringValue ?? v]));
+}
+
+/** Jumlah dokumen dalam satu koleksi. */
+export async function countDocs(collectionPath: string): Promise<number> {
+  const res = await fetch(`${FS}/${collectionPath}?pageSize=300`, { headers: OWNER });
+  const body = (await res.json()) as { documents?: unknown[] };
+  return body.documents?.length ?? 0;
 }
 
 export async function resetEmulators() {
@@ -52,60 +67,17 @@ export const whitelist = (email: string, role: UserRole, active = true) =>
     addedBy: 'e2e',
   });
 
-/** Konten awal (modul aplikasi, pengumuman, agenda, dokumen) langsung ke Firestore. */
+/** Link aplikasi awal langsung ke Firestore. Agenda sengaja tidak diisi: tiap uji membuatnya sendiri. */
 export async function seedContent() {
-  const strip = <T extends { id: string }>({ id, ...rest }: T) => [id, rest] as const;
-  await Promise.all([
-    ...INITIAL_APPS.map((a) => putDoc(`apps/${a.id}`, strip(a)[1])),
-    ...INITIAL_NOTICES.map((n) => putDoc(`notices/${n.id}`, strip(n)[1])),
-    ...INITIAL_EVENTS.map((e) => putDoc(`events/${e.id}`, strip(e)[1])),
-    ...INITIAL_DOCUMENTS.map((d) => putDoc(`documents/${d.id}`, { ...strip(d)[1], isConfidential: Boolean(d.isConfidential) })),
-  ]);
+  await Promise.all(INITIAL_APPS.map(({ id, ...rest }) => putDoc(`apps/${id}`, rest)));
 }
 
-/** Akun standar: IT_ADMIN, EXECUTIVE, staf operasional. */
+/** Akun standar: satu admin, dan satu akun terdaftar yang BUKAN admin (untuk uji penolakan). */
 export async function seedStandardUsers() {
   await createUser('admin@rep.test');
-  await createUser('ketua@rep.test');
   await createUser('staf@rep.test');
   await whitelist('admin@rep.test', 'IT_ADMIN');
-  await whitelist('ketua@rep.test', 'EXECUTIVE');
   await whitelist('staf@rep.test', 'OPERATIONAL');
-}
-
-/** Akun Firebase Authentication untuk email ini, atau null bila belum ada. */
-export async function getAuthUser(email: string): Promise<{ emailVerified: boolean; disabled: boolean } | null> {
-  const res = await fetch(`${AUTH}/identitytoolkit.googleapis.com/v1/projects/${PROJECT}/accounts:lookup`, {
-    method: 'POST',
-    headers: OWNER,
-    body: JSON.stringify({ email: [email] }),
-  });
-  const body = (await res.json()) as { users?: { emailVerified?: boolean; disabled?: boolean }[] };
-  const user = body.users?.[0];
-  return user ? { emailVerified: Boolean(user.emailVerified), disabled: Boolean(user.disabled) } : null;
-}
-
-/** Selesaikan tautan "buat kata sandi" terakhir yang dikirim ke email ini. */
-export async function completePasswordSetup(email: string, newPassword: string) {
-  const res = await fetch(`${AUTH}/emulator/v1/projects/${PROJECT}/oobCodes`);
-  const { oobCodes } = (await res.json()) as { oobCodes: { email: string; oobCode: string; requestType: string }[] };
-  const code = oobCodes.filter((c) => c.email === email && c.requestType === 'PASSWORD_RESET').at(-1);
-  if (!code) throw new Error(`Tidak ada email pembuatan kata sandi untuk ${email}`);
-  const done = await fetch(`${AUTH}/identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=demo-api-key`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ oobCode: code.oobCode, newPassword }),
-  });
-  if (!done.ok) throw new Error(`resetPassword gagal: ${await done.text()}`);
-}
-
-export async function idToken(email: string) {
-  const res = await fetch(`${AUTH}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-api-key`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password: PASSWORD, returnSecureToken: true }),
-  });
-  return ((await res.json()) as { idToken: string }).idToken;
 }
 
 export async function login(page: Page, email: string, opts: { password?: string; next?: string } = {}) {
@@ -115,7 +87,7 @@ export async function login(page: Page, email: string, opts: { password?: string
   await page.click('button:has-text("Masuk Sekarang")');
 }
 
-/** Tujuan default staf non-pimpinan setelah login: beranda. */
+/** Beranda — tujuan setelah login bagi akun yang bukan admin. */
 export const HOME_URL = /\/(?:[?#].*)?$/;
 
 export async function loginAndWait(page: Page, email: string, path: string | RegExp = '**/dashboard/admin') {

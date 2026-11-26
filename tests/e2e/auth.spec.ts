@@ -4,21 +4,24 @@ import { createUser, HOME_URL, login, loginAndWait, resetEmulators, seedStandard
 test.beforeAll(async () => {
   await resetEmulators();
   await seedStandardUsers();
-  await createUser('palsu.ketua@rep.test', false); // belum verifikasi email
-  await whitelist('palsu.ketua@rep.test', 'EXECUTIVE');
+  await createUser('palsu.admin@rep.test', false); // belum verifikasi email
+  await whitelist('palsu.admin@rep.test', 'IT_ADMIN');
   await createUser('luar@rep.test'); // terverifikasi, tidak di whitelist
   await createUser('superadmin@luar.test', true, 'admin2026'); // pola jalur pintas lama
 });
 
 test.describe('penjaga halaman', () => {
-  for (const path of ['/dashboard/admin', '/eksekutif']) {
-    test(`pengunjung anonim tidak bisa membuka ${path}`, async ({ page }) => {
-      await page.goto(path);
-      await expect(page.getByRole('heading', { name: 'Akses Terbatas' })).toBeVisible();
-    });
-  }
+  test('pengunjung anonim tidak bisa membuka panel admin', async ({ page }) => {
+    await page.goto('/dashboard/admin');
+    await expect(page.getByRole('heading', { name: 'Akses Terbatas' })).toBeVisible();
+  });
 
-  test('staf operasional ditolak dari panel admin berdasarkan role', async ({ page }) => {
+  test('dasbor eksekutif sudah dihapus', async ({ page }) => {
+    const res = await page.goto('/eksekutif');
+    expect(res?.status()).toBe(404);
+  });
+
+  test('akun terdaftar yang bukan IT_ADMIN ditolak dari panel admin', async ({ page }) => {
     await loginAndWait(page, 'staf@rep.test', HOME_URL);
     await page.goto('/dashboard/admin');
     await expect(page.getByText('tidak memiliki izin')).toBeVisible();
@@ -28,29 +31,27 @@ test.describe('penjaga halaman', () => {
 test.describe('login', () => {
   test('jalur pintas lama (email berisi "admin" + password admin2026) tidak memberi akses', async ({ page }) => {
     await login(page, 'superadmin@luar.test', { password: 'admin2026' });
-    await expect(page.getByText('belum terdaftar sebagai staf aktif')).toBeVisible();
+    await expect(page.getByText('tidak terdaftar sebagai admin portal')).toBeVisible();
   });
 
-  test('akun berEmail pimpinan yang belum diverifikasi ditolak', async ({ page }) => {
-    await login(page, 'palsu.ketua@rep.test');
+  test('akun ber-email admin yang belum diverifikasi ditolak', async ({ page }) => {
+    await login(page, 'palsu.admin@rep.test');
     await expect(page.getByText('belum diverifikasi')).toBeVisible();
   });
 
   test('akun di luar whitelist ditolak', async ({ page }) => {
     await login(page, 'luar@rep.test');
-    await expect(page.getByText('belum terdaftar sebagai staf aktif')).toBeVisible();
+    await expect(page.getByText('tidak terdaftar sebagai admin portal')).toBeVisible();
   });
 
   test('IT_ADMIN masuk ke panel dengan role dari Firestore', async ({ page }) => {
     await loginAndWait(page, 'admin@rep.test');
-    await expect(page.getByRole('heading', { name: 'Panel Admin' })).toBeVisible();
-    await expect(page.getByText('admin · IT Superadmin')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Link Aplikasi' })).toBeVisible();
   });
 
   test('parameter next mengembalikan ke halaman asal', async ({ page }) => {
-    await login(page, 'ketua@rep.test', { next: '/eksekutif' });
-    await page.waitForURL('**/eksekutif');
-    await expect(page.getByRole('heading', { name: 'Akses Terbatas' })).toHaveCount(0);
+    await login(page, 'admin@rep.test', { next: '/agenda' });
+    await page.waitForURL('**/agenda');
   });
 
   test('parameter next ke domain luar diabaikan', async ({ page }) => {
@@ -58,15 +59,15 @@ test.describe('login', () => {
     await page.waitForURL('**/dashboard/admin');
   });
 
-  test('staf non-pimpinan mendarat di beranda, bukan layar akses terbatas', async ({ page }) => {
+  test('akun bukan admin mendarat di beranda, bukan layar akses terbatas', async ({ page }) => {
     await loginAndWait(page, 'staf@rep.test', HOME_URL);
     await expect(page.getByRole('heading', { name: 'Akses Terbatas' })).toHaveCount(0);
   });
 
   test('alamat login lama /dashboard/admin/login diarahkan ke /masuk', async ({ page }) => {
-    await page.goto('/dashboard/admin/login?next=%2Feksekutif');
-    await page.waitForURL(/\/masuk\?next=%2Feksekutif/);
-    await expect(page.getByRole('heading', { name: 'Masuk Staf' })).toBeVisible();
+    await page.goto('/dashboard/admin/login?next=%2Fagenda');
+    await page.waitForURL(/\/masuk\?next=%2Fagenda/);
+    await expect(page.getByRole('heading', { name: 'Masuk Admin' })).toBeVisible();
   });
 
   test('pengguna yang sudah login tidak melihat formulir login lagi', async ({ page }) => {

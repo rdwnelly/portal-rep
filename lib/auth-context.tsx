@@ -23,10 +23,9 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, getDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import { UserProfile, UserRole, WhitelistedUser } from './types';
-import { findWhitelistedUser, addAuditLog, addAuditLogAsync, submitAccessRequest, configureSync } from './storage';
+import { UserProfile, WhitelistedUser } from './types';
+import { findWhitelistedUser } from './storage';
 import { auth, db, googleProvider, isConfigured, isDemoMode } from './firebase';
-import { unregisterPush } from './push';
 
 type DemoKey = 'FRICKY' | 'MITSHI' | 'RIDWAN' | 'FRONTDESK' | 'FINANCE' | 'UNAUTHORIZED_DEMO';
 
@@ -45,7 +44,6 @@ interface AuthContextType {
   logout: () => void;
   /** Kirim tautan buat/atur ulang kata sandi. Mengembalikan pesan untuk ditampilkan. */
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
-  requestAccess: (data: { name: string; email: string; department: string; reason: string }) => Promise<void>;
   clearUnauthorizedState: () => void;
   clearAuthError: () => void;
 }
@@ -121,7 +119,6 @@ let loginInProgress = false;
 
 function setAuthSnapshot(user: UserProfile | null): void {
   authSnapshot = { user, resolved: true };
-  configureSync(user ? user.role : null);
   authListeners.forEach((listener) => listener());
 }
 
@@ -207,7 +204,7 @@ type LoginResult = { ok: true } | { ok: false; error: string; unauthorizedEmail?
  * Validasi pasca-login Firebase: email harus terverifikasi dan terdaftar aktif di whitelist.
  * Verifikasi email mencegah orang mendaftarkan akun Email/Password memakai email pimpinan.
  */
-async function completeFirebaseLogin(fbUser: FirebaseUser, method: string): Promise<LoginResult> {
+async function completeFirebaseLogin(fbUser: FirebaseUser): Promise<LoginResult> {
   const email = fbUser.email?.toLowerCase();
   if (!email) {
     await firebaseSignOut(auth);
@@ -231,31 +228,16 @@ async function completeFirebaseLogin(fbUser: FirebaseUser, method: string): Prom
   const data = snap.data() as Omit<WhitelistedUser, 'id'> | undefined;
 
   if (!snap.exists() || !data?.active) {
-    await addAuditLogAsync({
-      userEmail: email,
-      userName: fbUser.displayName || email,
-      action: 'LOGIN_BLOCKED_UNAUTHORIZED',
-      details: `Percobaan login (${method}) ditolak: email tidak terdaftar/aktif di whitelist yayasan`,
-      category: 'AUTH',
-    });
     await firebaseSignOut(auth);
     return {
       ok: false,
       unauthorizedEmail: email,
-      error: `Email ${email} belum terdaftar sebagai staf aktif. Ajukan permohonan akses atau hubungi Admin IT.`,
+      error: `Email ${email} tidak terdaftar sebagai admin portal. Login hanya untuk pengelola link aplikasi; agenda bisa diubah tanpa login.`,
     };
   }
 
   // Set profil segera agar halaman tujuan tidak sempat merender status "belum login".
   setAuthSnapshot(buildProfile({ ...data, id: snap.id }, fbUser));
-
-  addAuditLog({
-    userEmail: email,
-    userName: data.name,
-    action: 'LOGIN_SUCCESS',
-    details: `Login berhasil (${method}) sebagai ${data.roleTitle}`,
-    category: 'AUTH',
-  });
   return { ok: true };
 }
 
@@ -305,7 +287,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const demoLogin = useCallback(
-    (email: string, method: string): boolean => {
+    (email: string): boolean => {
       const entry = findWhitelistedUser(email);
       if (!entry) {
         return applyResult({
@@ -316,13 +298,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       localStorage.setItem(DEMO_SESSION_KEY, entry.email);
       setAuthSnapshot(readDemoSession());
-      addAuditLog({
-        userEmail: entry.email,
-        userName: entry.name,
-        action: 'DEMO_LOGIN',
-        details: `[Mode Demo] Login simulasi (${method}) sebagai ${entry.roleTitle}`,
-        category: 'AUTH',
-      });
       return applyResult({ ok: true });
     },
     [applyResult]
@@ -331,7 +306,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = async () => {
     setAuthError(null);
     if (isDemoMode) {
-      demoLogin(DEMO_ACCOUNTS.RIDWAN.email, 'Google');
+      demoLogin(DEMO_ACCOUNTS.RIDWAN.email);
       return;
     }
     if (!isConfigured) {
@@ -343,7 +318,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginInProgress = true;
     try {
       const cred = await signInWithPopup(auth, googleProvider);
-      applyResult(await completeFirebaseLogin(cred.user, 'Google'));
+      applyResult(await completeFirebaseLogin(cred.user));
     } catch (err) {
       const code = (err as { code?: string })?.code;
       if (code === 'auth/popup-blocked') {
@@ -368,7 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
 
-    if (isDemoMode) return demoLogin(cleanEmail, 'Email & Password');
+    if (isDemoMode) return demoLogin(cleanEmail);
     if (!isConfigured) {
       setAuthError(LOGIN_UNAVAILABLE);
       return false;
@@ -378,7 +353,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginInProgress = true;
     try {
       const cred = await signInWithEmailAndPassword(auth, cleanEmail, pass);
-      return applyResult(await completeFirebaseLogin(cred.user, 'Email & Password'));
+      return applyResult(await completeFirebaseLogin(cred.user));
     } catch (err) {
       setAuthError(describeFirebaseError(err));
       return false;
@@ -393,7 +368,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthError('Akun simulasi hanya tersedia di mode pengembangan.');
       return;
     }
-    demoLogin(DEMO_ACCOUNTS[demoKey].email, 'Akun Simulasi');
+    demoLogin(DEMO_ACCOUNTS[demoKey].email);
   };
 
   const logout = async () => {
@@ -405,8 +380,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      // Lepas perangkat ini dari notifikasi milik akun yang keluar.
-      await unregisterPush();
       if (isConfigured) await firebaseSignOut(auth);
     } catch (e) {
       console.error('Logout error:', e);
@@ -431,10 +404,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
-  const requestAccess = async (data: { name: string; email: string; department: string; reason: string }) => {
-    submitAccessRequest(data);
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -450,7 +419,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginAsDemo,
         logout,
         resetPassword,
-        requestAccess,
         clearUnauthorizedState: () => setUnauthorizedEmail(null),
         clearAuthError: () => setAuthError(null),
       }}
@@ -469,6 +437,3 @@ export function useAuth() {
 }
 
 /** Helper role untuk UI (izin sebenarnya tetap ditegakkan oleh Firestore Security Rules). */
-export function isManagerRole(role: UserRole | undefined | null): boolean {
-  return role === 'IT_ADMIN' || role === 'EXECUTIVE';
-}

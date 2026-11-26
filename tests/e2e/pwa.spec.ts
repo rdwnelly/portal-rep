@@ -8,12 +8,12 @@ test('PWA: halaman yang pernah dibuka tetap tampil offline; halaman baru → hal
   await page.reload();
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
   await page.goto('/apps');
-  await expect(page.getByRole('heading', { name: 'Aplikasi', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Semua aplikasi yayasan' })).toBeVisible();
 
   await context.setOffline(true);
   try {
     await page.goto('/apps');
-    await expect(page.getByRole('heading', { name: 'Aplikasi', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Semua aplikasi yayasan' })).toBeVisible();
     await expect(page.getByText('Anda sedang offline')).toHaveCount(0);
 
     await page.goto('/agenda');

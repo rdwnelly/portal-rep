@@ -33,37 +33,37 @@ export function getCategoryBadge(category: EventCategory) {
     case 'CULTURE_EVENT':
       return {
         label: 'Pentas Seni & Budaya',
-        bgColor: 'bg-amber-950/80 text-amber-300 border-amber-500/40',
+        bgColor: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-500/40',
         dotColor: 'bg-amber-400',
       };
     case 'HOMESTAY_TOUR':
       return {
         label: 'Kunjungan Tamu & Homestay',
-        bgColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+        bgColor: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-500/40',
         dotColor: 'bg-emerald-400',
       };
     case 'EXECUTIVE_MEETING':
       return {
         label: 'Rapat Pimpinan & Staf',
-        bgColor: 'bg-indigo-950/80 text-indigo-300 border-indigo-500/40',
+        bgColor: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-500/40',
         dotColor: 'bg-indigo-400',
       };
     case 'COMMUNITY_WORKSHOP':
       return {
         label: 'Workshop & Edukasi Budaya',
-        bgColor: 'bg-teal-950/80 text-teal-300 border-teal-500/40',
+        bgColor: 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/80 dark:text-teal-300 dark:border-teal-500/40',
         dotColor: 'bg-teal-400',
       };
     case 'SYSTEM_MAINTENANCE':
       return {
         label: 'Pemeliharaan Sistem / IT',
-        bgColor: 'bg-purple-950/80 text-purple-300 border-purple-500/40',
+        bgColor: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-500/40',
         dotColor: 'bg-purple-400',
       };
     default:
       return {
         label: 'Agenda Umum',
-        bgColor: 'bg-stone-900/80 text-stone-300 border-stone-600/40',
+        bgColor: 'bg-stone-100 text-stone-700 border-stone-300 dark:bg-stone-900/80 dark:text-stone-300 dark:border-stone-600/40',
         dotColor: 'bg-stone-400',
       };
   }
@@ -285,7 +285,7 @@ export default function EventDetailModal({
             <button
               type="button"
               onClick={handleCopySummary}
-              className="p-2.5 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-[#153a2d] border border-stone-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold transition-all cursor-pointer"
+              className="p-2.5 rounded-xl bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-[#153a2d] border border-stone-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold transition-all cursor-pointer"
               title="Salin Rincian Agenda"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -314,7 +314,7 @@ export default function EventDetailModal({
                       onClose();
                     }
                   }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-200/80 dark:hover:bg-rose-900/80 border border-rose-500/40 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-200/80 dark:hover:bg-rose-900/80 border border-rose-500/40 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Hapus</span>

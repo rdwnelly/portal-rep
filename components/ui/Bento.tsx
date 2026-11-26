@@ -115,7 +115,7 @@ export function CardTitle({
               {eyebrow}
             </p>
           )}
-          <Tag id={id} className="text-[15px] sm:text-base font-bold leading-snug">
+          <Tag id={id} className="text-base sm:text-base font-bold leading-snug">
             {title}
           </Tag>
         </div>

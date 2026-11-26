@@ -65,7 +65,7 @@ export default function RoleGuard({ allow, pageName, returnTo, children }: RoleG
                   memiliki izin untuk membuka {pageName}.
                 </>
               ) : (
-                <>{pageName} hanya untuk pengurus dan administrator yayasan. Silakan masuk dengan akun yang berwenang.</>
+                <>{pageName} hanya untuk admin portal. Silakan masuk dengan akun admin.</>
               )}
             </p>
 

@@ -31,11 +31,11 @@ describe('safeRedirectPath (anti open-redirect setelah login)', () => {
 });
 
 describe('landingPathForRole (tujuan default sesuai kewenangan)', () => {
-  it.each(['IT_ADMIN', 'EXECUTIVE'] as const)('%s mendarat di panel admin', (role) => {
-    expect(landingPathForRole(role)).toBe('/dashboard/admin');
+  it('IT_ADMIN mendarat di panel admin', () => {
+    expect(landingPathForRole('IT_ADMIN')).toBe('/dashboard/admin');
   });
 
-  it.each(['OPERATIONAL', 'FINANCE_WAREHOUSE', 'UNAUTHORIZED', null, undefined] as const)(
+  it.each(['EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE', 'UNAUTHORIZED', null, undefined] as const)(
     'role %s mendarat di beranda (bukan layar akses terbatas)',
     (role) => {
       expect(landingPathForRole(role)).toBe('/');
