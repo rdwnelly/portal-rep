@@ -22,13 +22,15 @@ interface CreateEventModalProps {
   onClose: () => void;
   onSave: (eventData: Omit<CalendarEvent, 'id' | 'createdAt'>, eventId?: string) => void;
   initialData?: CalendarEvent | null;
+  /** Tanggal awal (YYYY-MM-DD) untuk agenda baru, mis. dari tanggal yang dipilih di kalender. */
+  defaultDate?: string;
   currentUserDisplayName?: string;
 }
 
 export default function CreateEventModal(props: CreateEventModalProps) {
   if (!props.isOpen) return null;
   // Formulir dipasang ulang setiap kali dibuka / ganti agenda → state selalu bersih tanpa effect.
-  return <CreateEventForm key={props.initialData?.id ?? 'new'} {...props} />;
+  return <CreateEventForm key={props.initialData?.id ?? `baru-${props.defaultDate ?? ''}`} {...props} />;
 }
 
 const todayLocal = () => {
@@ -40,19 +42,20 @@ function CreateEventForm({
   onClose,
   onSave,
   initialData,
-  currentUserDisplayName = 'Admin Yayasan REP',
+  defaultDate,
+  currentUserDisplayName = 'Pengunjung portal',
 }: CreateEventModalProps) {
   const isEditing = !!initialData;
 
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
-  const [date, setDate] = useState(initialData?.date ?? todayLocal);
+  const [date, setDate] = useState(initialData?.date ?? defaultDate ?? todayLocal);
   const [timeStart, setTimeStart] = useState(initialData?.timeStart ?? '09:00');
   const [timeEnd, setTimeEnd] = useState(initialData ? initialData.timeEnd || '' : '11:30');
   const [location, setLocation] = useState(initialData?.location ?? 'Rumah Etnik Papua Km. 21 Aimas');
   const [category, setCategory] = useState<EventCategory>(initialData?.category ?? 'CULTURE_EVENT');
   const [status, setStatus] = useState<EventStatus>(initialData?.status ?? 'UPCOMING');
-  const [organizer, setOrganizer] = useState(initialData?.organizer ?? currentUserDisplayName);
+  const [organizer, setOrganizer] = useState(initialData?.organizer ?? 'Yayasan Rumah Etnik Papua');
   const [targetAudience, setTargetAudience] = useState(
     initialData ? initialData.targetAudience || '' : 'Semua Staf & Pengunjung'
   );
@@ -85,7 +88,7 @@ function CreateEventForm({
         location: location.trim() || 'Rumah Etnik Papua Km. 21',
         category,
         status,
-        organizer: organizer.trim() || currentUserDisplayName,
+        organizer: organizer.trim() || 'Yayasan Rumah Etnik Papua',
         targetAudience: targetAudience.trim() || undefined,
         isHighlight,
         notes: notes.trim() || undefined,
@@ -141,7 +144,7 @@ function CreateEventForm({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
             {errorMsg && (
-              <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/40 text-xs text-rose-200 flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-500/40 text-xs text-rose-800 dark:text-rose-200 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
@@ -155,6 +158,7 @@ function CreateEventForm({
               <input
                 type="text"
                 value={title}
+                maxLength={150}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Contoh: Pentas Tari Tradisional Sambutan Tamu Wisata"
                 required
@@ -248,6 +252,7 @@ function CreateEventForm({
               <input
                 type="text"
                 value={location}
+                maxLength={200}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Contoh: Panggung Terbuka Yaswar Cafe & Taman Etnik"
                 className="w-full px-4 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-sm focus:outline-none focus:border-amber-400"
@@ -277,6 +282,7 @@ function CreateEventForm({
                 <input
                   type="text"
                   value={organizer}
+                maxLength={120}
                   onChange={(e) => setOrganizer(e.target.value)}
                   placeholder="Contoh: Bpk. Fricky Mosche Burdam"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs focus:outline-none focus:border-amber-400"
@@ -291,6 +297,7 @@ function CreateEventForm({
                 <input
                   type="text"
                   value={targetAudience}
+                maxLength={200}
                   onChange={(e) => setTargetAudience(e.target.value)}
                   placeholder="Contoh: Seluruh Staf & Pengunjung Umum"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs focus:outline-none focus:border-amber-400"
@@ -304,6 +311,7 @@ function CreateEventForm({
               <textarea
                 rows={3}
                 value={description}
+                maxLength={2000}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Tuliskan gambaran acara, susunan acara, atau arahan persiapan untuk staf..."
                 className="w-full px-4 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs leading-relaxed focus:outline-none focus:border-amber-400"
@@ -317,6 +325,7 @@ function CreateEventForm({
                 <input
                   type="text"
                   value={notes}
+                maxLength={1000}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Contoh: Hubungi IT jika butuh proyektor dan sound"
                   className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs focus:outline-none focus:border-amber-400"

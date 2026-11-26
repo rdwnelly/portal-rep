@@ -1,101 +1,98 @@
 'use client';
 
-import React from 'react';
-import { ArrowUpRight, CalendarDays, Landmark, Package, ShoppingBag, Sparkles, Store, Wallet } from 'lucide-react';
-import type { AppCategory, AppItem } from '@/lib/types';
-import { launchApp } from '@/lib/app-launcher';
-import { Bento, BentoCard, CARD_SURFACE } from '@/components/ui/Bento';
+import React, { useCallback, useState } from 'react';
+import { ArrowUpRight } from 'lucide-react';
+import type { AppItem } from '@/lib/types';
+import AppIcon from '@/components/AppIcon';
+import AppInfoSheet from '@/components/AppInfoSheet';
+import { CARD_SURFACE } from '@/components/ui/Bento';
 
-const ICONS: Record<AppCategory, { icon: React.ComponentType<{ className?: string }>; tone: string }> = {
-  OPERASIONAL: { icon: CalendarDays, tone: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' },
-  KEUANGAN: { icon: Wallet, tone: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' },
-  GUDANG_POS: { icon: Store, tone: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300' },
-  MEDIA_KREATIF: { icon: Sparkles, tone: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300' },
-  ADMINISTRASI: { icon: Landmark, tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' },
+const STATUS: Partial<Record<AppItem['status'], { label: string; dot: string }>> = {
+  MAINTENANCE: { label: 'Perbaikan', dot: 'bg-amber-500' },
+  OFFLINE: { label: 'Tidak aktif', dot: 'bg-stone-400' },
 };
-
-function getAppVisual(app: AppItem) {
-  if (app.id === 'app-omg' || app.iconName === 'Boxes' || app.iconName === 'Package') {
-    return { icon: Package, tone: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300' };
-  }
-  if (app.id === 'app-pos' || app.iconName === 'ShoppingBag') {
-    return { icon: ShoppingBag, tone: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' };
-  }
-  return ICONS[app.category] ?? ICONS.ADMINISTRASI;
-}
-
-const STATUS_LABEL: Partial<Record<AppItem['status'], string>> = {
-  MAINTENANCE: 'Sedang perbaikan',
-  OFFLINE: 'Tidak aktif',
-};
-
-/** Aplikasi yang dimatikan admin tidak boleh dibuka — menghindari staf mendarat di halaman mati. */
-const isLaunchable = (app: AppItem) => app.status !== 'OFFLINE';
 
 /**
- * Aplikasi kerja sebagai kartu bento. Satu ketukan pada kartu langsung membuka aplikasinya
- * (masuk otomatis bila staf sudah login & aplikasi mendukung SSO).
+ * Kisi aplikasi kerja. Mengetuk ubin menampilkan informasi aplikasi;
+ * aplikasinya dibuka dari tombol "Buka aplikasi" di lembar informasi itu.
  */
-export default function AppList({ apps, showDescription = false }: { apps: AppItem[]; showDescription?: boolean }) {
+export default function AppList({
+  apps,
+  emptyMessage = 'Belum ada aplikasi yang terdaftar.',
+}: {
+  apps: AppItem[];
+  emptyMessage?: string;
+}) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const opened = apps.find((a) => a.id === openId) ?? null;
+
+  const close = useCallback(() => {
+    const id = openId;
+    setOpenId(null);
+    // Kembalikan fokus ke ubin asal agar pengguna keyboard tidak kehilangan posisinya.
+    if (id) requestAnimationFrame(() => document.getElementById(`ubin-${id}`)?.focus());
+  }, [openId]);
+
   if (apps.length === 0) {
     return (
       <p className={`${CARD_SURFACE} p-6 text-center text-sm text-stone-500 dark:text-slate-400`}>
-        Belum ada aplikasi yang terdaftar. Administrator dapat menambahkannya di Panel Admin → Aplikasi.
+        {emptyMessage}
       </p>
     );
   }
 
   return (
-    <Bento as="ul">
-      {apps.map((app) => {
-        const { icon: Icon, tone } = getAppVisual(app);
-        const status = STATUS_LABEL[app.status];
-        const launchable = isLaunchable(app);
-        return (
-          <BentoCard key={app.id} as="li" span="third" surface={false} className={`${CARD_SURFACE} overflow-hidden`}>
-            <button
-              type="button"
-              disabled={!launchable}
-              aria-describedby={status ? `status-${app.id}` : undefined}
-              onClick={() => void launchApp(app)}
-              className={`group w-full h-full flex flex-col items-start gap-2.5 p-4 text-left transition-transform ${
-                launchable ? 'active:scale-[0.98] cursor-pointer' : 'opacity-60 cursor-not-allowed'
-              }`}
-            >
-              <span className="w-full flex items-start justify-between gap-2">
-                <span className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${tone}`}>
-                  <Icon className="w-5 h-5" />
-                </span>
-                {launchable && (
-                  <ArrowUpRight className="w-4 h-4 text-stone-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors shrink-0" />
-                )}
-              </span>
-
-              <span className="flex-1 min-w-0 w-full">
-                <span className="text-sm font-bold leading-snug text-stone-900 dark:text-white line-clamp-3">
-                  {app.title}
-                </span>
-                {showDescription && app.description && (
-                  <span className="mt-1 text-xs text-stone-500 dark:text-slate-400 line-clamp-2">
-                    {app.description}
-                  </span>
-                )}
-              </span>
-
-              {status ? (
+    <>
+      <ul className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        {apps.map((app) => {
+          const status = STATUS[app.status];
+          return (
+            <li key={app.id}>
+              <button
+                id={`ubin-${app.id}`}
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => setOpenId(app.id)}
+                className="group relative w-full h-full flex flex-col items-start gap-5 p-4 sm:p-5 rounded-[1.5rem] bg-white dark:bg-[#0c241b] ring-1 ring-stone-200/80 dark:ring-white/[0.08] text-left overflow-hidden transition-all duration-200 hover:ring-stone-300 dark:hover:ring-white/20 hover:shadow-[0_18px_40px_-20px_rgba(16,24,20,0.35)] hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+              >
+                {/* Cahaya lembut di sudut, muncul saat disorot. */}
                 <span
-                  id={`status-${app.id}`}
-                  className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"
-                >
-                  {status}
+                  aria-hidden
+                  className="pointer-events-none absolute -top-10 -right-10 w-28 h-28 rounded-full bg-emerald-400/0 blur-2xl transition-colors duration-300 group-hover:bg-emerald-400/15"
+                />
+
+                <span className="relative w-full flex items-start justify-between">
+                  <AppIcon app={app} variant="solid" />
+                  {status ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-100 dark:bg-white/10 text-[10px] font-semibold text-stone-600 dark:text-slate-300">
+                      <span aria-hidden className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                      {status.label}
+                    </span>
+                  ) : (
+                    <span
+                      aria-hidden
+                      className="w-7 h-7 flex items-center justify-center rounded-full bg-stone-100 dark:bg-white/5 text-stone-400 dark:text-slate-500 transition-colors group-hover:bg-emerald-600 group-hover:text-white"
+                    >
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </span>
+                  )}
                 </span>
-              ) : (
-                <span className="text-[11px] font-semibold text-stone-400 dark:text-slate-500">Ketuk untuk membuka</span>
-              )}
-            </button>
-          </BentoCard>
-        );
-      })}
-    </Bento>
+
+                <span className="relative w-full min-w-0 mt-auto">
+                  <span className="block text-sm sm:text-base font-semibold leading-snug text-stone-900 dark:text-white break-words">
+                    {app.title}
+                  </span>
+                  <span className="mt-1 block truncate text-xs text-stone-500 dark:text-slate-400">
+                    {app.badgeText || 'Aplikasi kerja'}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {opened && <AppInfoSheet app={opened} onClose={close} />}
+    </>
   );
 }

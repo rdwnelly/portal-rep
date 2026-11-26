@@ -9,7 +9,6 @@ import {
   Menu,
   X,
   CalendarDays,
-  BarChart3,
   ShieldCheck,
   Sun,
   Moon,
@@ -18,7 +17,7 @@ import {
   LogOut,
   ChevronRight,
 } from 'lucide-react';
-import { useAuth, isManagerRole } from '@/lib/auth-context';
+import { useAuth } from '@/lib/auth-context';
 import { useTheme } from '@/lib/theme-context';
 import PWAInstallModal from '@/components/PWAInstallModal';
 
@@ -34,7 +33,7 @@ const DOCK_ITEMS = [
   { label: 'Agenda', href: '/agenda', icon: CalendarDays, match: (p: string) => p.startsWith('/agenda') },
 ];
 
-const MORE_PATHS = ['/eksekutif', '/dashboard/admin'];
+const MORE_PATHS = ['/dashboard/admin', '/masuk'];
 
 /**
  * Navigasi utama: satu menu bawah berisi 5 tombol besar di semua ukuran layar.
@@ -47,7 +46,7 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [pwaOpen, setPwaOpen] = useState(false);
 
-  const isManager = isManagerRole(user?.role);
+  const isAdmin = user?.role === 'IT_ADMIN';
   const moreActive = MORE_PATHS.some((p) => pathname.startsWith(p));
 
   // Tutup lembar "Lainnya" dengan tombol Escape.
@@ -65,11 +64,22 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
   };
 
   const itemClass = (active: boolean) =>
-    `flex-1 min-w-0 h-14 px-0.5 flex flex-col items-center justify-center gap-1 rounded-2xl transition-colors ${
+    `group flex-1 min-w-0 h-14 flex flex-col items-center justify-center gap-0.5 rounded-2xl transition-colors focus-visible:outline-2 focus-visible:outline-emerald-500 ${
       active
-        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold'
-        : 'text-stone-500 dark:text-slate-400 hover:text-stone-800 dark:hover:text-white font-medium'
+        ? 'text-emerald-800 dark:text-emerald-200'
+        : 'text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
     }`;
+
+  /** Pil penanda di belakang ikon — melebar & berwarna saat item aktif. */
+  const indicatorClass = (active: boolean) =>
+    `flex items-center justify-center h-8 rounded-full transition-all duration-300 ease-out ${
+      active
+        ? 'w-14 bg-emerald-500/15 dark:bg-emerald-400/20'
+        : 'w-10 bg-transparent group-hover:bg-stone-900/5 dark:group-hover:bg-white/5'
+    }`;
+
+  const labelClass = (active: boolean) =>
+    `text-[10.5px] leading-none tracking-tight whitespace-nowrap ${active ? 'font-semibold' : 'font-medium'}`;
 
   return (
     <>
@@ -77,13 +87,15 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
       <div aria-hidden className="h-[env(safe-area-inset-top)]" />
 
       <div className="mobile-fixed-bottom-bar">
-        <nav data-bottom-dock aria-label="Menu utama" className="mobile-bottom-dock gap-1">
+        <nav data-bottom-dock aria-label="Menu utama" className="mobile-bottom-dock">
           {DOCK_ITEMS.map(({ label, href, icon: Icon, match }) => {
             const active = match(pathname);
             return (
               <Link key={href} href={href} aria-current={active ? 'page' : undefined} className={itemClass(active)}>
-                <Icon className="w-[22px] h-[22px] shrink-0" />
-                <span className="text-[10.5px] leading-none tracking-tight whitespace-nowrap">{label}</span>
+                <span className={indicatorClass(active)}>
+                  <Icon className="w-5 h-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+                </span>
+                <span className={labelClass(active)}>{label}</span>
               </Link>
             );
           })}
@@ -94,8 +106,10 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
             aria-expanded={moreOpen}
             className={`${itemClass(moreActive)} cursor-pointer`}
           >
-            <Menu className="w-[22px] h-[22px] shrink-0" />
-            <span className="text-[10.5px] leading-none tracking-tight whitespace-nowrap">Lainnya</span>
+            <span className={indicatorClass(moreActive)}>
+              <Menu className="w-5 h-5 shrink-0" strokeWidth={moreActive ? 2.25 : 1.75} />
+            </span>
+            <span className={labelClass(moreActive)}>Lainnya</span>
           </button>
         </nav>
       </div>
@@ -139,17 +153,14 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
                 className="flex items-center justify-center gap-2 h-12 mb-3 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold"
               >
                 <LogIn className="w-5 h-5" />
-                Masuk (khusus staf)
+                Masuk admin
               </Link>
             )}
 
             <ul className="divide-y divide-stone-100 dark:divide-white/5">
               <SheetLink href="/agenda" icon={CalendarDays} label="Agenda Budaya" onNavigate={() => setMoreOpen(false)} />
-              {isManager && (
-                <>
-                  <SheetLink href="/eksekutif" icon={BarChart3} label="Dasbor Eksekutif" onNavigate={() => setMoreOpen(false)} />
-                  <SheetLink href="/dashboard/admin" icon={ShieldCheck} label="Panel Admin" onNavigate={() => setMoreOpen(false)} />
-                </>
+              {isAdmin && (
+                <SheetLink href="/dashboard/admin" icon={ShieldCheck} label="Panel Admin" onNavigate={() => setMoreOpen(false)} />
               )}
               <li>
                 <button type="button" onClick={toggleTheme} className={sheetRowClass}>

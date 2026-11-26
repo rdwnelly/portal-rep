@@ -5,7 +5,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider } from '@/lib/theme-context';
 import PWARegister from '@/components/PWARegister';
 import StorageStatusToast from '@/components/StorageStatusToast';
-import PushOptIn from '@/components/PushOptIn';
+import InstallPrompt from '@/components/InstallPrompt';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -21,8 +21,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'PORTAL REP | Yayasan Rumah Etnik Papua (Single Sign-On Hub)',
-  description: 'Pusat Operasional Rumah Terpadu Aplikasi Layanan Yayasan Rumah Etnik Papua - Sorong, Papua Barat Daya. Single Source of Truth untuk Reservasi, SIK-REP, POS Kasir/OMG, dan zeestudio.',
+  title: 'PORTAL REP | Yayasan Rumah Etnik Papua',
+  description: 'Portal aplikasi kerja & agenda Yayasan Rumah Etnik Papua — Sorong, Papua Barat Daya.',
   applicationName: 'PORTAL REP',
   appleWebApp: {
     capable: true,
@@ -77,7 +77,7 @@ export default function RootLayout({
           <AuthProvider>
             <PWARegister />
             <StorageStatusToast />
-            <PushOptIn />
+            <InstallPrompt />
             {children}
           </AuthProvider>
         </ThemeProvider>

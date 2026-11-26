@@ -16,12 +16,14 @@ export interface WitClock {
   greeting: string;
   /** "Sabtu, 7 November 2026"; kosong saat render server. */
   dateLabel: string;
+  /** "14.05"; kosong saat render server. */
+  timeLabel: string;
 }
 
 /** Sapaan & tanggal zona WIT (Sorong) yang diperbarui otomatis tanpa hydration mismatch. */
 export function useWitClock(): WitClock {
   const minute = useSyncExternalStore(subscribe, getMinute, () => 0);
-  if (!minute) return { greeting: '', dateLabel: '' };
+  if (!minute) return { greeting: '', dateLabel: '', timeLabel: '' };
 
   const now = new Date(minute * 60_000);
   const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(now)) % 24;
@@ -34,7 +36,13 @@ export function useWitClock(): WitClock {
     month: 'long',
     year: 'numeric',
   }).format(now);
-  return { greeting, dateLabel };
+  const timeLabel = new Intl.DateTimeFormat('id-ID', {
+    timeZone: TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(now);
+  return { greeting, dateLabel, timeLabel };
 }
 
 /** Tanggal hari ini (YYYY-MM-DD) di zona WIT. */

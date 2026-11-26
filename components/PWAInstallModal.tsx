@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
+import { canPromptInstall, promptInstall, subscribeInstall } from '@/lib/install-prompt';
 import {
   X,
   Smartphone,
@@ -9,45 +10,20 @@ import {
   PlusSquare
 } from 'lucide-react';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
 interface PWAInstallModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function PWAInstallModal({ isOpen, onClose }: PWAInstallModalProps) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  // Event pasang ditangkap sekali oleh lib/install-prompt dan dipakai bersama notifikasi pasang.
+  const canPrompt = useSyncExternalStore(subscribeInstall, canPromptInstall, () => false);
   const [activeTab, setActiveTab] = useState<'ANDROID' | 'IOS' | 'DESKTOP'>('ANDROID');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const handleBeforeInstall = (e: Event) => {
-        e.preventDefault();
-        setDeferredPrompt(e as BeforeInstallPromptEvent);
-      };
-
-      window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-      return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-    }
-  }, []);
 
   if (!isOpen) return null;
 
   const handleNativeInstallClick = async () => {
-    if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      if (choiceResult.outcome === 'accepted') {
-        setDeferredPrompt(null);
-        onClose();
-      }
-    } else {
-      alert('Untuk memasang di perangkat ini, ikuti petunjuk langkah-langkah di bawah.');
-    }
+    if ((await promptInstall()) === 'accepted') onClose();
   };
 
   return (
@@ -170,7 +146,7 @@ export default function PWAInstallModal({ isOpen, onClose }: PWAInstallModalProp
             Tutup
           </button>
 
-          {deferredPrompt && (
+          {canPrompt && (
             <button
               onClick={handleNativeInstallClick}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-bold shadow-lg shadow-amber-950/60 transition-all"

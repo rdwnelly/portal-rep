@@ -1,12 +1,8 @@
 import type { UserRole } from './types';
 
-/**
- * Halaman tujuan default setelah login, sesuai kewenangan akun.
- * Pimpinan & IT Admin langsung ke Panel Admin; staf lain ke Beranda — tanpa login staf
- * biasa akan mendarat di layar "Akses Terbatas".
- */
+/** Halaman tujuan default setelah login: admin ke Panel Admin, selain itu ke Beranda. */
 export function landingPathForRole(role: UserRole | undefined | null): string {
-  return role === 'IT_ADMIN' || role === 'EXECUTIVE' ? '/dashboard/admin' : '/';
+  return role === 'IT_ADMIN' ? '/dashboard/admin' : '/';
 }
 
 /**

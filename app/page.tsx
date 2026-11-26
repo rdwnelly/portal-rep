@@ -2,173 +2,265 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, CalendarDays, Clock, KeyRound, LayoutGrid, LogIn, MapPin } from 'lucide-react';
+import { ArrowRight, CalendarDays, Flag, LayoutGrid, MapPin } from 'lucide-react';
 import { getAppsList, getEvents, SSR_APPS, SSR_EVENTS } from '@/lib/storage';
 import { useStoreValue } from '@/lib/use-store';
 import { todayWit, useWitClock } from '@/lib/use-wit-clock';
-import { useAuth, isManagerRole } from '@/lib/auth-context';
+import { daysUntilLabel, useHolidays } from '@/lib/holidays';
 import type { CalendarEvent } from '@/lib/types';
 import Navbar from '@/components/Navbar';
-import AppList from '@/components/AppList';
 import EventDetailModal from '@/components/EventDetailModal';
-import RequestAccessModal from '@/components/RequestAccessModal';
-import ExecutiveOverviewWidget from '@/components/ExecutiveOverviewWidget';
-import WeatherWidget from '@/components/WeatherWidget';
+import WeatherForecast from '@/components/WeatherForecast';
+import { PapuanBorderCorner } from '@/components/PapuanMotif';
 import { Bento, BentoCard, CardTitle } from '@/components/ui/Bento';
 
-/** Beranda: sapaan, aplikasi kerja, agenda terdekat, dan cuaca — semuanya sebagai kartu bento. */
+const shortDate = (date: string) => {
+  const d = new Date(`${date}T12:00:00`);
+  return {
+    day: d.toLocaleDateString('id-ID', { day: 'numeric' }),
+    month: d.toLocaleDateString('id-ID', { month: 'short' }),
+    weekday: d.toLocaleDateString('id-ID', { weekday: 'long' }),
+  };
+};
+
+/** Beranda: sapaan & jam WIT, cuaca, agenda mendatang, dan libur nasional berikutnya. */
 export default function HomePage() {
-  const { user, isInitialized } = useAuth();
-  const { greeting, dateLabel } = useWitClock();
+  const { greeting, dateLabel, timeLabel } = useWitClock();
   const apps = useStoreValue('apps', getAppsList, SSR_APPS);
   const events = useStoreValue('events', getEvents, SSR_EVENTS);
-
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [requestOpen, setRequestOpen] = useState(false);
 
-  // Agenda terdekat dihitung setelah jam klien tersedia (hindari beda server/klien).
+  // Dihitung setelah jam klien tersedia (hindari beda server/klien).
   const today = dateLabel ? todayWit() : '';
-  const upcoming = today
+  const year = today ? Number(today.slice(0, 4)) : 0;
+  // Tahun ini + tahun depan, agar di akhir Desember libur berikutnya tetap terlihat.
+  const { holidays, status: holidayStatus } = useHolidays(year ? [year, year + 1] : []);
+
+  const upcomingEvents = today
     ? events
         .filter((e) => e.date >= today && e.status !== 'CANCELLED')
-        .sort((a, b) => `${a.date}${a.timeStart}`.localeCompare(`${b.date}${b.timeStart}`))[0]
-    : undefined;
-  const firstName = user?.displayName.split(' ')[0];
+        .sort((a, b) => `${a.date}${a.timeStart}`.localeCompare(`${b.date}${b.timeStart}`))
+        .slice(0, 3)
+    : [];
+  const nextHolidays = today ? holidays.filter((h) => h.date >= today).slice(0, 3) : [];
   const activeApps = apps.filter((a) => a.status !== 'OFFLINE').length;
 
   return (
     <div className="dock-safe min-h-screen bg-[#f6f4ee] dark:bg-[#07130f] text-stone-900 dark:text-slate-100">
       <Navbar />
 
-      <section className="bg-gradient-to-b from-[#123a2b] to-[#0d2a1f] text-white px-4 pt-6 pb-16">
-        <div className="max-w-xl md:max-w-5xl mx-auto">
-          <p className="text-xs font-semibold tracking-wide text-emerald-200/90">
-            PORTAL REP · Yayasan Rumah Etnik Papua
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#123a2b] via-[#0f3324] to-[#0a2219] text-white">
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#e5a93c_1px,transparent_1px)] [background-size:18px_18px]"
+        />
+        <div aria-hidden className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-amber-500/10 blur-3xl" />
+        <PapuanBorderCorner position="top-right" />
+
+        <div className="relative max-w-xl md:max-w-5xl mx-auto px-4 pt-8 pb-20 md:pb-24">
+          <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-emerald-200/80">
+            Yayasan Rumah Etnik Papua · Sorong
           </p>
-          <h1 className="mt-3 text-[26px] md:text-3xl leading-tight font-bold">
-            {greeting || 'Selamat datang'}
-            {firstName ? `, ${firstName}` : ''}
-          </h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-emerald-100/80 min-h-5">
-            {dateLabel && <Clock className="w-3.5 h-3.5 shrink-0" />}
-            {dateLabel}
-          </p>
+
+          <div className="mt-4 flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{greeting || 'Selamat datang'}</h1>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-50/75">
+                Portal kerja yayasan — aplikasi, agenda, dan informasi harian di satu tempat.
+              </p>
+            </div>
+
+            <div className="md:text-right min-h-[3.75rem]" aria-live="off">
+              {timeLabel && (
+                <>
+                  <p className="text-4xl md:text-5xl font-light tabular-nums tracking-tight leading-none">
+                    {timeLabel}
+                    <span className="ml-1.5 text-base font-semibold text-amber-300">WIT</span>
+                  </p>
+                  <p className="mt-1.5 text-sm text-emerald-50/75">{dateLabel}</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-7 flex flex-wrap gap-2.5">
+            <Link
+              href="/apps"
+              className="h-11 px-5 inline-flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm font-bold transition-colors"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Buka aplikasi kerja
+            </Link>
+            <Link
+              href="/agenda"
+              className="h-11 px-5 inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-sm font-semibold transition-colors"
+            >
+              <CalendarDays className="w-4 h-4" />
+              Lihat agenda
+            </Link>
+          </div>
         </div>
       </section>
 
-      <main className="max-w-xl md:max-w-5xl mx-auto px-4 -mt-11 space-y-4 sm:space-y-5">
+      <main className="max-w-xl md:max-w-5xl mx-auto px-4 -mt-12 md:-mt-14 relative">
         <Bento>
-          {isInitialized && !user && (
-            <BentoCard as="section" span="full" tone="amber" aria-labelledby="judul-masuk">
-              <CardTitle
-                id="judul-masuk"
-                icon={KeyRound}
-                iconTone="bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
-                eyebrow="Khusus staf"
-                title="Masuk sebagai staf"
-                action={
-                  <Link
-                    href="/masuk"
-                    className="h-10 px-4 flex items-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Masuk
-                  </Link>
-                }
-              />
-              <p className="mt-3 text-xs text-stone-600 dark:text-slate-300 leading-relaxed">
-                Setelah masuk, aplikasi kerja yang sudah terhubung bisa dibuka tanpa mengisi kata sandi lagi.
-              </p>
-            </BentoCard>
-          )}
+          <BentoCard span="twoThirds" surface={false}>
+            <WeatherForecast />
+          </BentoCard>
 
-          {isManagerRole(user?.role) && (
-            <BentoCard span="full" surface={false}>
-              <ExecutiveOverviewWidget />
-            </BentoCard>
-          )}
+          {/* Libur nasional berikutnya */}
+          <BentoCard as="section" span="thirdWide" aria-labelledby="judul-libur" className="flex flex-col gap-4">
+            <CardTitle
+              id="judul-libur"
+              icon={Flag}
+              iconTone="bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
+              eyebrow="Libur nasional"
+              title="Libur berikutnya"
+            />
 
-          <BentoCard as="section" span="half" aria-labelledby="judul-agenda">
+            {holidayStatus === 'loading' && (
+              <div className="space-y-2 animate-pulse" role="status" aria-label="Memuat libur nasional">
+                <div className="h-14 rounded-2xl bg-stone-100 dark:bg-white/5" />
+                <div className="h-10 rounded-2xl bg-stone-100 dark:bg-white/5" />
+              </div>
+            )}
+
+            {holidayStatus === 'error' && (
+              <p className="text-sm text-stone-600 dark:text-slate-300">Data libur nasional belum dapat dimuat.</p>
+            )}
+
+            {holidayStatus === 'ready' && nextHolidays.length === 0 && (
+              <p className="text-sm text-stone-600 dark:text-slate-300">Belum ada data libur untuk sisa tahun ini.</p>
+            )}
+
+            {nextHolidays.length > 0 && (
+              <ul className="space-y-2">
+                {nextHolidays.map((h, i) => {
+                  const d = shortDate(h.date);
+                  return (
+                    <li
+                      key={`${h.date}-${h.name}`}
+                      className={`flex items-center gap-3 p-2.5 rounded-2xl ${
+                        i === 0 ? 'bg-rose-50 dark:bg-rose-500/10' : 'bg-stone-50 dark:bg-white/5'
+                      }`}
+                    >
+                      <span className="w-11 shrink-0 text-center">
+                        <span className="block text-lg font-black leading-none text-rose-600 dark:text-rose-400">
+                          {d.day}
+                        </span>
+                        <span className="block text-[10px] font-bold uppercase text-stone-500 dark:text-slate-400">
+                          {d.month}
+                        </span>
+                      </span>
+                      <span className="min-w-0">
+                        <span className="text-sm font-semibold leading-snug line-clamp-2">{h.name}</span>
+                        <span className="block text-[11px] text-stone-500 dark:text-slate-400">
+                          {h.type === 'CUTI_BERSAMA' ? 'Cuti bersama · ' : ''}
+                          {daysUntilLabel(today, h.date)}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            <Link
+              href="/agenda"
+              className="mt-auto inline-flex items-center gap-1 text-xs font-bold text-rose-700 dark:text-rose-400 hover:underline"
+            >
+              Lihat di kalender <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </BentoCard>
+
+          {/* Agenda mendatang */}
+          <BentoCard as="section" span="half" aria-labelledby="judul-agenda" className="flex flex-col gap-4">
             <CardTitle
               id="judul-agenda"
               icon={CalendarDays}
-              eyebrow="Agenda terdekat"
-              title={upcoming ? upcoming.title : today ? 'Belum ada agenda mendatang' : 'Memuat agenda…'}
+              eyebrow="Agenda"
+              title={
+                !today ? 'Memuat agenda…' : upcomingEvents.length ? 'Agenda mendatang' : 'Belum ada agenda mendatang'
+              }
               action={
                 <Link
                   href="/agenda"
-                  aria-label="Lihat semua agenda"
-                  className="w-9 h-9 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5 text-stone-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400"
+                  className="h-9 px-3 flex items-center gap-1 rounded-xl bg-stone-100 dark:bg-white/5 text-xs font-bold text-stone-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-400"
                 >
-                  <ArrowUpRight className="w-4 h-4" />
+                  Semua <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               }
             />
-            {upcoming && (
-              <button
-                type="button"
-                onClick={() => setSelectedEvent(upcoming)}
-                className="mt-3 w-full p-3 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-left cursor-pointer active:scale-[0.99] transition-transform"
-              >
-                <span className="block text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                  {new Date(`${upcoming.date}T12:00:00`).toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}{' '}
-                  · {upcoming.timeStart} WIT
-                </span>
-                <span className="mt-1 flex items-center gap-1 text-xs text-stone-500 dark:text-slate-400">
-                  <MapPin className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{upcoming.location}</span>
-                </span>
-                <span className="mt-2 block text-[11px] font-semibold text-amber-700 dark:text-amber-400">
-                  Lihat rincian agenda
-                </span>
-              </button>
+            {upcomingEvents.length > 0 ? (
+              <ul className="space-y-2">
+                {upcomingEvents.map((e) => {
+                  const d = shortDate(e.date);
+                  return (
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEvent(e)}
+                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-stone-50 dark:bg-white/5 hover:bg-stone-100 dark:hover:bg-white/10 text-left cursor-pointer transition-colors"
+                      >
+                        <span className="w-11 shrink-0 text-center">
+                          <span className="block text-lg font-black leading-none text-emerald-700 dark:text-emerald-400">
+                            {d.day}
+                          </span>
+                          <span className="block text-[10px] font-bold uppercase text-stone-500 dark:text-slate-400">
+                            {d.month}
+                          </span>
+                        </span>
+                        <span className="min-w-0">
+                          <span className="text-sm font-semibold leading-snug line-clamp-1">{e.title}</span>
+                          <span className="flex items-center gap-1 text-[11px] text-stone-500 dark:text-slate-400">
+                            {e.timeStart} WIT ·
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{e.location}</span>
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              today && (
+                <p className="text-sm text-stone-600 dark:text-slate-300">
+                  Siapa saja bisa menambahkan agenda dari halaman Agenda.
+                </p>
+              )
             )}
           </BentoCard>
 
-          <BentoCard as="section" span="half" surface={false} aria-label="Cuaca Sorong">
-            <WeatherWidget />
+          {/* Pintasan ke halaman aplikasi — tanpa menampilkan daftarnya di sini */}
+          <BentoCard as="section" span="half" tone="forest" aria-labelledby="judul-aplikasi" className="flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <span className="w-10 h-10 rounded-2xl bg-white/10 text-amber-300 flex items-center justify-center shrink-0">
+                <LayoutGrid className="w-5 h-5" />
+              </span>
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Aplikasi kerja</p>
+                <h2 id="judul-aplikasi" className="text-base font-bold">
+                  Reservasi, keuangan, kasir, gudang & media
+                </h2>
+              </div>
+            </div>
+            <p className="text-sm leading-relaxed text-emerald-50/75" suppressHydrationWarning>
+              {activeApps} aplikasi kerja yayasan siap dibuka. Setiap aplikasi terbuka di tab baru dengan login
+              masing-masing.
+            </p>
+            <Link
+              href="/apps"
+              className="mt-auto h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm font-bold transition-colors"
+            >
+              Buka halaman aplikasi <ArrowRight className="w-4 h-4" />
+            </Link>
           </BentoCard>
         </Bento>
-
-        <section aria-labelledby="judul-aplikasi" className="space-y-3 sm:space-y-4">
-          <div className="flex items-end justify-between gap-3 px-1">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                <LayoutGrid className="w-4.5 h-4.5" />
-              </span>
-              <h2 id="judul-aplikasi" className="text-lg font-bold">
-                Aplikasi kerja
-              </h2>
-            </div>
-            <span className="text-xs text-stone-500 dark:text-slate-400 shrink-0" suppressHydrationWarning>
-              {activeApps} aplikasi aktif
-            </span>
-          </div>
-
-          <AppList apps={apps} />
-
-          <button
-            type="button"
-            onClick={() => setRequestOpen(true)}
-            className="w-full h-12 rounded-2xl border border-dashed border-amber-500/50 text-sm font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 cursor-pointer"
-          >
-            Belum punya akun aplikasi? Ajukan akses
-          </button>
-        </section>
       </main>
 
-      {selectedEvent && (
-        <EventDetailModal
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-          canManage={isManagerRole(user?.role)}
-        />
-      )}
-      <RequestAccessModal isOpen={requestOpen} availableApps={apps} onClose={() => setRequestOpen(false)} />
+      {selectedEvent && <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
     </div>
   );
 }

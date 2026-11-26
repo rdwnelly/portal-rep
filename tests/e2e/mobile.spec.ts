@@ -40,7 +40,19 @@ async function expectNoHorizontalScroll(page: Page) {
 
 /** Setelah digulir ke dasar, konten terakhir harus berada di atas menu bawah. */
 async function expectDockDoesNotCoverContent(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  // Beranda memuat cuaca & libur dari jaringan; halaman bisa memanjang SETELAH digulir.
+  // Gulir ulang sampai tinggi halaman stabil, baru ukur — kalau tidak, konten yang baru
+  // muncul di bawah tepi layar akan terbaca seolah tertutup menu.
+  let lastHeight = -1;
+  for (let i = 0; i < 20; i++) {
+    const height = await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+      return document.documentElement.scrollHeight;
+    });
+    if (height === lastHeight) break;
+    lastHeight = height;
+    await page.waitForTimeout(250);
+  }
   await page.waitForTimeout(150);
   const result = await page.evaluate(() => {
     const dock = document.querySelector('[data-bottom-dock]');
@@ -101,14 +113,23 @@ for (const phone of PHONES) {
       await capture(page, `${phone.name}-staf-tema-terang`);
     });
 
-    test('pimpinan: panel admin & dasbor eksekutif', async ({ page }) => {
-      await loginAndWait(page, 'ketua@rep.test');
-      await capture(page, `${phone.name}-ketua_dashboard_admin`);
-      await expectNoHorizontalScroll(page);
-      await page.goto('/eksekutif');
+    test('lembar informasi aplikasi muat di layar HP', async ({ page }) => {
+      await page.goto('/apps');
       await settle(page);
-      await capture(page, `${phone.name}-ketua_eksekutif`);
+      await page.getByRole('button', { name: /Sistem Manajemen Reservasi/ }).click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Buka aplikasi' })).toBeInViewport();
+      await capture(page, `${phone.name}-info-aplikasi`);
       await expectNoHorizontalScroll(page);
+    });
+
+    test('admin: panel kelola link aplikasi', async ({ page }) => {
+      await loginAndWait(page, 'admin@rep.test');
+      await settle(page);
+      await capture(page, `${phone.name}-admin_dashboard_admin`);
+      await expectNoHorizontalScroll(page);
+      await expectDockDoesNotCoverContent(page);
     });
   });
 }

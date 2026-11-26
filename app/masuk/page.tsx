@@ -22,8 +22,8 @@ import { PapuanBorderCorner } from '@/components/PapuanMotif';
 import Navbar from '@/components/Navbar';
 import { Bento, BentoCard } from '@/components/ui/Bento';
 
-/** Halaman masuk untuk seluruh staf yayasan (bukan hanya administrator). */
-export default function StaffLoginPage() {
+/** Halaman masuk admin portal (pengelola link aplikasi). */
+export default function AdminLoginPage() {
   const router = useRouter();
   const { user, isInitialized, loginWithEmailPassword, resetPassword, isLoading, authError, clearAuthError } = useAuth();
 
@@ -91,10 +91,10 @@ export default function StaffLoginPage() {
               <ShieldCheck className="w-7 h-7 text-amber-200" />
             </div>
 
-            <h1 className="text-2xl font-bold text-stone-900 dark:text-white">Masuk Staf</h1>
+            <h1 className="text-2xl font-bold text-stone-900 dark:text-white">Masuk Admin</h1>
             <p className="text-sm text-stone-600 dark:text-slate-300 mt-1 leading-relaxed">
-              Gunakan email dan kata sandi akun staf Anda. Setelah masuk, Anda bisa langsung membuka aplikasi kerja
-              tanpa login ulang.
+              Khusus admin yang mengelola link aplikasi. Untuk membuka aplikasi atau mengubah agenda, Anda tidak
+              perlu masuk.
             </p>
           </div>
 
@@ -207,27 +207,27 @@ export default function StaffLoginPage() {
 
         <BentoCard span="thirdWide" tone="emerald" className="flex flex-col gap-4">
           <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-            Setelah masuk
+            Perlu diketahui
           </p>
           <ul className="space-y-3.5">
             {[
-              { icon: Zap, title: 'Satu kali masuk', desc: 'Aplikasi kerja yang sudah terhubung terbuka tanpa kata sandi lagi.' },
-              { icon: ShieldCheck, title: 'Izin sesuai jabatan', desc: 'Menu yang muncul mengikuti kewenangan akun Anda.' },
-              { icon: Smartphone, title: 'Bisa dipasang di HP', desc: 'Portal berjalan seperti aplikasi, termasuk saat sinyal lemah.' },
+              { icon: Zap, title: 'Aplikasi punya login sendiri', desc: 'Setiap aplikasi kerja dibuka di tab baru dan meminta login masing-masing.' },
+              { icon: ShieldCheck, title: 'Admin mengelola link', desc: 'Setelah masuk, admin bisa menambah, mengubah, atau menghapus link aplikasi.' },
+              { icon: Smartphone, title: 'Agenda terbuka', desc: 'Siapa saja bisa menambah dan mengubah agenda tanpa masuk.' },
             ].map(({ icon: Icon, title, desc }) => (
               <li key={title} className="flex items-start gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-white/80 dark:bg-white/10 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
                   <Icon className="w-4 h-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] font-bold">{title}</span>
+                  <span className="block text-sm font-bold">{title}</span>
                   <span className="block mt-0.5 text-[11px] text-stone-600 dark:text-slate-300 leading-relaxed">{desc}</span>
                 </span>
               </li>
             ))}
           </ul>
           <p className="mt-auto text-[11px] text-stone-500 dark:text-slate-400 leading-relaxed">
-            Belum punya akun staf? Ajukan akses dari halaman Beranda atau Aplikasi.
+            Akun admin dikelola lewat Firebase Console oleh pengelola portal.
           </p>
         </BentoCard>
        </Bento>

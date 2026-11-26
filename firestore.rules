@@ -3,56 +3,40 @@ rules_version = '2';
 // =============================================================================
 // PORTAL REP — Firestore Security Rules
 //
-// Model akses:
-//  • Publik (tanpa login)   : modul aplikasi, pengumuman, agenda, info yayasan,
-//                             dokumen NON-rahasia; boleh mengirim permohonan akses.
-//  • Staf (whitelist aktif) : + dokumen rahasia, konfirmasi baca pengumuman.
-//  • EXECUTIVE / IT_ADMIN   : kelola pengumuman, agenda, dokumen, info yayasan,
-//                             lihat daftar staf & status baca,
-//                             permohonan akses; baca metrik eksekutif.
-//  • IT_ADMIN               : + whitelist karyawan, modul aplikasi, metrik, audit log.
+// Portal sederhana: kumpulan link aplikasi kerja + agenda bersama.
 //
-// Role dibaca dari whitelist/{email} — dokumen yang hanya bisa diubah IT_ADMIN.
-// Email wajib terverifikasi agar akun Email/Password palsu dengan email pimpinan
-// tidak bisa memperoleh role tersebut.
+//  • Semua orang (tanpa login) : baca link aplikasi & agenda; tambah/ubah/hapus agenda.
+//  • IT_ADMIN                  : + kelola link aplikasi.
+//
+// Agenda sengaja terbuka untuk siapa saja. Karena tidak ada login yang bisa dipakai
+// sebagai penjaga, SATU-SATUNYA pertahanan agenda adalah validasi bentuk data di bawah:
+// field yang diizinkan, tipe, panjang teks, dan format tanggal/jam. Ini mencegah isian
+// sampah atau data raksasa, tetapi tidak mencegah orang mengubah/menghapus agenda.
+//
+// Role dibaca dari whitelist/{email} yang hanya bisa diubah lewat Firebase Console.
+// Email wajib terverifikasi agar akun palsu dengan email admin tidak memperoleh role.
 // =============================================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ---------- Identitas & role ----------
-    function signedIn() {
-      return request.auth != null;
+    // ---------- Identitas & role (hanya untuk mengelola link aplikasi) ----------
+    function verified() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email_verified == true;
     }
 
     function authEmail() {
       return request.auth.token.email.lower();
     }
 
-    function verified() {
-      return signedIn()
-        && request.auth.token.email is string
-        && request.auth.token.email_verified == true;
-    }
-
-    function staffPath() {
-      return /databases/$(database)/documents/whitelist/$(authEmail());
-    }
-
-    function isStaff() {
-      return verified() && exists(staffPath()) && get(staffPath()).data.active == true;
-    }
-
-    function hasRole(roles) {
-      return isStaff() && get(staffPath()).data.role in roles;
-    }
-
     function isAdmin() {
-      return hasRole(['IT_ADMIN']);
-    }
-
-    function isManager() {
-      return hasRole(['IT_ADMIN', 'EXECUTIVE']);
+      let path = /databases/$(database)/documents/whitelist/$(authEmail());
+      return verified()
+        && exists(path)
+        && get(path).data.active == true
+        && get(path).data.role == 'IT_ADMIN';
     }
 
     // ---------- Validasi ----------
@@ -60,152 +44,71 @@ service cloud.firestore {
       return v is string && v.size() <= max;
     }
 
-    function optStr(data, key, max) {
-      return !(key in data) || str(data[key], max);
+    function optStr(d, key, max) {
+      return !(key in d) || str(d[key], max);
     }
 
-    function changedOnly(keys) {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
-    }
-
-    // ---------- Whitelist karyawan (sumber role) ----------
-    function validWhitelist(id) {
-      let d = request.resource.data;
-      return d.keys().hasOnly(['email', 'name', 'role', 'roleTitle', 'department', 'active', 'addedAt', 'addedBy', 'avatarUrl'])
-        && d.email == id
-        && id == id.lower()
-        && d.role in ['IT_ADMIN', 'EXECUTIVE', 'OPERATIONAL', 'FINANCE_WAREHOUSE']
-        && d.active is bool
-        && str(d.name, 120)
-        && str(d.roleTitle, 120)
-        && str(d.department, 160);
-    }
-
+    // ---------- Whitelist (penentu admin) ----------
+    // Hanya bisa diubah dari Firebase Console (Admin SDK melewati aturan ini).
     match /whitelist/{userEmail} {
-      // Setiap pengguna terverifikasi boleh membaca status dirinya sendiri.
       allow get: if verified() && userEmail == authEmail();
-      // Pimpinan membutuhkan daftar staf untuk memantau konfirmasi baca instruksi.
-      allow get, list: if isManager();
-
-      // Pimpinan boleh menyetujui staf baru, tetapi tidak boleh memberi role EXECUTIVE/IT_ADMIN.
-      allow create: if validWhitelist(userEmail)
-        && (isAdmin() || (isManager() && request.resource.data.role in ['OPERATIONAL', 'FINANCE_WAREHOUSE']));
-
-      // Admin tidak bisa menurunkan role / menonaktifkan / menghapus akunnya sendiri (cegah terkunci).
-      allow update: if isAdmin()
-        && validWhitelist(userEmail)
-        && (userEmail != authEmail()
-            || (request.resource.data.role == resource.data.role
-                && request.resource.data.active == resource.data.active));
-      allow delete: if isAdmin() && userEmail != authEmail();
+      allow list, write: if false;
     }
 
-    // ---------- Konten publik ----------
+    // ---------- Link aplikasi ----------
+    function validApp() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'title', 'shortCode', 'description', 'fullDetails', 'category', 'iconName', 'url',
+          'internalUrl', 'status', 'allowedRoles', 'badgeText', 'colorTheme', 'stats',
+          'lastUpdated', 'order'
+        ])
+        && str(d.title, 120)
+        && str(d.url, 500)
+        && d.url.matches('^https?://.+')
+        && d.status in ['ONLINE', 'MAINTENANCE', 'UPDATED', 'OFFLINE']
+        && d.category in ['OPERASIONAL', 'KEUANGAN', 'GUDANG_POS', 'MEDIA_KREATIF', 'ADMINISTRASI']
+        && optStr(d, 'description', 600)
+        && optStr(d, 'shortCode', 40);
+    }
+
     match /apps/{appId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin() && validApp();
+      allow delete: if isAdmin();
     }
 
-    match /notices/{noticeId} {
-      allow read: if true;
-      allow write: if isManager();
-
-      // Konfirmasi baca: staf hanya menulis atas namanya sendiri dengan role aslinya.
-      match /reads/{readerEmail} {
-        allow get: if verified() && readerEmail == authEmail();
-        allow read: if isManager();
-        allow create, update: if isStaff()
-          && readerEmail == authEmail()
-          && request.resource.data.keys().hasOnly(['email', 'name', 'role', 'readAt'])
-          && request.resource.data.email == readerEmail
-          && request.resource.data.role == get(staffPath()).data.role
-          && str(request.resource.data.name, 120)
-          && str(request.resource.data.readAt, 40);
-        allow delete: if false;
-      }
+    // ---------- Agenda (terbuka untuk semua orang) ----------
+    function validEvent() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'title', 'description', 'date', 'timeStart', 'timeEnd', 'location', 'category',
+          'status', 'organizer', 'targetAudience', 'isHighlight', 'notes', 'createdAt', 'createdBy'
+        ])
+        && d.keys().hasAll(['title', 'date', 'timeStart', 'location', 'category', 'status'])
+        && str(d.title, 150) && d.title.size() > 0
+        && str(d.date, 10) && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && str(d.timeStart, 5) && d.timeStart.matches('^[0-2][0-9]:[0-5][0-9]$')
+        && (!('timeEnd' in d) || (str(d.timeEnd, 5) && d.timeEnd.matches('^[0-2][0-9]:[0-5][0-9]$')))
+        && str(d.location, 200)
+        && d.category in ['CULTURE_EVENT', 'HOMESTAY_TOUR', 'EXECUTIVE_MEETING',
+                          'COMMUNITY_WORKSHOP', 'SYSTEM_MAINTENANCE', 'GENERAL_AGENDA']
+        && d.status in ['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']
+        && optStr(d, 'description', 2000)
+        && optStr(d, 'organizer', 120)
+        && optStr(d, 'targetAudience', 200)
+        && optStr(d, 'notes', 1000)
+        && optStr(d, 'createdAt', 40)
+        && optStr(d, 'createdBy', 120)
+        && (!('isHighlight' in d) || d.isHighlight is bool);
     }
 
     match /events/{eventId} {
       allow read: if true;
-      allow write: if isManager();
+      allow create, update: if validEvent();
+      allow delete: if true;
     }
 
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isManager();
-    }
-
-    // ---------- Dokumen & SOP ----------
-    function isDownloadIncrement() {
-      return changedOnly(['downloadsCount'])
-        && request.resource.data.downloadsCount == resource.data.get('downloadsCount', 0) + 1
-        && (resource.data.isConfidential == false || isStaff());
-    }
-
-    match /documents/{docId} {
-      allow read: if resource.data.isConfidential == false || isStaff();
-      allow create: if isManager() && request.resource.data.isConfidential is bool;
-      allow update: if (isManager() && request.resource.data.isConfidential is bool)
-        || isDownloadIncrement();
-      allow delete: if isManager();
-    }
-
-    // ---------- Metrik eksekutif ----------
-    match /metrics/{period} {
-      allow read: if isManager();
-      allow write: if isAdmin();
-    }
-
-    // ---------- Permohonan akses ----------
-    function validNewRequest() {
-      let d = request.resource.data;
-      return d.keys().hasOnly(['name', 'email', 'appId', 'appTitle', 'department', 'phoneNumber', 'reason', 'requestedAt', 'status'])
-        && d.keys().hasAll(['name', 'email', 'department', 'reason', 'requestedAt', 'status'])
-        && d.status == 'PENDING'
-        && str(d.name, 120) && d.name.size() > 0
-        && str(d.email, 254) && d.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
-        && str(d.department, 160)
-        && str(d.reason, 1000) && d.reason.size() > 0
-        && str(d.requestedAt, 40)
-        && optStr(d, 'appId', 120)
-        && optStr(d, 'appTitle', 160)
-        && optStr(d, 'phoneNumber', 30);
-    }
-
-    match /accessRequests/{requestId} {
-      allow create: if validNewRequest();
-      allow read: if isManager();
-      allow update: if isManager()
-        && changedOnly(['status', 'approvedAt', 'approvedBy', 'adminNotes'])
-        && request.resource.data.status in ['APPROVED', 'REJECTED'];
-      allow delete: if isAdmin();
-    }
-
-    // ---------- Token notifikasi push (per perangkat) ----------
-    // Hanya server (Admin SDK) yang membaca token untuk mengirim notifikasi.
-    match /pushTokens/{token} {
-      allow create, update: if isStaff()
-        && request.resource.data.keys().hasOnly(['email', 'role', 'userAgent', 'updatedAt'])
-        && request.resource.data.email == authEmail()
-        && request.resource.data.role == get(staffPath()).data.role
-        && str(request.resource.data.userAgent, 300)
-        && str(request.resource.data.updatedAt, 40)
-        && (resource == null || resource.data.email == authEmail());
-      allow delete: if verified() && resource.data.email == authEmail();
-      allow read: if false;
-    }
-
-    // ---------- Audit log (append-only) ----------
-    match /auditLogs/{logId} {
-      allow read: if isAdmin();
-      allow create: if verified()
-        && request.resource.data.keys().hasOnly(['userEmail', 'userName', 'action', 'details', 'category', 'timestamp', 'actorEmail'])
-        && request.resource.data.actorEmail == authEmail()
-        && request.resource.data.category in ['AUTH', 'NOTICE', 'WHITELIST', 'APP_CONFIG', 'EVENT', 'DOCUMENT']
-        && str(request.resource.data.action, 80)
-        && str(request.resource.data.details, 2000)
-        && (isStaff() || request.resource.data.category == 'AUTH');
-      allow update, delete: if false;
-    }
+    // Semua koleksi lain (data fitur lama) tertutup.
   }
 }
