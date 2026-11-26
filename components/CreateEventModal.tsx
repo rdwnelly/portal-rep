@@ -108,30 +108,30 @@ function CreateEventForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-2xl rounded-3xl bg-[#091f17] border-2 border-amber-500/40 shadow-2xl text-slate-100 overflow-hidden max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-2xl rounded-3xl bg-white dark:bg-[#0c241b] border-2 border-stone-200 dark:border-amber-500/40 shadow-2xl text-slate-100 overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <PapuanBorderCorner position="top-right" />
         <PapuanBorderCorner position="bottom-left" />
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-amber-500/20 bg-gradient-to-r from-[#0d2a1f] to-[#091f17]">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-stone-200 dark:border-amber-500/20 bg-gradient-to-r from-[#0d2a1f] to-[#091f17]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-stone-200 dark:border-amber-500/40 flex items-center justify-center text-amber-600 dark:text-amber-400">
               {isEditing ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-white font-serif">
+              <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-white font-serif">
                 {isEditing ? 'Ubah Rincian Agenda' : 'Tambah Agenda Budaya & Operasional'}
               </h2>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-stone-600 dark:text-slate-300">
                 Yayasan Rumah Etnik Papua (Zona Waktu WIT)
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700 cursor-pointer"
+            className="p-2 rounded-xl bg-stone-100 dark:bg-slate-900/80 hover:bg-stone-200 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white transition-all border border-stone-200 dark:border-slate-700 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -142,15 +142,15 @@ function CreateEventForm({
           <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
             {errorMsg && (
               <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/40 text-xs text-rose-200 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             {/* Judul Agenda */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                Judul Agenda / Event <span className="text-rose-400">*</span>
+              <label className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                Judul Agenda / Event <span className="text-rose-600 dark:text-rose-400">*</span>
               </label>
               <input
                 type="text"
@@ -158,18 +158,18 @@ function CreateEventForm({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Contoh: Pentas Tari Tradisional Sambutan Tamu Wisata"
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-[#081a13] border border-amber-500/30 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-all text-sm font-medium"
+                className="w-full px-4 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-all text-sm font-medium"
               />
             </div>
 
             {/* Kategori & Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Kategori Agenda</label>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Kategori Agenda</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as EventCategory)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#081a13] border border-amber-500/30 text-slate-200 text-xs font-semibold focus:outline-none focus:border-amber-400 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-slate-200 text-xs font-semibold focus:outline-none focus:border-amber-400 cursor-pointer"
                 >
                   <option value="CULTURE_EVENT">🎭 Pentas Seni & Budaya</option>
                   <option value="HOMESTAY_TOUR">🏡 Kunjungan Tamu & Homestay</option>
@@ -181,11 +181,11 @@ function CreateEventForm({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Status Agenda</label>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Status Agenda</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as EventStatus)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#081a13] border border-amber-500/30 text-slate-200 text-xs font-semibold focus:outline-none focus:border-amber-400 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-slate-200 text-xs font-semibold focus:outline-none focus:border-amber-400 cursor-pointer"
                 >
                   <option value="UPCOMING">🔵 Akan Datang (Upcoming)</option>
                   <option value="ONGOING">🟢 Sedang Berlangsung (Live)</option>
@@ -198,51 +198,51 @@ function CreateEventForm({
             {/* Tanggal & Waktu WIT */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                  Tanggal <span className="text-rose-400">*</span>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  Tanggal <span className="text-rose-600 dark:text-rose-400">*</span>
                 </label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="w-full px-3 py-2 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-xs font-mono focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs font-mono focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  Waktu Mulai (WIT) <span className="text-rose-400">*</span>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  Waktu Mulai (WIT) <span className="text-rose-600 dark:text-rose-400">*</span>
                 </label>
                 <input
                   type="time"
                   value={timeStart}
                   onChange={(e) => setTimeStart(e.target.value)}
                   required
-                  className="w-full px-3 py-2 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-xs font-mono focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs font-mono focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   Waktu Selesai (WIT)
                 </label>
                 <input
                   type="time"
                   value={timeEnd}
                   onChange={(e) => setTimeEnd(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-xs font-mono focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs font-mono focus:outline-none focus:border-amber-400"
                 />
               </div>
             </div>
 
             {/* Lokasi Acara + Preset */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+              <label className="text-xs font-bold text-stone-600 dark:text-slate-300 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                 Lokasi di Kompleks Rumah Etnik Papua
               </label>
               <input
@@ -250,16 +250,16 @@ function CreateEventForm({
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Contoh: Panggung Terbuka Yaswar Cafe & Taman Etnik"
-                className="w-full px-4 py-2.5 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-sm focus:outline-none focus:border-amber-400"
+                className="w-full px-4 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-sm focus:outline-none focus:border-amber-400"
               />
               <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                <span className="text-[10px] text-slate-400">Pilihan Cepat:</span>
+                <span className="text-[10px] text-stone-500 dark:text-slate-400">Pilihan Cepat:</span>
                 {locationPresets.map((preset) => (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => setLocation(preset)}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#0c281e] hover:bg-[#12382c] border border-emerald-500/20 text-emerald-300 transition-all cursor-pointer"
+                    className="text-[10px] px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 transition-all cursor-pointer"
                   >
                     {preset}
                   </button>
@@ -270,8 +270,8 @@ function CreateEventForm({
             {/* Penyelenggara & Target Peserta */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                  <User className="w-3.5 h-3.5 text-amber-400" />
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300 flex items-center gap-1">
+                  <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   Penanggung Jawab / Penyelenggara
                 </label>
                 <input
@@ -279,13 +279,13 @@ function CreateEventForm({
                   value={organizer}
                   onChange={(e) => setOrganizer(e.target.value)}
                   placeholder="Contoh: Bpk. Fricky Mosche Burdam"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-xs focus:outline-none focus:border-amber-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-teal-400" />
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
                   Target Peserta / Tamu
                 </label>
                 <input
@@ -293,46 +293,46 @@ function CreateEventForm({
                   value={targetAudience}
                   onChange={(e) => setTargetAudience(e.target.value)}
                   placeholder="Contoh: Seluruh Staf & Pengunjung Umum"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-xs focus:outline-none focus:border-amber-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs focus:outline-none focus:border-amber-400"
                 />
               </div>
             </div>
 
             {/* Deskripsi & Rundown */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Deskripsi & Rundown Acara</label>
+              <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Deskripsi & Rundown Acara</label>
               <textarea
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Tuliskan gambaran acara, susunan acara, atau arahan persiapan untuk staf..."
-                className="w-full px-4 py-2.5 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-xs leading-relaxed focus:outline-none focus:border-amber-400"
+                className="w-full px-4 py-2.5 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs leading-relaxed focus:outline-none focus:border-amber-400"
               />
             </div>
 
             {/* Catatan Khusus & Highlight Switch */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
               <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Catatan Khusus (Opsional)</label>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Catatan Khusus (Opsional)</label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Contoh: Hubungi IT jika butuh proyektor dan sound"
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#081a13] border border-amber-500/30 text-white text-xs focus:outline-none focus:border-amber-400"
+                  className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/30 text-stone-900 dark:text-white text-xs focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div className="pt-4 sm:pt-6">
-                <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#0c281e] border border-amber-500/25 cursor-pointer select-none">
+                <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-stone-100 dark:bg-white/10 border border-stone-200 dark:border-amber-500/25 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={isHighlight}
                     onChange={(e) => setIsHighlight(e.target.checked)}
                     className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
                   />
-                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     Agenda Unggulan
                   </span>
                 </label>
@@ -341,11 +341,11 @@ function CreateEventForm({
           </div>
 
           {/* Modal Footer */}
-          <div className="p-4 sm:p-5 border-t border-amber-500/20 bg-[#081a13] flex items-center justify-end gap-3">
+          <div className="p-4 sm:p-5 border-t border-stone-200 dark:border-amber-500/20 bg-stone-50 dark:bg-white/5 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-all border border-slate-700 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-slate-900 hover:bg-stone-200 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-300 text-xs font-bold transition-all border border-stone-200 dark:border-slate-700 cursor-pointer"
             >
               Batal
             </button>

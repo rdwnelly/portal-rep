@@ -1,23 +1,24 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
 import { initializeFirestore, getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
+import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
 
 // Emulator lokal (opsional): set NEXT_PUBLIC_FIREBASE_EMULATOR=true untuk menjalankan
 // seluruh aplikasi terhadap Firebase Emulator Suite tanpa menyentuh data produksi.
 const useEmulator = process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'portal-rep.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || (useEmulator ? 'demo-portal-rep' : 'portal-rep-yayasan'),
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'portal-rep.appspot.com',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:123456789:web:abcdef',
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBlwXDYegGZxZkEHBz3EOTVhbkm7xTnckU',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'portal-rep-7d456.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || (useEmulator ? 'demo-portal-rep' : 'portal-rep-7d456'),
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'portal-rep-7d456.firebasestorage.app',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '933783230823',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:933783230823:web:37c3e38dc7dca4068df7c2',
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-SMPJ94S50V',
 };
 
 /** Firebase sungguhan (atau emulator) tersedia → data & otorisasi berjalan di Firestore. */
-const isConfigured = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) || useEmulator;
+const isConfigured = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) || firebaseConfig.apiKey !== 'demo-api-key' || useEmulator;
 
 /**
  * Mode demo (data contoh di localStorage + akun simulasi) HANYA untuk pengembangan lokal.
@@ -41,6 +42,16 @@ try {
   db = getFirestore(app);
 }
 
+// Inisialisasi Analytics di browser (client-side) bila didukung
+let analytics: Analytics | null = null;
+if (typeof window !== 'undefined') {
+  isSupported().then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(app);
+    }
+  });
+}
+
 const globalFlags = globalThis as unknown as { __portalRepEmulatorConnected?: boolean };
 if (useEmulator && typeof window !== 'undefined' && !globalFlags.__portalRepEmulatorConnected) {
   globalFlags.__portalRepEmulatorConnected = true;
@@ -48,4 +59,4 @@ if (useEmulator && typeof window !== 'undefined' && !globalFlags.__portalRepEmul
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
 }
 
-export { app, auth, googleProvider, db, isConfigured, isDemoMode };
+export { app, auth, googleProvider, db, analytics, isConfigured, isDemoMode };

@@ -40,7 +40,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f2e22',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f6f4ee' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f2e22' },
+  ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -48,14 +51,28 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+/**
+ * Pasang tema tersimpan SEBELUM halaman pertama digambar, agar pengguna bertema terang
+ * tidak melihat kedipan gelap sesaat (ThemeProvider baru berjalan setelah hidrasi).
+ */
+const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem('portal_rep_theme');if(t!=='light'&&t!=='dark')t='dark';var r=document.documentElement;r.classList.remove('light','dark');r.classList.add(t);r.setAttribute('data-theme',t);r.style.colorScheme=t;}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${jakarta.variable} ${playfair.variable} font-sans dark`}>
-      <body className="min-h-screen flex flex-col bg-[#07130f] text-slate-100 antialiased selection:bg-amber-500 selection:text-black transition-colors duration-300">
+    <html
+      lang="id"
+      data-theme="dark"
+      className={`${jakarta.variable} ${playfair.variable} font-sans dark`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
+      <body className="min-h-screen flex flex-col bg-[#f6f4ee] text-stone-900 dark:bg-[#07130f] dark:text-slate-100 antialiased selection:bg-amber-500 selection:text-black transition-colors duration-300">
         <ThemeProvider>
           <AuthProvider>
             <PWARegister />

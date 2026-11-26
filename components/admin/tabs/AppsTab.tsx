@@ -98,11 +98,11 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Link2 className="w-5 h-5 text-emerald-400" />
+              <h2 className="text-lg font-black text-stone-900 dark:text-white flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
                 <span>Konfigurasi Link & Modul Sub-Aplikasi</span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-500 dark:text-slate-400">
                 Atur tautan produksi Vercel, status operasional (Online/Maintenance), dan deskripsi modul.
               </p>
             </div>
@@ -120,11 +120,11 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
             {apps.map((app) => (
               <div
                 key={app.id}
-                className="p-5 rounded-2xl glass-panel bg-[#091b14] border border-emerald-500/25 shadow-xl flex flex-col justify-between space-y-4"
+                className="p-5 rounded-2xl bg-stone-50 dark:bg-white/5 border border-emerald-500/25 shadow-xl flex flex-col justify-between space-y-4"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                       {app.shortCode}
                     </span>
                     <span
@@ -138,33 +138,33 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
                     </span>
                   </div>
 
-                  <h3 className="text-base font-extrabold text-white leading-snug">{app.title}</h3>
-                  <p className="text-xs text-slate-300 mt-1 line-clamp-2">{app.description}</p>
-                  <p className="text-[11px] text-emerald-400 font-mono mt-2 truncate">{app.url}</p>
+                  <h3 className="text-base font-extrabold text-stone-900 dark:text-white leading-snug">{app.title}</h3>
+                  <p className="text-xs text-stone-600 dark:text-slate-300 mt-1 line-clamp-2">{app.description}</p>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono mt-2 truncate">{app.url}</p>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-[11px] text-slate-400">
+                <div className="flex items-center justify-between pt-3 border-t border-stone-200 dark:border-slate-800 text-[11px] text-stone-500 dark:text-slate-400">
                   <span>{app.badgeText}</span>
                   <div className="flex items-center gap-1.5">
                     <a
                       href={app.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 text-emerald-400 transition-all"
+                      className="p-1.5 rounded-lg bg-stone-200 dark:bg-slate-800 hover:bg-emerald-200/60 dark:hover:bg-emerald-950/60 border border-stone-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 transition-all"
                       title="Buka Aplikasi"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                     <button
                       onClick={() => handleOpenEditApp(app)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 border border-slate-700 text-emerald-300 transition-all cursor-pointer"
+                      className="p-1.5 rounded-lg bg-stone-200 dark:bg-slate-800 hover:bg-emerald-200/60 dark:hover:bg-emerald-950/60 border border-stone-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-300 transition-all cursor-pointer"
                       title="Edit Aplikasi"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteApp(app.id, app.title)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-950/60 border border-slate-700 text-red-400 transition-all cursor-pointer"
+                      className="p-1.5 rounded-lg bg-stone-200 dark:bg-slate-800 hover:bg-rose-200/60 dark:hover:bg-red-950/60 border border-stone-200 dark:border-slate-700 text-rose-600 dark:text-red-400 transition-all cursor-pointer"
                       title="Hapus Aplikasi"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
         {showAppModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
             <div
-              className="relative w-full max-w-lg rounded-3xl bg-[#091f17] border-2 border-emerald-500/40 shadow-2xl p-6 text-slate-100 overflow-hidden"
+              className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0c241b] border-2 border-emerald-500/40 shadow-2xl p-6 text-slate-100 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <PapuanBorderCorner position="top-right" />
@@ -187,14 +187,14 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
 
               <div className="flex items-center justify-between pb-3 border-b border-emerald-500/20 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <Link2 className="w-5 h-5 text-emerald-400" />
-                  <h3 className="text-base font-black text-white font-serif">
+                  <Link2 className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+                  <h3 className="text-base font-black text-stone-900 dark:text-white font-serif">
                     {editingApp ? 'Edit Konfigurasi Aplikasi' : 'Tambah Modul Aplikasi'}
                   </h3>
                 </div>
                 <button
                   onClick={() => setShowAppModal(false)}
-                  className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white border border-slate-700"
+                  className="p-1.5 rounded-xl bg-stone-100 dark:bg-slate-900 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white border border-stone-200 dark:border-slate-700"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -202,47 +202,47 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
 
               <form onSubmit={handleSaveApp} className="space-y-3.5">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-emerald-400">Nama Aplikasi</label>
+                  <label className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Nama Aplikasi</label>
                   <input
                     type="text"
                     value={appTitle}
                     onChange={(e) => setAppTitle(e.target.value)}
                     placeholder="Contoh: Sistem Informasi Keuangan"
                     required
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-emerald-500/30 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-emerald-400"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">Tautan Produksi (URL Vercel / Domain)</label>
+                  <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Tautan Produksi (URL Vercel / Domain)</label>
                   <input
                     type="url"
                     value={appUrl}
                     onChange={(e) => setAppUrl(e.target.value)}
                     placeholder="https://apk-reservasi-homestay-rep.vercel.app"
                     required
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-400"
+                    className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-300 font-mono focus:outline-none focus:border-emerald-400"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-300">Kode Singkat</label>
+                    <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Kode Singkat</label>
                     <input
                       type="text"
                       value={appShortCode}
                       onChange={(e) => setAppShortCode(e.target.value)}
                       placeholder="RESERVASI"
-                      className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white uppercase focus:outline-none focus:border-emerald-400"
+                      className="w-full px-2.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-emerald-500/30 text-xs text-stone-900 dark:text-white uppercase focus:outline-none focus:border-emerald-400"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-300">Status Modul</label>
+                    <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Status Modul</label>
                     <select
                       value={appStatus}
                       onChange={(e) => setAppStatus(e.target.value as AppStatus)}
-                      className="w-full px-2.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none focus:border-emerald-400"
+                      className="w-full px-2.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-emerald-500/30 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-emerald-400"
                     >
                       <option value="ONLINE">Online (Aktif)</option>
                       <option value="MAINTENANCE">Dalam Pemeliharaan</option>
@@ -253,13 +253,13 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">Deskripsi Singkat</label>
+                  <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Deskripsi Singkat</label>
                   <textarea
                     rows={2}
                     value={appDescription}
                     onChange={(e) => setAppDescription(e.target.value)}
                     placeholder="Penjelasan fungsi aplikasi..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#06140e] border border-emerald-500/30 text-xs text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full px-3.5 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-emerald-500/30 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-emerald-400"
                   />
                 </div>
 
@@ -267,7 +267,7 @@ export default function AppsTab({ apps, currentAdminName }: { apps: AppItem[]; c
                   <button
                     type="button"
                     onClick={() => setShowAppModal(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-900 text-slate-300 text-xs font-bold border border-slate-700"
+                    className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-slate-900 text-stone-600 dark:text-slate-300 text-xs font-bold border border-stone-200 dark:border-slate-700"
                   >
                     Batal
                   </button>

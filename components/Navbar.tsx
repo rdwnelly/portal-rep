@@ -6,8 +6,6 @@ import { usePathname } from 'next/navigation';
 import {
   Home,
   LayoutGrid,
-  Bell,
-  FileText,
   Menu,
   X,
   CalendarDays,
@@ -33,11 +31,10 @@ interface NavbarProps {
 const DOCK_ITEMS = [
   { label: 'Beranda', href: '/', icon: Home, match: (p: string) => p === '/' },
   { label: 'Aplikasi', href: '/apps', icon: LayoutGrid, match: (p: string) => p === '/apps' || p === '/dashboard' },
-  { label: 'Pengumuman', href: '/dashboard/notices', icon: Bell, match: (p: string) => p.startsWith('/dashboard/notices') },
-  { label: 'Dokumen', href: '/dokumen', icon: FileText, match: (p: string) => p.startsWith('/dokumen') },
+  { label: 'Agenda', href: '/agenda', icon: CalendarDays, match: (p: string) => p.startsWith('/agenda') },
 ];
 
-const MORE_PATHS = ['/agenda', '/eksekutif', '/dashboard/admin'];
+const MORE_PATHS = ['/eksekutif', '/dashboard/admin'];
 
 /**
  * Navigasi utama: satu menu bawah berisi 5 tombol besar di semua ukuran layar.
@@ -137,7 +134,7 @@ export default function Navbar({ onOpenPwaModal }: NavbarProps) {
               </div>
             ) : (
               <Link
-                href={`/dashboard/admin/login?next=${encodeURIComponent(pathname)}`}
+                href={`/masuk?next=${encodeURIComponent(pathname)}`}
                 onClick={() => setMoreOpen(false)}
                 className="flex items-center justify-center gap-2 h-12 mb-3 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold"
               >

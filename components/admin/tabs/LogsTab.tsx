@@ -31,23 +31,23 @@ export default function LogsTab({ auditLogs, actualRole, currentAdminName }: { a
     <>
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
-              <History className="w-5 h-5 text-slate-400" />
+            <h2 className="text-lg font-black text-stone-900 dark:text-white flex items-center gap-2">
+              <History className="w-5 h-5 text-stone-500 dark:text-slate-400" />
               <span>Audit Trail & Jejak Aktivitas Keamanan</span>
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-stone-500 dark:text-slate-400">
               Catatan otomatis setiap perubahan data, penambahan SOP, otorisasi staf, dan pembaruan sistem.
             </p>
           </div>
 
           {actualRole === 'IT_ADMIN' && (
-            <div className="p-4 rounded-2xl bg-[#091b14] border border-amber-500/25 space-y-2">
+            <div className="p-4 rounded-2xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-amber-500/25 space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold text-white">
+                  <p className="text-xs font-bold text-stone-900 dark:text-white">
                     {isRemoteStore ? 'Inisialisasi Data Awal Firestore' : 'Pulihkan Data Demo Lokal'}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-stone-500 dark:text-slate-400">
                     {isRemoteStore
                       ? 'Mengisi modul aplikasi, info yayasan, dan konten contoh ke koleksi yang masih kosong. Whitelist & metrik tidak diisi (metrik diambil langsung dari sub-aplikasi).'
                       : 'Mengembalikan seluruh data contoh di browser ini ke kondisi awal.'}
@@ -64,7 +64,7 @@ export default function LogsTab({ auditLogs, actualRole, currentAdminName }: { a
                 </button>
               </div>
               {seedStatus.lines.length > 0 && (
-                <ul className="text-[11px] text-emerald-300 font-mono space-y-0.5">
+                <ul className="text-[11px] text-emerald-700 dark:text-emerald-300 font-mono space-y-0.5">
                   {seedStatus.lines.map((line) => (
                     <li key={line}>• {line}</li>
                   ))}
@@ -73,23 +73,23 @@ export default function LogsTab({ auditLogs, actualRole, currentAdminName }: { a
             </div>
           )}
 
-          <div className="rounded-2xl border border-slate-800 overflow-hidden bg-[#091b14]">
-            <div className="divide-y divide-slate-800">
+          <div className="rounded-2xl border border-stone-200 dark:border-slate-800 overflow-hidden bg-stone-50 dark:bg-white/5">
+            <div className="divide-y divide-stone-200 dark:divide-slate-800">
               {auditLogs.map((log) => (
                 <div key={log.id} className="p-3.5 flex items-start justify-between gap-3 text-xs hover:bg-[#0c241b]/50">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-amber-400 border border-slate-700">
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-stone-100 dark:bg-slate-900 text-amber-600 dark:text-amber-400 border border-stone-200 dark:border-slate-700">
                         {log.category}
                       </span>
-                      <span className="font-bold text-white">{log.action}</span>
+                      <span className="font-bold text-stone-900 dark:text-white">{log.action}</span>
                     </div>
-                    <p className="text-slate-300">{log.details}</p>
-                    <p className="text-[10px] text-slate-500">
-                      Oleh: <strong className="text-slate-400">{log.userName}</strong> ({log.actorEmail || log.userEmail})
+                    <p className="text-stone-600 dark:text-slate-300">{log.details}</p>
+                    <p className="text-[10px] text-stone-400 dark:text-slate-500">
+                      Oleh: <strong className="text-stone-500 dark:text-slate-400">{log.userName}</strong> ({log.actorEmail || log.userEmail})
                     </p>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">
+                  <span className="text-[10px] text-stone-500 dark:text-slate-400 font-mono whitespace-nowrap">
                     {new Date(log.timestamp).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })} WIT
                   </span>
                 </div>

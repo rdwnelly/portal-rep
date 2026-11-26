@@ -104,12 +104,11 @@ export const INITIAL_FOUNDATION_INFO: FoundationInfo = {
 };
 
 /**
- * Nilai awal untuk render server (SSR) & hidrasi. Dalam mode Firestore nilainya kosong agar
- * data contoh tidak sempat tampil sebelum data asli tiba.
+ * Nilai awal untuk render server (SSR) & hidrasi.
  */
-export const SSR_APPS: AppItem[] = isRemoteStore ? [] : INITIAL_APPS;
-export const SSR_NOTICES: NoticeItem[] = isRemoteStore ? [] : INITIAL_NOTICES;
-export const SSR_EVENTS: CalendarEvent[] = isRemoteStore ? [] : INITIAL_EVENTS;
+export const SSR_APPS: AppItem[] = INITIAL_APPS;
+export const SSR_NOTICES: NoticeItem[] = INITIAL_NOTICES;
+export const SSR_EVENTS: CalendarEvent[] = INITIAL_EVENTS;
 export const SSR_DOCUMENTS: FoundationDocument[] = isRemoteStore ? [] : INITIAL_DOCUMENTS;
 export const SSR_WHITELIST: WhitelistedUser[] = isRemoteStore ? [] : INITIAL_WHITELIST;
 export const SSR_LOGS: AuditLog[] = isRemoteStore ? [] : INITIAL_LOGS;
@@ -128,7 +127,7 @@ function reportError(context: string, err: unknown): void {
   const code = (err as { code?: string })?.code;
   const message =
     code === 'permission-denied'
-      ? `${context} ditolak: akun Anda tidak memiliki izin untuk aksi ini.`
+      ? `${context} ditolak: aturan Firestore (firestore.rules) belum diterapkan di Firebase Console atau akun Anda tidak memiliki izin.`
       : `${context} gagal: ${(err as Error)?.message || 'kesalahan tidak diketahui'}`;
   window.dispatchEvent(new CustomEvent(STORAGE_ERROR_EVENT, { detail: { message } }));
 }
@@ -155,6 +154,16 @@ function remoteSet(col: string, id: string, data: object, context: string): Prom
 }
 
 const pendingNoticeSaves = new Map<string, Promise<boolean>>();
+const pendingWhitelistSaves = new Map<string, Promise<boolean>>();
+
+/**
+ * Tunggu sampai dokumen whitelist karyawan benar-benar tersimpan di Firestore.
+ * Penyiapan akun login dibaca server lewat Admin SDK, jadi ia harus menunggu tulisan ini
+ * mendarat — kalau tidak, server melihat karyawannya "belum ada di whitelist".
+ */
+export function whitelistSaved(email: string): Promise<boolean> {
+  return pendingWhitelistSaves.get(email.trim().toLowerCase()) ?? Promise.resolve(true);
+}
 
 /** Tunggu sampai pengumuman yang baru dibuat benar-benar tersimpan (true) atau gagal (false). */
 export function noticeSaved(id: string): Promise<boolean> {
@@ -238,7 +247,8 @@ function listenList<K extends ListKey>(
   return onSnapshot(
     q,
     (snap) => {
-      const items = snap.docs.map((d) => ({ ...d.data(), id: d.id })) as RemoteCache[K][number][];
+      let items = snap.docs.map((d) => ({ ...d.data(), id: d.id })) as RemoteCache[K][number][];
+      if (key === 'apps') items = splitLegacyPosOmg(items as AppItem[]) as RemoteCache[K][number][];
       if (sorter) items.sort(sorter);
       remote[key] = items as RemoteCache[K];
       notify(key);
@@ -363,7 +373,11 @@ export function addWhitelistedUser(
   };
 
   if (isRemoteStore) {
-    remoteSet(COLLECTIONS.WHITELIST, email, withoutId(newUser), 'Menambahkan karyawan ke whitelist');
+    const saved = remoteSet(COLLECTIONS.WHITELIST, email, withoutId(newUser), 'Menambahkan karyawan ke whitelist');
+    pendingWhitelistSaves.set(email, saved);
+    void saved.finally(() => {
+      if (pendingWhitelistSaves.get(email) === saved) pendingWhitelistSaves.delete(email);
+    });
   } else {
     setItem(STORAGE_KEYS.WHITELIST, [newUser, ...current]);
   }
@@ -429,12 +443,32 @@ export function removeWhitelistedUser(id: string, adminName: string): void {
 // ==========================================
 // Apps Operations
 // ==========================================
+/**
+ * Memastikan modul POS Kasir dan OMG Gudang tampil terpisah meskipun data tersimpan masih
+ * menggunakan entri legacy `app-pos-omg`.
+ */
+export function splitLegacyPosOmg(list: AppItem[]): AppItem[] {
+  if (!list.some((a) => a.id === 'app-pos-omg')) return list;
+  const posTemplate = INITIAL_APPS.find((a) => a.id === 'app-pos');
+  const omgTemplate = INITIAL_APPS.find((a) => a.id === 'app-omg');
+  const result: AppItem[] = [];
+  for (const item of list) {
+    if (item.id === 'app-pos-omg') {
+      if (posTemplate) result.push({ ...posTemplate, url: item.url || posTemplate.url });
+      if (omgTemplate) result.push({ ...omgTemplate, url: item.url || omgTemplate.url });
+    } else {
+      result.push(item);
+    }
+  }
+  return result;
+}
+
 export function getAppsList(): AppItem[] {
   if (isRemoteStore) {
     startPublicSync();
-    return remote.apps;
+    return splitLegacyPosOmg(remote.apps.length > 0 ? remote.apps : INITIAL_APPS);
   }
-  return getItem<AppItem[]>(STORAGE_KEYS.APPS, INITIAL_APPS);
+  return splitLegacyPosOmg(getItem<AppItem[]>(STORAGE_KEYS.APPS, INITIAL_APPS));
 }
 
 export function addAppItem(app: Omit<AppItem, 'id' | 'order'>, adminName: string): AppItem {
@@ -513,7 +547,7 @@ export function deleteAppItem(id: string, adminName: string): void {
 export function getNotices(): NoticeItem[] {
   if (isRemoteStore) {
     startPublicSync();
-    return remote.notices;
+    return remote.notices.length > 0 ? remote.notices : INITIAL_NOTICES;
   }
   return getItem<NoticeItem[]>(STORAGE_KEYS.NOTICES, INITIAL_NOTICES);
 }
@@ -854,7 +888,7 @@ export function resolveAccessRequest(
 export function getEvents(): CalendarEvent[] {
   if (isRemoteStore) {
     startPublicSync();
-    return remote.events;
+    return remote.events.length > 0 ? remote.events : INITIAL_EVENTS;
   }
   return getItem<CalendarEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS);
 }

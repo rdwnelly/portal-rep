@@ -15,7 +15,7 @@ const ADMIN_APP = 'portal-admin';
 const useEmulator = process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === 'true';
 
 export const PORTAL_PROJECT_ID =
-  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || (useEmulator ? 'demo-portal-rep' : '');
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || (useEmulator ? 'demo-portal-rep' : 'portal-rep-7d456');
 
 export class AdminNotConfiguredError extends Error {}
 

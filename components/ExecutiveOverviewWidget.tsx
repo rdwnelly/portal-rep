@@ -6,16 +6,8 @@ import { MetricsPeriod } from '@/lib/types';
 import { useLiveMetrics } from '@/lib/live-metrics';
 import { SourceOverlay } from '@/components/SourceStatus';
 import { SOURCE_LABELS } from '@/lib/integration-contract';
-import {
-  BedDouble,
-  Wallet,
-  Store,
-  Film,
-  AlertTriangle,
-  ChevronRight,
-  BarChart3
-} from 'lucide-react';
-import { PapuanBorderCorner } from '@/components/PapuanMotif';
+import { AlertTriangle, ArrowUpRight, BarChart3, BedDouble, Film, Store, Wallet } from 'lucide-react';
+import { Bento, BentoCard, CardTitle } from '@/components/ui/Bento';
 
 export function formatRupiah(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -25,219 +17,191 @@ export function formatRupiah(amount: number): string {
   }).format(amount);
 }
 
+/** Batang kemajuan kecil di dalam kartu pilar. */
+function Meter({ percent, tone }: { percent: number; tone: string }) {
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  return (
+    <div
+      className="w-full h-1.5 rounded-full bg-stone-200 dark:bg-white/10 overflow-hidden"
+      role="progressbar"
+      aria-valuenow={clamped}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <div className={`h-full rounded-full transition-all duration-500 ${tone}`} style={{ width: `${clamped}%` }} />
+    </div>
+  );
+}
+
+const PILLAR_TONE = {
+  amber: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  teal: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
+  indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+};
+
+/** Kepala tiap kartu pilar: ikon + nama modul di kiri, tren kecil di kanan. */
+function PillarHead({
+  icon: Icon,
+  label,
+  tone,
+  trend,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  tone: keyof typeof PILLAR_TONE;
+  trend?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${PILLAR_TONE[tone]}`}>
+          <Icon className="w-4 h-4" />
+        </span>
+        <span className="text-[11px] font-bold uppercase tracking-wide truncate">{label}</span>
+      </div>
+      {trend && (
+        <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 shrink-0">{trend}</span>
+      )}
+    </div>
+  );
+}
+
+/** Ringkasan empat sub-aplikasi untuk pimpinan, sebagai bento di dalam satu kartu. */
 export default function ExecutiveOverviewWidget() {
   const [period, setPeriod] = useState<MetricsPeriod>('TODAY');
+  const { metrics: m, sources } = useLiveMetrics(period);
 
-  const { metrics: currentMetrics, sources } = useLiveMetrics(period);
+  const periodBtn = (value: MetricsPeriod, label: string) => (
+    <button
+      type="button"
+      onClick={() => setPeriod(value)}
+      aria-pressed={period === value}
+      className={`px-2.5 h-8 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+        period === value
+          ? 'bg-amber-600 text-white'
+          : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   return (
-    <div className="rounded-3xl bg-gradient-to-b from-[#091f17] via-[#0b241b] to-[#071711] border-2 border-amber-500/30 text-white p-5 sm:p-6 shadow-2xl relative overflow-hidden">
-      <PapuanBorderCorner position="top-right" />
-      <PapuanBorderCorner position="bottom-left" />
-
-      {/* Header Widget */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-amber-500/20 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-5 h-5 text-amber-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40">
-                PIMPINAN & EKSEKUTIF
-              </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+    <div className="rounded-3xl bg-white dark:bg-[#0c241b] border border-stone-200/90 dark:border-white/10 shadow-[0_1px_2px_rgba(16,24,20,0.04),0_10px_28px_-18px_rgba(16,24,20,0.18)] dark:shadow-none p-4 sm:p-5">
+      <CardTitle
+        as="h2"
+        icon={BarChart3}
+        iconTone="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+        eyebrow="Pimpinan & eksekutif"
+        title="Denyut operasional terpadu"
+        action={
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-stone-100 dark:bg-white/5">
+              {periodBtn('TODAY', 'Hari Ini')}
+              {periodBtn('THIS_MONTH', 'Bulan Ini')}
             </div>
-            <h3 className="text-base sm:text-lg font-black text-white font-serif mt-0.5">
-              Denyut Operasional Terpadu (4 Aplikasi)
-            </h3>
-          </div>
-        </div>
-
-        {/* Period Selector & Link Button */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <div className="flex items-center bg-[#06140e] p-1 rounded-xl border border-amber-500/25 text-[11px] font-bold">
-            <button
-              type="button"
-              onClick={() => setPeriod('TODAY')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                period === 'TODAY'
-                  ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
+            <Link
+              href="/eksekutif"
+              aria-label="Buka dasbor eksekutif"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white"
             >
-              Hari Ini
-            </button>
-            <button
-              type="button"
-              onClick={() => setPeriod('THIS_MONTH')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                period === 'THIS_MONTH'
-                  ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Bulan Ini
-            </button>
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
           </div>
+        }
+      />
 
-          <Link
-            href="/eksekutif"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-extrabold shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <span>Selengkapnya</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      {/* 4 Pillars Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-4 relative z-10">
-        {/* Pillar 1: Reservasi Homestay */}
-        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-amber-500/20 flex flex-col justify-between space-y-2.5">
+      <Bento className="mt-4">
+        <BentoCard span="third" tone="amber" className="relative flex flex-col justify-between gap-2.5">
           <SourceOverlay compact state={sources.reservasi} appName={SOURCE_LABELS.reservasi} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                <BedDouble className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wide">
-                Homestay
-              </span>
-            </div>
-            <span className="text-[10px] font-mono text-emerald-400 font-bold">
-              {currentMetrics.reservasi.trendGuests}
-            </span>
-          </div>
-
+          <PillarHead icon={BedDouble} label="Homestay" tone="amber" trend={m.reservasi.trendGuests} />
           <div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-xl sm:text-2xl font-black text-white font-serif">
-                {currentMetrics.reservasi.occupancyRate}%
-              </span>
-              <span className="text-[11px] text-slate-400">
-                {currentMetrics.reservasi.occupiedHomestay}/{currentMetrics.reservasi.totalHomestay} Kamar
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xl sm:text-2xl font-black tabular-nums">{m.reservasi.occupancyRate}%</span>
+              <span className="text-[11px] text-stone-500 dark:text-slate-400 shrink-0">
+                {m.reservasi.occupiedHomestay}/{m.reservasi.totalHomestay} kamar
               </span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-slate-800 mt-1.5 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 rounded-full transition-all duration-500"
-                style={{ width: `${currentMetrics.reservasi.occupancyRate}%` }}
-              />
+            <div className="mt-1.5">
+              <Meter percent={m.reservasi.occupancyRate} tone="bg-gradient-to-r from-amber-500 to-emerald-500" />
             </div>
-            <p className="text-[10px] text-slate-300 mt-1.5">
-              {currentMetrics.reservasi.activeGuestsToday} Tamu Aktif • {currentMetrics.reservasi.totalTicketsSold} Tiket Terjual
+            <p className="mt-1.5 text-[10px] text-stone-600 dark:text-slate-300">
+              {m.reservasi.activeGuestsToday} tamu aktif • {m.reservasi.totalTicketsSold} tiket
             </p>
           </div>
-        </div>
+        </BentoCard>
 
-        {/* Pillar 2: SIK-REP Keuangan */}
-        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-emerald-500/20 flex flex-col justify-between space-y-2.5">
+        <BentoCard span="third" tone="emerald" className="relative flex flex-col justify-between gap-2.5">
           <SourceOverlay compact state={sources.keuangan} appName={SOURCE_LABELS.keuangan} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <Wallet className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide">
-                SIK-REP Kas
-              </span>
-            </div>
-            <span className="text-[10px] font-mono text-emerald-400 font-bold">
-              {currentMetrics.keuangan.trendRevenue}
-            </span>
-          </div>
-
+          <PillarHead icon={Wallet} label="SIK-REP kas" tone="emerald" trend={m.keuangan.trendRevenue} />
           <div>
-            <span className="text-lg sm:text-xl font-black text-white font-mono block leading-tight">
-              {formatRupiah(currentMetrics.keuangan.totalCashBalance)}
+            <span className="block text-base sm:text-lg font-black font-mono leading-tight tabular-nums">
+              {formatRupiah(m.keuangan.totalCashBalance)}
             </span>
-            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 pt-1.5 border-t border-slate-800">
-              <span className="text-emerald-300 font-semibold">
-                Masuk: {formatRupiah(currentMetrics.keuangan.monthlyIncome)}
+            <div className="mt-1.5 pt-1.5 border-t border-stone-200 dark:border-white/10 flex items-center justify-between gap-2 text-[10px]">
+              <span className="text-emerald-700 dark:text-emerald-300 font-semibold truncate">
+                Masuk {formatRupiah(m.keuangan.monthlyIncome)}
               </span>
-              <span className="text-rose-300">
-                Keluar: {formatRupiah(currentMetrics.keuangan.monthlyExpense)}
+              <span className="text-rose-700 dark:text-rose-300 truncate">
+                Keluar {formatRupiah(m.keuangan.monthlyExpense)}
               </span>
             </div>
           </div>
-        </div>
+        </BentoCard>
 
-        {/* Pillar 3: POS Kasir Yaswar & Gudang */}
-        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-teal-500/20 flex flex-col justify-between space-y-2.5">
+        <BentoCard span="third" className="relative flex flex-col justify-between gap-2.5">
           <SourceOverlay compact state={sources.posGudang} appName={SOURCE_LABELS.posGudang} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center">
-                <Store className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold text-teal-400 uppercase tracking-wide">
-                POS & Gudang
-              </span>
-            </div>
-            <span className="text-[10px] font-mono text-teal-300 font-bold">
-              {currentMetrics.posGudang.trendSales}
-            </span>
-          </div>
-
+          <PillarHead icon={Store} label="POS & gudang" tone="teal" trend={m.posGudang.trendSales} />
           <div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-lg sm:text-xl font-black text-white font-mono leading-tight">
-                {formatRupiah(currentMetrics.posGudang.dailySalesVolume)}
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-base sm:text-lg font-black font-mono leading-tight tabular-nums">
+                {formatRupiah(m.posGudang.dailySalesVolume)}
               </span>
-              <span className="text-[11px] text-slate-400">
-                {currentMetrics.posGudang.dailyTransactionsCount} Struk
+              <span className="text-[11px] text-stone-500 dark:text-slate-400 shrink-0">
+                {m.posGudang.dailyTransactionsCount} struk
               </span>
             </div>
-            {currentMetrics.posGudang.lowStockAlerts.length > 0 && (
-              <p className="text-[10px] text-amber-300 flex items-center gap-1 mt-1.5 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/25">
-                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                <span>{currentMetrics.posGudang.lowStockAlerts.length} Suvenir Stok Menipis</span>
+            {m.posGudang.lowStockAlerts.length > 0 && (
+              <p className="mt-1.5 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/25 text-[10px] text-amber-800 dark:text-amber-300">
+                <AlertTriangle className="w-3 h-3 shrink-0" />
+                <span className="truncate">{m.posGudang.lowStockAlerts.length} suvenir stok menipis</span>
               </p>
             )}
           </div>
-        </div>
+        </BentoCard>
 
-        {/* Pillar 4: Zeey Studio Media */}
-        <div className="relative p-3.5 rounded-2xl bg-[#081a13] border border-indigo-500/20 flex flex-col justify-between space-y-2.5">
+        <BentoCard span="third" className="relative flex flex-col justify-between gap-2.5">
           <SourceOverlay compact state={sources.zeeyStudio} appName={SOURCE_LABELS.zeeyStudio} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                <Film className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide">
-                Zeey Media
-              </span>
-            </div>
-            <span className="text-[10px] font-mono text-indigo-300 font-bold">
-              +{currentMetrics.zeeyStudio.newAssetsThisWeek} pekan ini
-            </span>
-          </div>
-
+          <PillarHead
+            icon={Film}
+            label="Zeey media"
+            tone="indigo"
+            trend={`+${m.zeeyStudio.newAssetsThisWeek} pekan ini`}
+          />
           <div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-xl sm:text-2xl font-black text-white font-serif">
-                {currentMetrics.zeeyStudio.totalMediaAssets}
-              </span>
-              <span className="text-[11px] text-slate-400">
-                {currentMetrics.zeeyStudio.cloudStorageUsedGb} / {currentMetrics.zeeyStudio.totalCloudStorageGb} GB
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xl sm:text-2xl font-black tabular-nums">{m.zeeyStudio.totalMediaAssets}</span>
+              <span className="text-[11px] text-stone-500 dark:text-slate-400 shrink-0">
+                {m.zeeyStudio.cloudStorageUsedGb}/{m.zeeyStudio.totalCloudStorageGb} GB
               </span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-slate-800 mt-1.5 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full"
-                style={{
-                  width: `${(currentMetrics.zeeyStudio.totalCloudStorageGb ? (currentMetrics.zeeyStudio.cloudStorageUsedGb / currentMetrics.zeeyStudio.totalCloudStorageGb) * 100 : 0)}%`,
-                }}
+            <div className="mt-1.5">
+              <Meter
+                percent={
+                  m.zeeyStudio.totalCloudStorageGb
+                    ? (m.zeeyStudio.cloudStorageUsedGb / m.zeeyStudio.totalCloudStorageGb) * 100
+                    : 0
+                }
+                tone="bg-gradient-to-r from-indigo-500 to-purple-500"
               />
             </div>
-            <p className="text-[10px] text-slate-300 mt-1.5 truncate">
-              {currentMetrics.zeeyStudio.culturalVideosCount} Video Budaya • {currentMetrics.zeeyStudio.highResPhotosCount} Foto
+            <p className="mt-1.5 text-[10px] text-stone-600 dark:text-slate-300 truncate">
+              {m.zeeyStudio.culturalVideosCount} video • {m.zeeyStudio.highResPhotosCount} foto
             </p>
           </div>
-        </div>
-      </div>
+        </BentoCard>
+      </Bento>
     </div>
   );
 }

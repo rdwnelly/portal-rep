@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { PapuanBorderCorner } from '@/components/PapuanMotif';
+import { CARD_SURFACE } from '@/components/ui/Bento';
 
 interface CurrentWeather {
   temperature: number;
@@ -161,62 +162,28 @@ async function fetchSorongWeather(): Promise<{ current: CurrentWeather; forecast
   return null;
 }
 
-export default function WeatherWidget({ isCompact = false }: { isCompact?: boolean }) {
-  const [weather, setWeather] = useState<CurrentWeather>({
-    temperature: 30,
-    feelsLike: 33,
-    humidity: 78,
-    windSpeed: 11,
-    weatherCode: 2,
-    conditionText: 'Cerah Berawan Tropis',
-    isDay: true,
-    advisoryText: 'Cuaca bersahabat untuk tur budaya, pertunjukan tari, dan aktivitas homestay.',
-    updatedAt: '09:00 WIT',
-  });
-
-  const [forecast, setForecast] = useState<DailyForecast[]>([
-    {
-      date: 'Hari ini',
-      dayName: 'Minggu',
-      weatherCode: 2,
-      tempMax: 32,
-      tempMin: 25,
-      conditionText: 'Cerah Berawan',
-    },
-    {
-      date: 'Besok',
-      dayName: 'Senin',
-      weatherCode: 80,
-      tempMax: 31,
-      tempMin: 24,
-      conditionText: 'Hujan Lokal Sore',
-    },
-    {
-      date: 'Lusa',
-      dayName: 'Selasa',
-      weatherCode: 1,
-      tempMax: 33,
-      tempMin: 25,
-      conditionText: 'Cerah Hangat',
-    },
-  ]);
-
-  const [isLoading, setIsLoading] = useState(false);
+export default function WeatherWidget() {
+  // Tidak ada angka contoh: sebelum data asli tiba, widget menampilkan status memuat/gagal.
+  const [weather, setWeather] = useState<CurrentWeather | null>(null);
+  const [forecast, setForecast] = useState<DailyForecast[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Weather Code to Indonesian text & icon
-  // Isi state hanya di callback .then → tidak ada setState sinkron di dalam effect.
   const loadWeather = useCallback(() => {
     return fetchSorongWeather().then((result) => {
       if (result) {
         setWeather(result.current);
-        if (result.forecast.length) setForecast(result.forecast);
+        setForecast(result.forecast);
+        setFailed(false);
+      } else {
+        setFailed(true);
       }
       setIsLoading(false);
     });
   }, []);
 
-  /** Tombol refresh manual: tampilkan indikator memuat lalu ambil ulang. */
+  /** Tombol muat ulang manual. */
   const fetchLiveWeather = () => {
     setIsLoading(true);
     void loadWeather();
@@ -228,176 +195,179 @@ export default function WeatherWidget({ isCompact = false }: { isCompact?: boole
     return () => clearInterval(interval);
   }, [loadWeather]);
 
-  const WeatherIconComp = getWeatherInfo(weather.weatherCode, weather.isDay).icon;
+  // Tutup rincian dengan tombol Escape.
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setModalOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalOpen]);
 
-  // COMPACT PILL BUTTON (In the Hero Header)
-  if (isCompact) {
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0a2319]/90 hover:bg-[#0e2f22] border border-emerald-500/30 hover:border-amber-400 text-emerald-200 text-xs transition-all shadow-md active:scale-95 cursor-pointer group"
-          title="Prakiraan Cuaca Real-Time Sorong (Klik untuk Rincian)"
-        >
-          <WeatherIconComp className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
-          <span className="font-bold text-white font-mono">{weather.temperature}°C</span>
-          <span className="text-[11px] text-emerald-300 hidden sm:inline truncate max-w-[120px]">
-            {weather.conditionText}
-          </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        </button>
+  const info = weather ? getWeatherInfo(weather.weatherCode, weather.isDay) : null;
+  const WeatherIconComp = info?.icon ?? CloudSun;
 
-        {/* Detailed Weather Modal */}
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 text-slate-100">
-            <div
-              className="relative w-full max-w-md rounded-3xl bg-[#091f17] border-2 border-emerald-500/40 shadow-2xl p-6 overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+  return (
+    <>
+      <div className={`${CARD_SURFACE} h-full p-4 sm:p-5 flex flex-col justify-between gap-3`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 flex items-center justify-center shrink-0">
+              <WeatherIconComp className="w-5 h-5" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-extrabold uppercase text-emerald-700 dark:text-emerald-400 tracking-wide">
+                  Cuaca Sorong (WIT)
+                </span>
+                {weather && (
+                  <span className="text-[10px] font-mono text-stone-400 dark:text-slate-400">• {weather.updatedAt}</span>
+                )}
+              </div>
+              <p className="text-sm font-bold text-stone-900 dark:text-white truncate">
+                {weather
+                  ? `${weather.temperature}°C — ${weather.conditionText}`
+                  : isLoading
+                    ? 'Memuat data cuaca…'
+                    : 'Data cuaca belum tersedia'}
+              </p>
+            </div>
+          </div>
+
+          {weather ? (
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="px-3 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-bold cursor-pointer shrink-0"
             >
-              <PapuanBorderCorner position="top-right" />
-              <PapuanBorderCorner position="bottom-left" />
+              Rincian
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={fetchLiveWeather}
+              disabled={isLoading}
+              aria-label="Muat ulang cuaca"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-white/5 text-stone-500 dark:text-slate-400 border border-stone-200 dark:border-white/10 cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+        </div>
+        {failed && !isLoading && (
+          <p className="mt-2 text-[11px] text-stone-500 dark:text-slate-400">
+            Gagal menghubungi layanan cuaca. Periksa koneksi, lalu coba muat ulang.
+          </p>
+        )}
+      </div>
 
-              <div className="flex items-start justify-between pb-3 border-b border-emerald-500/20 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center">
-                    <WeatherIconComp className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-white font-serif">
-                      Cuaca Sorong & Aimas
-                    </h3>
-                    <p className="text-[10px] text-emerald-300 flex items-center gap-1 font-mono">
-                      <MapPin className="w-3 h-3 text-amber-400" />
-                      Km. 21, Papua Barat Daya • {weather.updatedAt}
-                    </p>
-                  </div>
-                </div>
+      {modalOpen && weather && info && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Rincian cuaca Sorong">
+          <button
+            type="button"
+            aria-label="Tutup rincian cuaca"
+            onClick={() => setModalOpen(false)}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-default"
+          />
+          <div className="relative w-full max-w-md max-h-[85dvh] overflow-y-auto rounded-3xl bg-white dark:bg-[#091f17] border border-stone-200 dark:border-emerald-500/40 shadow-2xl p-6 text-stone-900 dark:text-slate-100">
+            <PapuanBorderCorner position="top-right" />
+            <PapuanBorderCorner position="bottom-left" />
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={fetchLiveWeather}
-                    className={`p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700 cursor-pointer ${
-                      isLoading ? 'animate-spin text-amber-400' : ''
-                    }`}
-                    title="Perbarui Cuaca"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setModalOpen(false)}
-                    className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Main Temp & Condition */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0d2a1f] to-[#06140e] border border-emerald-500/30 text-center mb-4 shadow-inner">
-                <p className="text-4xl font-serif font-black text-white tracking-tight">
-                  {weather.temperature}°C
-                </p>
-                <p className="text-sm font-bold text-amber-300 mt-0.5">
-                  {weather.conditionText}
-                </p>
-                <p className="text-[11px] text-emerald-200/80 mt-0.5">
-                  Suhu Terasa: {weather.feelsLike}°C
-                </p>
-              </div>
-
-              {/* Weather Stats Grid */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-3 rounded-2xl bg-[#081a13] border border-emerald-500/20 flex items-center gap-2.5">
-                  <Droplets className="w-5 h-5 text-cyan-400 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Kelembapan</p>
-                    <p className="text-xs font-black text-white">{weather.humidity}% RH</p>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-[#081a13] border border-emerald-500/20 flex items-center gap-2.5">
-                  <Wind className="w-5 h-5 text-teal-400 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Kecepatan Angin</p>
-                    <p className="text-xs font-black text-white">{weather.windSpeed} km/jam</p>
-                  </div>
+            <div className="flex items-start justify-between gap-2 pb-3 border-b border-stone-200 dark:border-emerald-500/20 mb-4">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                  <WeatherIconComp className="w-5 h-5" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold font-serif">Cuaca Sorong &amp; Aimas</h2>
+                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-mono">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">Km. 21, Papua Barat Daya • {weather.updatedAt}</span>
+                  </p>
                 </div>
               </div>
 
-              {/* Cultural & Operational Advisory */}
-              <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 mb-4">
-                <div className="flex items-start gap-2 text-xs">
-                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-amber-300 block mb-0.5">Rekomendasi Operasional REP:</strong>
-                    <span className="text-slate-300 text-[11px] leading-relaxed">
-                      {weather.advisoryText}
-                    </span>
-                  </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={fetchLiveWeather}
+                  aria-label="Perbarui cuaca"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-stone-500 dark:text-slate-400 hover:bg-stone-100 dark:hover:bg-white/10 cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-500' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  aria-label="Tutup"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-stone-500 dark:text-slate-400 hover:bg-stone-100 dark:hover:bg-white/10 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-stone-50 dark:bg-gradient-to-r dark:from-[#0d2a1f] dark:to-[#06140e] border border-stone-200 dark:border-emerald-500/30 text-center mb-4">
+              <p className="text-4xl font-serif font-black tracking-tight">{weather.temperature}°C</p>
+              <p className="text-sm font-bold text-amber-700 dark:text-amber-300 mt-0.5">{weather.conditionText}</p>
+              <p className="text-[11px] text-stone-500 dark:text-emerald-200/80 mt-0.5">Suhu terasa: {weather.feelsLike}°C</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-stone-200 dark:border-emerald-500/20 flex items-center gap-2.5">
+                <Droplets className="w-5 h-5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-stone-500 dark:text-slate-400 font-bold uppercase">Kelembapan</p>
+                  <p className="text-xs font-bold">{weather.humidity}% RH</p>
                 </div>
               </div>
 
-              {/* 3 Days Forecast */}
+              <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#081a13] border border-stone-200 dark:border-emerald-500/20 flex items-center gap-2.5">
+                <Wind className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-stone-500 dark:text-slate-400 font-bold uppercase">Angin</p>
+                  <p className="text-xs font-bold">{weather.windSpeed} km/jam</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 mb-4">
+              <div className="flex items-start gap-2 text-xs">
+                <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-amber-800 dark:text-amber-300 block mb-0.5">Saran operasional REP:</strong>
+                  <span className="text-stone-700 dark:text-slate-300 text-[11px] leading-relaxed">{weather.advisoryText}</span>
+                </div>
+              </div>
+            </div>
+
+            {forecast.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Prakiraan 3 Hari ke Depan (Sorong)
+                <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-slate-400">
+                  Prakiraan {forecast.length} hari ke depan
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {forecast.map((f, i) => {
+                  {forecast.map((f) => {
                     const FIcon = getWeatherInfo(f.weatherCode).icon;
                     return (
                       <div
-                        key={i}
-                        className="p-2.5 rounded-xl bg-[#081a13] border border-emerald-500/20 text-center"
+                        key={f.date}
+                        className="p-2.5 rounded-xl bg-stone-50 dark:bg-[#081a13] border border-stone-200 dark:border-emerald-500/20 text-center"
                       >
-                        <p className="text-[10px] font-bold text-emerald-300">{f.date}</p>
-                        <FIcon className="w-4 h-4 text-amber-400 mx-auto my-1" />
-                        <p className="text-xs font-black text-white">{f.tempMax}° / {f.tempMin}°</p>
-                        <p className="text-[9px] text-slate-400 truncate mt-0.5">{f.conditionText}</p>
+                        <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">{f.date}</p>
+                        <FIcon className="w-4 h-4 text-amber-600 dark:text-amber-400 mx-auto my-1" />
+                        <p className="text-xs font-bold">
+                          {f.tempMax}° / {f.tempMin}°
+                        </p>
+                        <p className="text-[9px] text-stone-500 dark:text-slate-400 truncate mt-0.5">{f.conditionText}</p>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  // FULL CARD VIEW
-  return (
-    <div className="rounded-2xl bg-white dark:bg-[#0c241b] border border-stone-200/90 dark:border-emerald-500/30 p-4 shadow-sm hover:shadow-md transition-all">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <WeatherIconComp className="w-5 h-5 text-amber-500" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-extrabold uppercase text-emerald-700 dark:text-emerald-400 tracking-wide">
-                CUACA SORONG (WIT)
-              </span>
-              <span className="text-[10px] font-mono text-stone-400 dark:text-slate-400">
-                • {weather.updatedAt}
-              </span>
-            </div>
-            <p className="text-sm font-black text-stone-900 dark:text-white">
-              {weather.temperature}°C — {weather.conditionText}
-            </p>
+            )}
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-bold hover:bg-emerald-100 transition-all cursor-pointer shrink-0"
-        >
-          Rincian
-        </button>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

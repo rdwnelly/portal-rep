@@ -115,13 +115,13 @@ html.light .mobile-bottom-dock {
   background-size: 24px 24px;
 }
 
-.ethnic-border {
-  border-image: linear-gradient(to right, #e5a93c, #c28844, #0f382a) 1;
-}
-
 /* ========================================================================= */
 /* LIGHT MODE THEME OVERRIDES (HIGH CONTRAST & RICH PAPUAN AESTHETIC)       */
 /* ========================================================================= */
+html.light {
+  color-scheme: light;
+}
+
 html.light body, [data-theme="light"] body {
   background-color: #f5f8f6;
   color: #0f281e;
@@ -130,214 +130,6 @@ html.light body, [data-theme="light"] body {
 html.light .papuan-pattern-overlay {
   background-image: radial-gradient(rgba(180, 83, 9, 0.15) 1px, transparent 0);
   background-size: 24px 24px;
-}
-
-/* Header & Top Bar */
-html.light header {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  border-bottom: 1px solid rgba(180, 83, 9, 0.25) !important;
-  box-shadow: 0 4px 20px rgba(15, 56, 42, 0.05);
-}
-
-html.light header h1,
-html.light header span.font-black {
-  color: #b45309 !important;
-}
-
-html.light header p {
-  color: #334e42 !important;
-}
-
-/* Hero Banner - Always Rich Forest Emerald with Crisp White Text */
-.hero-banner-content h1,
-.hero-banner-content p,
-.hero-banner-content span {
-  color: #ffffff !important;
-}
-
-.hero-banner-content p {
-  color: #e2e8f0 !important;
-}
-
-/* Search Bar in Light Mode */
-html.light .search-box-container input {
-  background-color: #ffffff !important;
-  color: #0c261c !important;
-  border-color: rgba(180, 83, 9, 0.35) !important;
-  box-shadow: 0 2px 8px rgba(15, 56, 42, 0.05) !important;
-}
-
-html.light .search-box-container input::placeholder {
-  color: #64748b !important;
-}
-
-/* Category Filter Tabs in Light Mode */
-html.light .category-pill-inactive {
-  background-color: #ffffff !important;
-  color: #143528 !important;
-  border-color: rgba(180, 83, 9, 0.25) !important;
-  box-shadow: 0 2px 6px rgba(15, 56, 42, 0.04) !important;
-}
-
-html.light .category-pill-inactive:hover {
-  background-color: #eaf2ed !important;
-  color: #092017 !important;
-}
-
-html.light .category-pill-count {
-  background-color: rgba(180, 83, 9, 0.12) !important;
-  color: #8b3707 !important;
-  font-weight: 800 !important;
-}
-
-/* Application Big Grid Cards in Light Mode */
-html.light .app-card-wrapper {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
-  border: 1.5px solid rgba(180, 83, 9, 0.28) !important;
-  box-shadow: 0 10px 30px -5px rgba(15, 56, 42, 0.08), 0 0 15px rgba(229, 169, 60, 0.08) !important;
-}
-
-html.light .app-card-wrapper:hover {
-  border-color: rgba(180, 83, 9, 0.55) !important;
-  box-shadow: 0 16px 36px -8px rgba(15, 56, 42, 0.14), 0 0 22px rgba(229, 169, 60, 0.18) !important;
-}
-
-html.light .app-card-title {
-  color: #0c261c !important;
-}
-
-html.light .app-card-desc {
-  color: #2c4a3d !important;
-}
-
-html.light .app-card-sub {
-  color: #527063 !important;
-}
-
-html.light .app-card-stats {
-  background-color: #f0f6f2 !important;
-  border-color: rgba(180, 83, 9, 0.22) !important;
-  color: #143528 !important;
-  font-weight: 600 !important;
-}
-
-html.light .app-card-footer {
-  background-color: #f7faf8 !important;
-  border-top-color: rgba(180, 83, 9, 0.18) !important;
-}
-
-html.light .app-card-btn-copy {
-  background-color: #e6ede8 !important;
-  color: #143528 !important;
-  border-color: rgba(180, 83, 9, 0.28) !important;
-  font-weight: 700 !important;
-}
-
-html.light .app-card-btn-copy:hover {
-  background-color: #d6e2d9 !important;
-  color: #071912 !important;
-}
-
-html.light .app-card-btn-request {
-  background-color: rgba(180, 83, 9, 0.12) !important;
-  color: #8b3707 !important;
-  border-color: rgba(180, 83, 9, 0.4) !important;
-  font-weight: 800 !important;
-}
-
-html.light .app-card-btn-request:hover {
-  background-color: rgba(180, 83, 9, 0.2) !important;
-  color: #632402 !important;
-}
-
-/* Ultra-Modern Floating Bottom Dock in Light Mode */
-html.light .floating-bottom-nav {
-  background-color: rgba(255, 255, 255, 0.97) !important;
-  border-color: rgba(180, 83, 9, 0.3) !important;
-  box-shadow: 0 14px 40px rgba(15, 56, 42, 0.12), 0 0 20px rgba(229, 169, 60, 0.12) !important;
-}
-
-html.light .floating-bottom-nav a,
-html.light .floating-bottom-nav button {
-  color: #334155 !important;
-}
-
-html.light .floating-bottom-nav .text-amber-400,
-html.light .floating-bottom-nav .text-amber-300 {
-  color: #b45309 !important;
-}
-
-html.light .floating-bottom-nav .bg-amber-500\/15 {
-  background-color: rgba(254, 243, 199, 0.95) !important;
-  color: #92400e !important;
-}
-
-html.light .floating-bottom-nav .text-purple-400,
-html.light .floating-bottom-nav .text-purple-300\/80 {
-  color: #7e22ce !important;
-}
-
-html.light .floating-bottom-nav .bg-purple-500\/15 {
-  background-color: rgba(243, 232, 255, 0.95) !important;
-  color: #6b21a8 !important;
-}
-
-html.light .floating-bottom-nav .text-emerald-400 {
-  color: #047857 !important;
-}
-
-/* Modals & Dialogs in Light Mode */
-html.light .glass-panel {
-  background-color: rgba(255, 255, 255, 0.98) !important;
-  border-color: rgba(180, 83, 9, 0.3) !important;
-  box-shadow: 0 20px 40px -10px rgba(15, 56, 42, 0.15) !important;
-}
-
-html.light .glass-panel h2,
-html.light .glass-panel h3 {
-  color: #0c261c !important;
-}
-
-html.light .glass-panel input,
-html.light .glass-panel select,
-html.light .glass-panel textarea {
-  background-color: #f8faf9 !important;
-  border-color: rgba(180, 83, 9, 0.3) !important;
-  color: #0c261c !important;
-}
-
-html.light .glass-panel label {
-  color: #163628 !important;
-}
-
-/* Glassmorphic Cards with full Safari WebKit support */
-.glass-panel {
-  background: rgba(14, 30, 24, 0.82);
-  background-color: rgba(14, 30, 24, 0.82);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(229, 169, 60, 0.2);
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-
-.glass-panel-hover {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  -webkit-transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-panel-hover:hover {
-  transform: translateY(-3px);
-  -webkit-transform: translateY(-3px);
-  border-color: rgba(229, 169, 60, 0.45);
-  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(229, 169, 60, 0.15);
-}
-
-.glass-panel-active {
-  background: rgba(18, 42, 33, 0.9);
-  background-color: rgba(18, 42, 33, 0.9);
-  border-color: rgba(229, 169, 60, 0.5);
 }
 
 /* Button & interactive fixes for Safari */
@@ -366,37 +158,15 @@ button {
   background: #c28844;
 }
 
-/* Animation utilities */
-@keyframes pulseGlow {
-
-  0%,
-  100% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
+html.light ::-webkit-scrollbar-track {
+  background: #e9eeeb;
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 3s ease-in-out infinite;
+html.light ::-webkit-scrollbar-thumb {
+  background: #b9c7c0;
+  border-color: rgba(120, 113, 108, 0.25);
 }
 
-@keyframes floatSlow {
-
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-.animate-float {
-  animation: floatSlow 5s ease-in-out infinite;
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #8f9f97;
 }

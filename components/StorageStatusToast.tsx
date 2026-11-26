@@ -46,12 +46,12 @@ export default function StorageStatusToast() {
               key={t.id}
               className="p-3 rounded-xl bg-red-950/95 border border-red-500/50 text-red-100 text-xs flex items-start gap-2 shadow-2xl animate-in fade-in slide-in-from-bottom-2"
             >
-              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-red-400 shrink-0 mt-0.5" />
               <span className="flex-1 leading-snug">{t.message}</span>
               <button
                 type="button"
                 onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-                className="p-0.5 rounded text-red-300 hover:text-white cursor-pointer"
+                className="p-0.5 rounded text-rose-700 dark:text-red-300 hover:text-stone-900 dark:hover:text-white cursor-pointer"
                 aria-label="Tutup"
               >
                 <X className="w-3.5 h-3.5" />

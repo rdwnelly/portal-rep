@@ -23,71 +23,71 @@ export default function InfoTab({ info, currentAdminName }: { info: FoundationIn
     <>
         <div className="max-w-3xl space-y-6">
           <div>
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
-              <Info className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-lg font-black text-stone-900 dark:text-white flex items-center gap-2">
+              <Info className="w-5 h-5 text-cyan-700 dark:text-cyan-400" />
               <span>Profil & Informasi Resmi Yayasan REP</span>
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-stone-500 dark:text-slate-400">
               Data kontak helpdesk IT, alamat operasional, dan jam layanan yang tampil di portal.
             </p>
           </div>
 
-          <form onSubmit={handleSaveInfo} className="p-6 rounded-2xl bg-[#091b14] border border-cyan-500/25 space-y-4">
+          <form onSubmit={handleSaveInfo} className="p-6 rounded-2xl bg-stone-50 dark:bg-white/5 border border-cyan-500/25 space-y-4">
             {infoSavedSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500/40 text-xs text-emerald-300 flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400" />
+              <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950 border border-emerald-500/40 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                 <span>Informasi yayasan berhasil disimpan dan diperbarui!</span>
               </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Nama Organisasi</label>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Nama Organisasi</label>
                 <input
                   type="text"
                   value={infoForm.organizationName}
                   onChange={(e) => setInfoForm({ ...infoForm, organizationName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-slate-700 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Tagline Budaya</label>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Tagline Budaya</label>
                 <input
                   type="text"
                   value={infoForm.tagline}
                   onChange={(e) => setInfoForm({ ...infoForm, tagline: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-slate-700 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-300">Alamat Kompleks Yayasan</label>
+              <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Alamat Kompleks Yayasan</label>
               <input
                 type="text"
                 value={infoForm.address}
                 onChange={(e) => setInfoForm({ ...infoForm, address: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-slate-700 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-cyan-400"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Nama Kontak IT Helpdesk</label>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Nama Kontak IT Helpdesk</label>
                 <input
                   type="text"
                   value={infoForm.itHelpdeskName}
                   onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-slate-700 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Nomor WhatsApp IT Helpdesk</label>
+                <label className="text-xs font-bold text-stone-600 dark:text-slate-300">Nomor WhatsApp IT Helpdesk</label>
                 <input
                   type="text"
                   value={infoForm.itHelpdeskPhone}
                   onChange={(e) => setInfoForm({ ...infoForm, itHelpdeskPhone: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#06140e] border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-slate-700 text-xs text-stone-900 dark:text-white focus:outline-none focus:border-cyan-400 font-mono"
                 />
               </div>
             </div>

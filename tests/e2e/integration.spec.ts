@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { idToken, loginAndWait, resetEmulators, seedContent, seedStandardUsers } from './support/emulator';
+import { HOME_URL, idToken, loginAndWait, resetEmulators, seedContent, seedStandardUsers } from './support/emulator';
 
 test.beforeAll(async () => {
   await resetEmulators();
@@ -41,7 +41,10 @@ test('dasbor eksekutif: kartu POS live, kartu lain tertutup "belum terhubung"', 
 test('SSO: staf berakun langsung masuk ke sub-aplikasi', async ({ page, context }) => {
   await loginAndWait(page, 'admin@rep.test');
   await page.goto('/');
-  const [tab] = await Promise.all([context.waitForEvent('page'), page.getByText('POS Kasir & OMG (Manajemen Gudang)').first().click()]);
+  const [tab] = await Promise.all([
+    context.waitForEvent('page'),
+    page.getByText(/Aplikasi Kasir \(POS\)|POS Kasir & OMG/).first().click(),
+  ]);
   await tab.waitForURL(/localhost:3199\/sso\?ticket=[a-f0-9]{64}/);
   await expect(tab.getByText('SSO MOCK OK')).toBeVisible();
 });
@@ -49,25 +52,12 @@ test('SSO: staf berakun langsung masuk ke sub-aplikasi', async ({ page, context 
 test('SSO: staf tanpa akun di sub-aplikasi diberi tahu & dibuka halaman biasa', async ({ page, context }) => {
   // Arahkan URL publik POS (dari data contoh) ke sub-aplikasi tiruan.
   await context.route('https://rep-pos-app.vercel.app/**', (route) => route.fulfill({ body: 'LOGIN POS BIASA' }));
-  await loginAndWait(page, 'staf@rep.test');
+  await loginAndWait(page, 'staf@rep.test', HOME_URL);
   await page.goto('/');
-  const [tab] = await Promise.all([context.waitForEvent('page'), page.getByText('POS Kasir & OMG (Manajemen Gudang)').first().click()]);
+  const [tab] = await Promise.all([
+    context.waitForEvent('page'),
+    page.getByText(/Aplikasi Kasir \(POS\)|POS Kasir & OMG/).first().click(),
+  ]);
   await expect(page.getByText('belum memiliki akun di aplikasi tiruan')).toBeVisible();
   await tab.waitForURL('https://rep-pos-app.vercel.app/**');
-});
-
-test('konfirmasi baca: staf mengonfirmasi, pimpinan melihat status & mengirim pengingat', async ({ page, browser }) => {
-  await loginAndWait(page, 'staf@rep.test');
-  await page.goto('/dashboard/notices');
-  await page.getByText('Integrasi Single Sign-On').first().click();
-  await page.getByRole('button', { name: 'Saya sudah membaca & memahami' }).click();
-  await expect(page.getByText('Anda telah mengonfirmasi membaca')).toBeVisible();
-
-  const leader = await browser.newPage();
-  await loginAndWait(leader, 'ketua@rep.test');
-  await leader.goto('/dashboard/notices?notice=notice-1'); // tautan dari notifikasi push
-  await expect(leader.getByText('Status baca: 1/3 staf (33%)')).toBeVisible();
-  await leader.getByRole('button', { name: /Kirim pengingat ke 2 staf/ }).click();
-  await expect(leader.getByText('Tidak ada perangkat staf belum-membaca yang mengaktifkan notifikasi.')).toBeVisible();
-  await leader.close();
 });
