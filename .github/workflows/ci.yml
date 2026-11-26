@@ -64,3 +64,36 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # Vercel men-deploy aplikasi dari `main` secara otomatis, tetapi TIDAK men-deploy aturan
+  # Firestore. Job ini memasangnya — hanya setelah semua uji lulus, hanya untuk push ke main.
+  # Aktif setelah secret FIREBASE_RULES_DEPLOYER diisi (lihat README bagian 9); tanpa secret,
+  # job dilewati dengan peringatan, bukan gagal.
+  deploy-rules:
+    name: Deploy Firestore Rules (produksi)
+    needs: [quality, firebase]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-rules-produksi
+      cancel-in-progress: false
+    env:
+      DEPLOYER: ${{ secrets.FIREBASE_RULES_DEPLOYER }}
+    steps:
+      - name: Lewati bila kredensial belum diisi
+        if: env.DEPLOYER == ''
+        run: echo "::warning::Secret FIREBASE_RULES_DEPLOYER belum diisi — firestore.rules TIDAK di-deploy otomatis."
+      - uses: actions/checkout@v4
+        if: env.DEPLOYER != ''
+      - uses: actions/setup-node@v4
+        if: env.DEPLOYER != ''
+        with:
+          node-version: 22
+      - name: Deploy firestore.rules
+        if: env.DEPLOYER != ''
+        run: |
+          printf '%s' "$DEPLOYER" > "$RUNNER_TEMP/kredensial.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/kredensial.json"
+          npx -y firebase-tools@14 deploy --only firestore:rules --project portal-rep-7d456 --non-interactive
+          rm -f "$RUNNER_TEMP/kredensial.json"

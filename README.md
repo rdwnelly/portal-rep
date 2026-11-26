@@ -174,11 +174,29 @@ Uji e2e memakai build produksi di folder `.next-e2e` dan emulator — tidak meny
 
 ---
 
-## 🚢 9. Deployment ke Vercel
+## 🚢 9. Deployment otomatis
 
-1. Impor repository ke [Vercel](https://vercel.com) dan isi variabel bagian 5.1.
+Setiap push ke **`main`** langsung masuk produksi:
+
+| Bagian | Siapa yang men-deploy | Kapan |
+| :--- | :--- | :--- |
+| Aplikasi (Next.js) | Vercel | Begitu push ke `main` diterima |
+| `firestore.rules` | GitHub Actions, job **Deploy Firestore Rules** | Setelah lint, typecheck, unit, rules & e2e lulus |
+
+Branch lain hanya menghasilkan **Preview** di Vercel dan tidak menyentuh produksi.
+
+### Mengaktifkan deploy aturan otomatis (sekali saja)
+Tanpa langkah ini, job deploy aturan dilewati dengan peringatan dan aturan harus dipasang manual (bagian 5.2 langkah 3).
+
+1. Google Cloud Console → **IAM & Admin → Service Accounts** (proyek `portal-rep-7d456`) → **Create service account**, misalnya `deploy-aturan-ci`.
+2. Beri peran **Firebase Rules Admin** dan **Service Usage Consumer** — cukup untuk memasang aturan, tanpa akses ke data.
+3. Tab **Keys → Add key → JSON**, unduh berkasnya.
+4. GitHub → repo → **Settings → Secrets and variables → Actions → New repository secret**: nama `FIREBASE_RULES_DEPLOYER`, isi = seluruh isi berkas JSON tadi.
+5. Hapus berkas JSON dari komputer.
+
+### Pertama kali di Vercel
+1. Impor repository ke [Vercel](https://vercel.com) dan isi variabel bagian 5.1. Pastikan **Production Branch = `main`**.
 2. Tambahkan domain Vercel di Firebase Console → Authentication → Settings → **Authorized domains**.
-3. Deploy, lalu **deploy `firestore.rules`** (bagian 5.2 langkah 3). Vercel tidak men-deploy aturan Firestore — tanpa langkah ini, agenda tidak bisa diubah pengunjung.
 
 ---
 
